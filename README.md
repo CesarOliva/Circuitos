@@ -20,6 +20,22 @@ You can start editing the page by modifying `app/page.tsx`. The page auto-update
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
+## Comparar dos imágenes con DINOv2
+
+El experimento en `src/app/experiments/dinov2/compare_pair.py` compara dos imágenes usando DINOv2 ViT-S/14. Imprime la similitud coseno de las representaciones globales y una comparación adicional por parches. Los valores son índices de similitud, no porcentajes ni probabilidades.
+
+En este equipo ya está disponible Python 3.14. Ejecuta estos comandos en PowerShell desde la raíz del proyecto:
+
+```powershell
+py -3.14 -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install --upgrade pip
+python -m pip install -r src\app\experiments\requirements.txt
+python src\app\experiments\dinov2\compare_pair.py "C:\ruta\a\imagen1.jpg" "C:\ruta\a\imagen2.jpg"
+```
+
+La primera ejecución descarga el código y los pesos de DINOv2 mediante `torch.hub`. Para comparar componentes, conviene usar fotos o recortes con encuadre similar: la comparación por parches empareja regiones que ocupan la misma posición y ambas medidas pueden verse afectadas por el fondo, la iluminación y la orientación. Puedes guardar las imágenes en `src\app\experiments\dinov2\images` o en cualquier otra carpeta e indicar sus rutas al ejecutar el script.
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:

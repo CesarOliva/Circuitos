@@ -1,0 +1,45 @@
+import { ElectronicComponent } from "../../core/ElectronicComponent.ts";
+import { Terminal } from "../../core/Terminal.ts";
+import { fraction, positive } from "../../core/validation.ts";
+
+export class Potentiometer extends ElectronicComponent {
+    readonly type = "potentiometer";
+    private _position: number;
+
+    constructor(id: string, public readonly totalResistanceOhms: number, position = 0.5) {
+        super(id, "Potentiometer", [
+            new Terminal("A", "End A", "bidirectional"),
+            new Terminal("W", "Wiper", "wiper"),
+            new Terminal("B", "End B", "bidirectional"),
+        ]);
+
+        positive(totalResistanceOhms, "totalResistanceOhms");
+
+        this._position = fraction(position, "position");
+    }
+
+    get position(): number { 
+        return this._position;
+    }
+
+    set position(value: number) {
+        this._position = fraction(value, "position"); 
+    }
+
+    get resistanceAW(): number { 
+        return this.totalResistanceOhms * this.position; 
+    }
+
+    get resistanceWB(): number { 
+        return this.totalResistanceOhms * (1 - this.position); 
+    }
+
+    getProperties() {
+        return {
+            totalResistanceOhms: this.totalResistanceOhms,
+            position: this.position,
+            resistanceAW: this.resistanceAW,
+            resistanceWB: this.resistanceWB,
+        };
+    }
+}

@@ -16,10 +16,12 @@ node dist/example.js
 
 `DCSolver.simulate(circuit)` devuelve voltajes de nodo y voltaje, corriente y potencia por componente. Un resultado fallido incluye el motivo en `errors`. En circuitos no lineales, el solver itera los estados hasta converger o reporta el fallo.
 
+Los errores distinguen nodos flotantes, fuentes ideales incompatibles y restricciones de voltaje redundantes. Fuentes ideales paralelas con reparto de corriente indeterminado se reportan como error, aunque sus voltajes coincidan.
+
 Los componentes se aproximan así:
 
 - Fuente DC ideal y resistor ideal con sus valores configurados.
-- Switch y push button como conexiones ideales cuando están cerrados. En lazos redundantes de conexiones ideales, la distribución de corriente no es única; la corriente reportada corresponde a una base independiente de restricciones.
+- Switch y push button como conexiones ideales cuando están cerrados. Las conexiones redundantes se reducen a un árbol determinista según el orden de componentes; los enlaces redundantes reportan corriente cero porque el reparto ideal no es único.
 - Potenciómetro como dos resistencias y LDR con su ley configurable.
 - Capacitor abierto en estado estacionario; inductor reemplazado por su resistencia serie.
 - Diodo y LED con caída nominal y resistencia de conducción pequeña.
@@ -32,7 +34,32 @@ Los componentes se aproximan así:
 
 ## Análisis transitorio
 
-`TransientSolver.simulate(circuit, { durationSeconds, timeStepSeconds })` devuelve muestras con voltajes, corrientes y potencias a lo largo del tiempo. Usa Euler implícito para resistores, fuentes DC, capacitores e inductores; los estados iniciales del capacitor y del inductor son cero. El análisis admite hasta 100 000 pasos y reporta error si recibe otro tipo de componente.
+`TransientSolver.simulate(circuit, options)` devuelve muestras con voltajes, corrientes, potencias y mediciones por paso. Soporta todos los componentes declarados, resuelve diodos, LED y BJT mediante iteraciones por paso, y usa Euler implícito para resistores, fuentes, capacitores e inductores. Admite hasta 100 000 pasos. Los estados iniciales son cero por omisión y se pueden proporcionar por ID:
+
+```ts
+import { TransientSolver } from "./index.ts";
+
+new TransientSolver().simulate(circuit, {
+  durationSeconds: 0.1,
+  timeStepSeconds: 0.001,
+  initialConditions: {
+    capacitorVoltages: { C1: 2 },
+    inductorCurrents: { L1: 0.1 },
+  },
+  sourceWaveforms: {
+    V1: timeSeconds => timeSeconds < 0.01 ? 0 : 5,
+  },
+  controlWaveforms: {
+    switchClosed: { S1: timeSeconds => timeSeconds >= 0.02 },
+    potentiometerPositions: { P1: timeSeconds => timeSeconds < 0.05 ? 0.25 : 0.75 },
+    ldrIlluminanceLux: { LDR1: timeSeconds => 10 + 20 * timeSeconds },
+  },
+});
+```
+
+Los estados de switch, pulsador, potenciómetro y LDR se conservan desde el componente si no se proporciona una forma de onda. También se puede variar la distancia con `ultrasonicDistancesCm` y el estado del pulsador con `pushButtonPressed`. Las funciones se evalúan al final de cada paso; los valores no válidos y los IDs que no corresponden a un componente del tipo correcto producen un error.
+
+El sensor ultrasónico inicia un pulso ECHO ante cada flanco ascendente válido de TRIG y lo mantiene durante 58 µs por cm. El motor reporta RPM instantáneas proporcionales al voltaje y el buzzer cambia al cruzar su voltaje nominal; no se simulan inercia mecánica ni propagación acústica. El paso fijo limita la resolución temporal de controles y pulsos cortos.
 
 ## Ejemplo
 

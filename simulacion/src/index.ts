@@ -13,6 +13,7 @@ export * from "./components/controls/PushButton.ts";
 export * from "./components/controls/Switch.ts";
 export * from "./components/semiconductors/Transistor.ts";
 export * from "./components/semiconductors/Diode.ts";
+export * from "./components/semiconductors/LED.ts";
 export * from "./components/passive/Inductor.ts";
 export * from "./components/passive/Capacitor.ts";
 export * from "./components/passive/Resistor.ts";

@@ -2,21 +2,12 @@ import * as React from "react";
 import * as k from "@/components/iso/iso-kit";
 import { Dots, FaceText, Line, Solid } from "@/components/iso/react/draw";
 import type { Flat, Plan, Plane, Point3, SolidPaths, LineTone, Tone } from "@/components/iso/iso-kit";
+import { BLOCK_D, BLOCK_Y, BOARD, BOARD_T, PITCH, STANDOFF_H, STEP_Z, TOWER_D, TOWER_Z, cellX } from "./layout";
+
+export { traces } from "./layout";
 
 export const WIDTH = 420;
 export const HEIGHT = 300;
-
-// World units: x and y on the board, z up; the board's top face is z = 0.
-export const BOARD: Plan = { x: -46, y: -38, w: 92, d: 86, r: 4 };
-export const BOARD_T = 2.4;
-export const STANDOFF_H = 7;
-export const BLOCK_Y = 28;
-export const BLOCK_D = 15;
-export const STEP_Z = 7;
-export const TOWER_D = 9;
-export const TOWER_Z = 11;
-export const PITCH = 13;
-const LANES = [24, 21, 18, 15];
 
 export const P = k.fitProjection(
   [...k.boxCorners(BOARD, -BOARD_T - STANDOFF_H, 0), [0, -18, 44]],
@@ -139,41 +130,6 @@ export function board(art: Art) {
 export function silkscreen(art: Art, footprint: Plan, id: string) {
   art.line(k.planOutline(footprint, 0, P, 3), { tone: "faint" });
   art.text(k.topMatrix([footprint.x + 1, footprint.y - 1.8], 0, P, "x"), id, { size: 3.2, tone: "lo" });
-}
-
-export const cellX = (index: number, count: number) => (index - (count - 1) / 2) * PITCH;
-
-// Copper traces from each pad to its cell of the terminal block, routed so no two cross.
-export function traces(pads: Plane[], count: number) {
-  for (let index = 1; index < pads.length; index++) {
-    if (pads[index][0] <= pads[index - 1][0]) throw new Error("pads must run left to right in terminal order");
-  }
-  const shifts = pads.map(([x], index) => cellX(index, count) - x);
-  const right = shifts.map((shift, index) => (shift > 0.01 ? index : -1)).filter((index) => index >= 0);
-  const left = shifts.map((shift, index) => (shift < -0.01 ? index : -1)).filter((index) => index >= 0);
-  const lane = new Map<number, number>();
-  right.forEach((index, order) => lane.set(index, LANES[order]));
-  [...left].reverse().forEach((index, order) => lane.set(index, LANES[order]));
-  return pads.map(([x, y], index) => {
-    const cx = cellX(index, count);
-    const turn = lane.get(index);
-    const route: Plane[] = turn === undefined ? [[x, y], [x, BLOCK_Y]] : [[x, y], [x, turn], [cx, turn], [cx, BLOCK_Y]];
-    return chamfer(route, 1.6);
-  });
-}
-
-function chamfer(route: Plane[], cut: number): Plane[] {
-  const out: Plane[] = [route[0]];
-  for (let index = 1; index < route.length - 1; index++) {
-    const [a, b, c] = [route[index - 1], route[index], route[index + 1]];
-    const into = Math.hypot(b[0] - a[0], b[1] - a[1]);
-    const away = Math.hypot(c[0] - b[0], c[1] - b[1]);
-    const size = Math.min(cut, into / 2, away / 2);
-    out.push([b[0] - ((b[0] - a[0]) / into) * size, b[1] - ((b[1] - a[1]) / into) * size]);
-    out.push([b[0] + ((c[0] - b[0]) / away) * size, b[1] + ((c[1] - b[1]) / away) * size]);
-  }
-  out.push(route[route.length - 1]);
-  return out;
 }
 
 // A pad with its trace: copper ring, solder dot and the line to the block.

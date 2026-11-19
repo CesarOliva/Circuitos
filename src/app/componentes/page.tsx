@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import "@/components/iso/iso.css";
 import "@/components/simulador/simulador.css";
 import { CATALOG } from "@/components/simulador/catalog";
@@ -14,6 +15,10 @@ export default function ComponentesPage() {
   return (
     <main className="iso sim-gallery">
       <header className="sim-header">
+        <nav className="sim-nav" aria-label="Vistas">
+          <span aria-current="page">Isométrico</span>
+          <Link href="/componentes/3d">3D</Link>
+        </nav>
         <h1>Componentes del simulador</h1>
         <p>
           {CATALOG.length} clases de <code>simulacion/src/components</code> en {folders} carpetas. Cada tarjeta instancia la clase real: los bornes, el

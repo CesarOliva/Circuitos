@@ -43,6 +43,48 @@ export const CATALOG: Entry[] = [
   { component: new UltrasonicSensor("US1", 2, 400, 50), className: "UltrasonicSensor", title: "Sensor ultrasónico", folder: "sensors" },
 ];
 
+export const TERMINAL_TYPES: Record<string, string> = {
+  positive: "positivo",
+  negative: "negativo",
+  anode: "ánodo",
+  cathode: "cátodo",
+  bidirectional: "bidireccional",
+  base: "base",
+  collector: "colector",
+  emitter: "emisor",
+  wiper: "cursor",
+  input: "entrada",
+  output: "salida",
+};
+
+// What a client view needs from an instance, as plain data.
+export interface Spec {
+  type: string;
+  id: string;
+  name: string;
+  className: string;
+  title: string;
+  folder: Folder;
+  terminals: Array<{ id: string; text: string }>;
+  properties: Record<string, unknown>;
+}
+
+export function specOf({ component, className, title, folder }: Entry): Spec {
+  return {
+    type: component.type,
+    id: component.id,
+    name: component.name,
+    className,
+    title,
+    folder,
+    terminals: component.terminals.map((terminal) => ({
+      id: terminal.id,
+      text: `${terminal.id} · ${terminal.name} · ${TERMINAL_TYPES[terminal.type] ?? terminal.type}`,
+    })),
+    properties: component.getProperties(),
+  };
+}
+
 const UNITS: Record<string, string> = {
   voltage: "V",
   maxCurrent: "A",

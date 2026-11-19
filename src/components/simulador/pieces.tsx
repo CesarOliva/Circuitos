@@ -3,19 +3,17 @@ import type { ElectronicComponent } from "@simulacion/index.ts";
 import * as k from "@/components/iso/iso-kit";
 import * as G from "@/components/iso/lathe.mjs";
 import type { Flat, Plan, Plane, Point3, SolidPaths } from "@/components/iso/iso-kit";
+import { CY, colourCode } from "./layout";
 import { Art, P, at, hexagon, polyline } from "./stage";
 
 export type Term = (index: number, build: (art: Art) => void) => void;
 
+// The isometric drawing of one component; its pads and footprint are in layout.ts.
 export interface Piece {
-  footprint: Plan;
-  // where each terminal meets the board, in the component's terminal order
-  pads: Plane[];
   draw(art: Art, term: Term, component: ElectronicComponent): void;
 }
 
 type Frame = ReturnType<typeof G.frameOf>;
-const CY = -14;
 const along = (o: Point3): Frame => G.frameOf(o, [1, 0, 0], [0, 1, 0], [0, 0, 1]);
 const upright = (o: Point3): Frame => G.frameOf(o, [0, 0, 1], [1, 0, 0], [0, 1, 0]);
 const turned = (paths: unknown) => paths as SolidPaths;
@@ -36,20 +34,7 @@ function band(F: Frame, s: number, r: number, color: string) {
   return <path key={`band-${s}`} className="sim-band" data-band={color} d={G.arcOf(F, s, r, P, { trim: 0.8 })} />;
 }
 
-const DIGITS = ["black", "brown", "red", "orange", "yellow", "green", "blue", "violet", "grey", "white"];
-const TOLERANCE: Record<number, string> = { 1: "brown", 2: "red", 5: "gold", 10: "silver" };
-
-// The colour code of a resistance: two digits, a multiplier, a tolerance.
-export function colourCode(resistance: number, tolerance: number) {
-  const power = Math.floor(Math.log10(resistance)) - 1;
-  const digits = Math.round(resistance / 10 ** power);
-  const multiplier = power === -1 ? "gold" : power === -2 ? "silver" : DIGITS[power];
-  return [DIGITS[Math.floor(digits / 10)], DIGITS[digits % 10], multiplier, TOLERANCE[tolerance] ?? "none"];
-}
-
 const battery: Piece = {
-  footprint: { x: -15, y: -29, w: 30, d: 26, r: 2 },
-  pads: [[-22, -2], [22, -2]],
   draw(art, term) {
     const body: Plan = { x: -10, y: -22.5, w: 20, d: 13, r: 1.8 };
     art.solid(k.slabOf({ x: -13, y: -27, w: 26, d: 22, r: 2 }, 0, 3, P, 4, 0.6), { tone: "lo" });
@@ -71,8 +56,6 @@ const battery: Piece = {
 };
 
 const motor: Piece = {
-  footprint: { x: -16, y: -23, w: 48, d: 18, r: 1 },
-  pads: [[-34, -10], [-28, -18]],
   draw(art, term) {
     const F = along([0, CY, 12]);
     for (const x of [-14, 6]) art.solid(k.slabOf({ x, y: -22, w: 5, d: 16, r: 1 }, 0, 4, P, 3, 0.4), { tone: "lo" });
@@ -94,8 +77,6 @@ const motor: Piece = {
 };
 
 const buzzer: Piece = {
-  footprint: { x: -11, y: CY - 11, w: 22, d: 22, r: 11 },
-  pads: [[-3.8, CY], [3.8, CY]],
   draw(art) {
     art.solid(k.cylinder(0, CY, 9.6, 0, 1, P, 48), { tone: "lo" });
     art.solid(k.cylinder(0, CY, 9, 1, 9, P, 56, 0.6), { tone: "mid", inner: <path className="iso-line" data-tone="faint" d={k.sideArc(0, CY, 9, 8, P, 32)} /> });
@@ -109,8 +90,6 @@ const buzzer: Piece = {
 };
 
 const potentiometer: Piece = {
-  footprint: { x: -11, y: -26, w: 22, d: 22, r: 1 },
-  pads: [[-6, -2.2], [0, -2.2], [6, -2.2]],
   draw(art, term, component) {
     const position = Number(component.getProperties().position);
     const cy = -15;
@@ -143,8 +122,6 @@ const potentiometer: Piece = {
 };
 
 const pushButton: Piece = {
-  footprint: { x: -13, y: -24, w: 26, d: 20, r: 1 },
-  pads: [[-11, -10], [11, -10]],
   draw(art, term) {
     term(0, (art) => lead(art, [[-7, -12, 2], [-9.6, -12, 2], [-11, -10, 0]], 1));
     art.solid(k.slabOf({ x: -7, y: -21, w: 14, d: 14, r: 1 }, 0, 4, P, 3, 0.4), { tone: "lo" });
@@ -160,8 +137,6 @@ const pushButton: Piece = {
 };
 
 const toggle: Piece = {
-  footprint: { x: -9, y: -24, w: 18, d: 18, r: 1 },
-  pads: [[-4.5, -4.6], [4.5, -4.6]],
   draw(art, term, component) {
     const closed = Boolean(component.getProperties().closed);
     const cy = -15.5;
@@ -187,8 +162,6 @@ const toggle: Piece = {
 };
 
 const resistor: Piece = {
-  footprint: { x: -12, y: -18.5, w: 24, d: 9, r: 1 },
-  pads: [[-17, CY], [17, CY]],
   draw(art, term, component) {
     const { resistance, tolerance } = component.getProperties() as { resistance: number; tolerance: number };
     const F = along([0, CY, 4.6]);
@@ -201,8 +174,6 @@ const resistor: Piece = {
 };
 
 const capacitor: Piece = {
-  footprint: { x: -8, y: CY - 8, w: 16, d: 16, r: 8 },
-  pads: [[-3, CY], [3, CY]],
   draw(art, _term, component) {
     const polarized = Boolean(component.getProperties().polarized);
     const r = 6.4;
@@ -233,8 +204,6 @@ const capacitor: Piece = {
 };
 
 const inductor: Piece = {
-  footprint: { x: -13, y: -21, w: 26, d: 14, r: 1 },
-  pads: [[-17, CY], [17, CY]],
   draw(art, term) {
     const F = along([0, CY, 7]);
     term(0, (art) => lead(art, [[-11, CY, 7], [-17, CY, 7], [-17, CY, 0]], 1.8));
@@ -249,8 +218,6 @@ const inductor: Piece = {
 };
 
 const diode: Piece = {
-  footprint: { x: -9, y: -18, w: 18, d: 8, r: 1 },
-  pads: [[-14, CY], [14, CY]],
   draw(art, term) {
     const F = along([0, CY, 3.4]);
     term(0, (art) => lead(art, [[-6.5, CY, 3.4], [-14, CY, 3.4], [-14, CY, 0]], 1.4));
@@ -261,8 +228,6 @@ const diode: Piece = {
 };
 
 const led: Piece = {
-  footprint: { x: -5, y: CY - 5, w: 10, d: 10, r: 5 },
-  pads: [[-2.6, CY], [2.6, CY]],
   draw(art, term, component) {
     const colour = String(component.getProperties().color);
     [-1, 1].forEach((side, index) =>
@@ -278,8 +243,6 @@ const led: Piece = {
 };
 
 const transistor: Piece = {
-  footprint: { x: -7, y: -19, w: 14, d: 15, r: 1 },
-  pads: [[-5, -6], [0, -6], [5, -6]],
   draw(art, term) {
     const low = (-20.4 * Math.PI) / 180;
     const high = (200.4 * Math.PI) / 180;
@@ -298,8 +261,6 @@ const transistor: Piece = {
 };
 
 const ldr: Piece = {
-  footprint: { x: -7, y: CY - 7, w: 14, d: 14, r: 7 },
-  pads: [[-2.6, -11], [2.6, -11]],
   draw(art, term) {
     [-1, 1].forEach((side, index) =>
       term(index, (art) => {
@@ -319,8 +280,6 @@ const ldr: Piece = {
 };
 
 const ultrasonic: Piece = {
-  footprint: { x: -23, y: -32, w: 46, d: 23, r: 1 },
-  pads: [[-4.5, -6], [-1.5, -6], [1.5, -6], [4.5, -6]],
   draw(art, term) {
     const pcb: Plan = { x: -22, y: -31, w: 44, d: 21, r: 1 };
     for (const x of [-19, 19]) art.solid(k.cylinder(x, -28, 1.6, 0, 2.6, P, 16), { tone: "lo" });

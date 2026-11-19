@@ -12,9 +12,17 @@ export type TerminalType =
     | "output";
 
 export class Terminal {
+    readonly id: string;
+    readonly name: string;
+    readonly type: TerminalType;
+
     constructor(
-        public readonly id: string,
-        public readonly name: string,
-        public readonly type: TerminalType,
-    ) {}
+        id: string,
+        name: string,
+        type: TerminalType,
+    ) {
+        this.id = id;
+        this.name = name;
+        this.type = type;
+    }
 }

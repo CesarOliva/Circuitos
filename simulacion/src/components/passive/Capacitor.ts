@@ -4,13 +4,17 @@ import { nonnegative, positive } from "../../core/validation.ts";
 
 export class Capacitor extends ElectronicComponent {
     readonly type = "capacitor";
+    readonly capacitanceFarads: number;
+    readonly ratedVoltage: number;
+    readonly polarized: boolean;
+    readonly equivalentSeriesResistanceOhms: number;
 
     constructor(
         id: string,
-        public readonly capacitanceFarads: number,
-        public readonly ratedVoltage: number,
-        public readonly polarized = false,
-        public readonly equivalentSeriesResistanceOhms = 0,
+        capacitanceFarads: number,
+        ratedVoltage: number,
+        polarized = false,
+        equivalentSeriesResistanceOhms = 0,
     ) {
         super(id, "Capacitor", polarized
             ? [
@@ -22,7 +26,11 @@ export class Capacitor extends ElectronicComponent {
                 new Terminal("2", "Terminal 2", "bidirectional")
             ]
         );
-        
+
+        this.capacitanceFarads = capacitanceFarads;
+        this.ratedVoltage = ratedVoltage;
+        this.polarized = polarized;
+        this.equivalentSeriesResistanceOhms = equivalentSeriesResistanceOhms;
         positive(capacitanceFarads, "capacitanceFarads");
         positive(ratedVoltage, "ratedVoltage");
         nonnegative(equivalentSeriesResistanceOhms, "equivalentSeriesResistanceOhms");

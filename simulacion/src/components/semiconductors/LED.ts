@@ -11,18 +11,24 @@ type LEDColor =
 
 export class LED extends ElectronicComponent {
     readonly type = "led";
+    readonly color: LEDColor;
+    readonly forwardVoltage: number;
+    readonly maxForwardCurrent: number;
 
     constructor(
         id: string,
-        public readonly color: LEDColor,
-        public readonly forwardVoltage: number,
-        public readonly maxForwardCurrent: number
+        color: LEDColor,
+        forwardVoltage: number,
+        maxForwardCurrent: number
     ) {
         super(id, "LED", [
             new Terminal("A", "Anode", "anode"),
             new Terminal("K", "Cathode", "cathode")
         ]);
 
+        this.color = color;
+        this.forwardVoltage = forwardVoltage;
+        this.maxForwardCurrent = maxForwardCurrent;
         positive(forwardVoltage, "forwardVoltage");
         positive(maxForwardCurrent, "maxForwardCurrent");
     }

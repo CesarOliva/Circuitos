@@ -5,19 +5,28 @@ import { nonnegative, positive } from "../../core/validation.ts";
 export class LDR extends ElectronicComponent {
     readonly type = "ldr";
     private _illuminanceLux: number;
+    readonly referenceResistanceOhms: number;
+    readonly referenceLux: number;
+    readonly gamma: number;
+    readonly minLux: number;
 
     constructor(
         id: string,
-        public readonly referenceResistanceOhms = 10_000,
-        public readonly referenceLux = 10,
-        public readonly gamma = 0.7,
+        referenceResistanceOhms = 10_000,
+        referenceLux = 10,
+        gamma = 0.7,
         illuminanceLux = 10,
-        public readonly minLux = 0.01,
+        minLux = 0.01,
     ) {
         super(id, "LDR", [
             new Terminal("1", "Terminal 1", "bidirectional"),
             new Terminal("2", "Terminal 2", "bidirectional"),
         ]);
+
+        this.referenceResistanceOhms = referenceResistanceOhms;
+        this.referenceLux = referenceLux;
+        this.gamma = gamma;
+        this.minLux = minLux;
 
         positive(referenceResistanceOhms, "referenceResistanceOhms");
         positive(referenceLux, "referenceLux");

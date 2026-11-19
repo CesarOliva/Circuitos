@@ -5,11 +5,13 @@ import { nonnegative, positive } from "../../core/validation.ts";
 export class UltrasonicSensor extends ElectronicComponent {
     readonly type = "ultrasonic";
     private _distanceCm: number;
+    readonly minDistanceCm: number;
+    readonly maxDistanceCm: number;
 
     constructor(
         id: string,
-        public readonly minDistanceCm = 2,
-        public readonly maxDistanceCm = 400,
+        minDistanceCm = 2,
+        maxDistanceCm = 400,
         distanceCm = 0,
     ) {
         super(id, "Ultrasonic Sensor", [
@@ -19,6 +21,8 @@ export class UltrasonicSensor extends ElectronicComponent {
             new Terminal("GND", "Ground", "negative"),
         ]);
 
+        this.minDistanceCm = minDistanceCm;
+        this.maxDistanceCm = maxDistanceCm;
         positive(minDistanceCm, "minDistanceCm");
         positive(maxDistanceCm, "maxDistanceCm");
 

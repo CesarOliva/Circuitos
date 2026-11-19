@@ -6,13 +6,15 @@ export type PushButtonContact = "NO" | "NC";
 export class PushButton extends ElectronicComponent {
     readonly type = "push-button";
     private _pressed = false;
+    readonly contact: PushButtonContact;
 
-    constructor(id: string, public readonly contact: PushButtonContact = "NO") {
+    constructor(id: string, contact: PushButtonContact = "NO") {
 		super(id, "Push Button", [
 			new Terminal("1", "Terminal 1", "bidirectional"),
 			new Terminal("2", "Terminal 2", "bidirectional"),
 		]);
 
+        this.contact = contact;
       	if (contact !== "NO" && contact !== "NC") {
             throw new Error("Invalid contact type")
         }

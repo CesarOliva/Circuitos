@@ -4,18 +4,23 @@ import { positive } from "../../core/validation.ts";
 
 export class Resistor extends ElectronicComponent {
     readonly type = "resistor";
+    readonly tolerance: number;
+    readonly ratedPower: number;
+    private resistance: number;
 
     constructor(
         id: string,
-        private resistance: number,
-        public readonly tolerance = 5,
-        public readonly ratedPower = 0.25
+        resistance: number,
+        tolerance = 5,
+        ratedPower = 0.25
     ) {
         super(id, "Resistor", [
             new Terminal("1", "Terminal 1", "bidirectional"),
             new Terminal("2", "Terminal 2", "bidirectional")
         ]);
 
+        this.tolerance = tolerance;
+        this.ratedPower = ratedPower;
         this.resistance = positive(resistance, "resistance");
     }
 

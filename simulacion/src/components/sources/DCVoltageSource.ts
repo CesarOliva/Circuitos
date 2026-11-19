@@ -5,13 +5,15 @@ import { finite, positive } from "../../core/validation.ts";
 export class DCVoltageSource extends ElectronicComponent {
     readonly type = "dc-voltage-source";
     private _voltage: number;
+    readonly maxCurrent: number;
 
-    constructor(id: string, voltage: number, public readonly maxCurrent: number = Infinity) {
+    constructor(id: string, voltage: number, maxCurrent: number = Infinity) {
         super(id, "DC Voltage Source", [
             new Terminal("+", "Positive", "positive"),
             new Terminal("-", "Negative", "negative"),
         ]);
 
+        this.maxCurrent = maxCurrent;
         this._voltage = finite(voltage, "voltage");
 
         if (maxCurrent !== Infinity) {

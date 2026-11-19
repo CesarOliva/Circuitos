@@ -5,14 +5,16 @@ import { fraction, positive } from "../../core/validation.ts";
 export class Potentiometer extends ElectronicComponent {
     readonly type = "potentiometer";
     private _position: number;
+    readonly totalResistanceOhms: number;
 
-    constructor(id: string, public readonly totalResistanceOhms: number, position = 0.5) {
+    constructor(id: string, totalResistanceOhms: number, position = 0.5) {
         super(id, "Potentiometer", [
             new Terminal("A", "End A", "bidirectional"),
             new Terminal("W", "Wiper", "wiper"),
             new Terminal("B", "End B", "bidirectional"),
         ]);
 
+        this.totalResistanceOhms = totalResistanceOhms;
         positive(totalResistanceOhms, "totalResistanceOhms");
 
         this._position = fraction(position, "position");

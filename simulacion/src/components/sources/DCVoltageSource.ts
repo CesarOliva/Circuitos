@@ -29,6 +29,12 @@ export class DCVoltageSource extends ElectronicComponent {
         this._voltage = finite(value, "voltage"); 
     }
 
+
+    getVoltage(): number {
+        return this.voltage;
+    }
+
+
     getProperties() { 
         return { 
             voltage: this.voltage, 

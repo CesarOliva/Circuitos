@@ -36,6 +36,25 @@ python src\app\experiments\dinov2\compare_pair.py "C:\ruta\a\imagen1.jpg" "C:\ru
 
 La primera ejecución descarga el código y los pesos de DINOv2 mediante `torch.hub`. Para comparar componentes, conviene usar fotos o recortes con encuadre similar: la comparación por parches empareja regiones que ocupan la misma posición y ambas medidas pueden verse afectadas por el fondo, la iluminación y la orientación. Puedes guardar las imágenes en `src\app\experiments\dinov2\images` o en cualquier otra carpeta e indicar sus rutas al ejecutar el script.
 
+### Primer paso: clases del dataset
+
+La primera versión del clasificador usará dos clases:
+
+```text
+src\app\experiments\dinov2\dataset\
+├── train\
+│   ├── led\
+│   └── no_led\
+├── validation\
+│   ├── led\
+│   └── no_led\
+└── test\
+    ├── led\
+    └── no_led\
+```
+
+Coloca en `led` fotografías de LEDs y en `no_led` fotografías de componentes u objetos que no sean LEDs. Mantén separadas las imágenes de entrenamiento, validación y prueba; no copies la misma imagen a más de una partición. Conviene comenzar con imágenes recortadas donde aparezca principalmente un solo componente.
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:

@@ -1,4 +1,4 @@
-import { Connection } from "./Conection.ts";
+import { Connection } from "./Connection.ts";
 import { ElectronicComponent } from "./ElectronicComponent.ts"
 import { Node, type TerminalReference } from "./Node.ts";
 

@@ -1,6 +1,6 @@
 
 import { Circuit } from "./core/Circuit.ts";
-import { Connection } from "./core/Conection.ts";
+import { Connection } from "./core/Connection.ts";
 import { Resistor } from "./components/passive/Resistor.ts";
 import { DCVoltageSource } from "./components/sources/DCVoltageSource.ts";
 import { DCSolver } from "./simulation/DCSolver.ts";

@@ -9,6 +9,7 @@ export interface ComponentResult {
     voltage: number;
     current: number;
     power: number;
+    measurements?: Record<string, number | boolean>;
 }
 
 export interface SimulationResult {

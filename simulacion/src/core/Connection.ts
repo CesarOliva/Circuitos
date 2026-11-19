@@ -38,7 +38,7 @@ export class Connection {
             (this.from.componentId === componentId &&
                 this.from.terminalId === terminalId) ||
             (this.to.componentId === componentId &&
-                this.from.terminalId === terminalId)
+                this.to.terminalId === terminalId)
         )
     }
 }

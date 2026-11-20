@@ -5,6 +5,7 @@ import dynamic from "next/dynamic";
 import Link from "next/link";
 import {
   ActiveBuzzer,
+  Breadboard,
   Capacitor,
   Circuit,
   Connection,
@@ -24,6 +25,7 @@ import {
 } from "@simulacion/index";
 import type { Jumper, Locate, Placed } from "./simulador3d/circuit";
 import type { Mount } from "./simulador3d/model";
+import { BB_COLUMNS, BB_H, BB_HOLE, BB_HOLES, BB_LABEL_X, BB_LETTERS, BB_NUMBER_Y, BB_PITCH, BB_RAIL_LINES, BB_W, bbX, bbY, holeName, stripBox } from "./breadboard";
 import { PartPicture } from "./part-picture";
 import "./playground.css";
 
@@ -34,6 +36,7 @@ const Circuit3D = dynamic(() => import("./simulador3d/circuit"), {
 });
 
 type Kind =
+  | "breadboard"
   | "battery" | "resistor" | "led" | "diode" | "capacitor" | "inductor"
   | "switch" | "push-button" | "potentiometer" | "ldr" | "ultrasonic"
   | "dc-motor" | "active-buzzer" | "transistor";
@@ -50,8 +53,9 @@ type Part = {
 type TerminalRef = { componentId: string; terminalId: string };
 type Wire = { id: string; from: TerminalRef; to: TerminalRef };
 type TerminalSpec = { id: string; x: number; y: number; ax: number; ay: number; labelX: number; labelY: number; anchor: "start" | "middle" | "end" };
-type GroupName = "Pasivos y controles" | "Sensores y actuadores" | "Semiconductores";
-type ComponentSpec = { name: string; prefix: string; unit: string; value: number; group: GroupName; terminals: TerminalSpec[] };
+type GroupName = "Montaje" | "Pasivos y controles" | "Sensores y actuadores" | "Semiconductores";
+// `half` is how far the part reaches from its centre, which keeps it inside the canvas.
+type ComponentSpec = { name: string; prefix: string; unit: string; value: number; group: GroupName; terminals: TerminalSpec[]; half?: [number, number] };
 type Result = ReturnType<DCSolver["simulate"]>;
 
 const terminal = (id: string, side: -1 | 1, anchor = 40): TerminalSpec => ({
@@ -59,6 +63,8 @@ const terminal = (id: string, side: -1 | 1, anchor = 40): TerminalSpec => ({
   labelX: side * 18, labelY: 4, anchor: side < 0 ? "end" : "start",
 });
 const specs: Record<Kind, ComponentSpec> = {
+  // Its terminals are the holes, laid out in ./breadboard.
+  breadboard: { name: "Protoboard", prefix: "PB", unit: "", value: 0, group: "Montaje", terminals: [], half: [BB_W / 2, BB_H / 2] },
   battery: { name: "Batería DC", prefix: "V", unit: "V", value: 9, group: "Pasivos y controles", terminals: [terminal("+", -1), terminal("-", 1)] },
   resistor: { name: "Resistencia", prefix: "R", unit: "Ω", value: 470, group: "Pasivos y controles", terminals: [terminal("1", -1), terminal("2", 1)] },
   led: { name: "LED rojo", prefix: "D", unit: "V", value: 2.1, group: "Semiconductores", terminals: [terminal("A", -1, 29), terminal("K", 1, 29)] },
@@ -84,7 +90,7 @@ const specs: Record<Kind, ComponentSpec> = {
   ] },
 };
 
-const groups: GroupName[] = ["Pasivos y controles", "Sensores y actuadores", "Semiconductores"];
+const groups: GroupName[] = ["Montaje", "Pasivos y controles", "Sensores y actuadores", "Semiconductores"];
 const kinds = Object.keys(specs) as Kind[];
 const initialParts: Part[] = [];
 
@@ -96,16 +102,43 @@ function setValue(part: Part, value: number) {
 }
 
 function terminalPoint(part: Part, id: string): [number, number] {
-  const { x, y } = specs[part.kind].terminals.find(item => item.id === id)!;
+  const { x, y } = part.kind === "breadboard" ? BB_HOLE.get(id)! : specs[part.kind].terminals.find(item => item.id === id)!;
   return [part.x + x, part.y + y];
 }
 
-const clampX = (x: number) => Math.max(80, Math.min(880, x));
-const clampY = (y: number) => Math.max(90, Math.min(470, y));
+// Keeps a part's centre where the whole part stays on the 960 × 560 canvas.
+function clampTo(kind: Kind, x: number, y: number) {
+  const [w, h] = specs[kind].half ?? [80, 90];
+  return { x: Math.max(w, Math.min(960 - w, x)), y: Math.max(h, Math.min(560 - h, y)) };
+}
+
+// The protoboard isn't simulated as a part: every terminal wired into the same strip, or straight to another, is one node,
+// and the circuit gets the connections that join each node's terminals.
+function netlist(parts: Part[], wires: Wire[]) {
+  const boards = new Set(parts.filter(part => part.kind === "breadboard").map(part => part.id));
+  const key = ({ componentId, terminalId }: TerminalRef) => JSON.stringify(boards.has(componentId) ? [componentId, "strip", BB_HOLE.get(terminalId)!.strip] : [componentId, terminalId]);
+  const parent = new Map<string, string>();
+  const find = (id: string): string => {
+    const up = parent.get(id) ?? id;
+    if (up === id) return id;
+    const root = find(up);
+    parent.set(id, root);
+    return root;
+  };
+  const terminals = new Map<string, TerminalRef>();
+  for (const wire of wires) {
+    for (const end of [wire.from, wire.to]) if (!boards.has(end.componentId)) terminals.set(key(end), end);
+    parent.set(find(key(wire.from)), find(key(wire.to)));
+  }
+  const nets = new Map<string, TerminalRef[]>();
+  for (const [id, ref] of terminals) nets.set(find(id), [...(nets.get(find(id)) ?? []), ref]);
+  return [...nets.values()].flatMap(net => net.slice(1).map((to, index) => ({ from: net[index], to })));
+}
 
 function createComponent(part: Part) {
   const value = setValue(part, part.value);
   switch (part.kind) {
+    case "breadboard": return new Breadboard(part.id);
     case "battery": return new DCVoltageSource(part.id, value);
     case "resistor": return new Resistor(part.id, value);
     case "led": return new LED(part.id, "red", value, 0.02);
@@ -205,6 +238,36 @@ function ComponentArt({ part, lit, active }: { part: Part; lit: boolean; active:
   }
 }
 
+// The protoboard's face: wired holes in the accent, the holes joined to them tinted, the pending hole's strip boxed.
+function BreadboardArt({ wired, pending }: { wired: Set<string>; pending: string | null }) {
+  const live = new Set([...wired].map(id => BB_HOLE.get(id)!.strip));
+  const span = [bbX(1) - BB_PITCH * 0.6, bbX(BB_COLUMNS) + BB_PITCH * 0.6];
+  const pendingHole = pending ? BB_HOLE.get(pending) : undefined;
+  return <>
+    <rect className="part-body breadboard-body" x={-BB_W / 2} y={-BB_H / 2} width={BB_W} height={BB_H} rx="8" />
+    <rect className="bb-channel" x={span[0]} y="-3.5" width={span[1] - span[0]} height="7" rx="2" />
+    {BB_RAIL_LINES.map(line => <g key={line.y} className={line.sign === "+" ? "bb-rail-plus" : "bb-rail-minus"}>
+      <line x1={span[0]} x2={span[1]} y1={line.y} y2={line.y} />
+      {[-1, 1].map(side => <text key={side} className="bb-sign" x={side * BB_LABEL_X} y={line.y}>{line.sign === "+" ? "+" : "−"}</text>)}
+    </g>)}
+    {Array.from({ length: BB_COLUMNS }, (_, index) => index + 1).filter(column => column === 1 || column % 5 === 0).map(column =>
+      [-1, 1].map(side => <text key={`${column}${side}`} className="bb-print" x={bbX(column)} y={side * BB_NUMBER_Y}>{column}</text>))}
+    {BB_LETTERS.map(letter => [-1, 1].map(side => <text key={`${letter}${side}`} className="bb-print" x={side * BB_LABEL_X} y={bbY(letter)}>{letter}</text>))}
+    {pendingHole && <rect className="bb-strip bb-strip-pending" rx="3" {...stripBox(pendingHole.strip)} />}
+    {BB_HOLES.map(hole => <rect key={hole.id} className={`bb-hole${hole.id === pending ? " bb-hole-pending" : wired.has(hole.id) ? " bb-hole-used" : live.has(hole.strip) ? " bb-hole-linked" : ""}`} x={hole.x - 3} y={hole.y - 3} width="6" height="6" rx="1.2" />)}
+  </>;
+}
+
+// The holes as targets, above the wires so a wire never hides one; the strip under the pointer is boxed.
+function BreadboardHoles({ onHole }: { onHole(id: string): void }) {
+  const [hover, setHover] = useState<string | null>(null);
+  const hole = hover ? BB_HOLE.get(hover) : undefined;
+  return <g onPointerDown={event => event.stopPropagation()} onPointerMove={event => setHover((event.target as Element).getAttribute("data-hole"))} onPointerLeave={() => setHover(null)}>
+    {hole && <rect className="bb-strip" rx="3" {...stripBox(hole.strip)} />}
+    {BB_HOLES.map(item => <rect key={item.id} className="bb-target" data-hole={item.id} x={item.x - 4} y={item.y - 4} width="8" height="8" onClick={() => onHole(item.id)}><title>{holeName(item.id)}</title></rect>)}
+  </g>;
+}
+
 export default function Playground() {
   const [parts, setParts] = useState<Part[]>(initialParts);
   const [wires, setWires] = useState<Wire[]>([]);
@@ -245,10 +308,10 @@ export default function Playground() {
     let count = 1;
     while (parts.some(part => part.id === `${spec.prefix}${count}`)) count++;
     const index = parts.length % 15;
+    const [x, y] = at ?? (kind === "breadboard" ? [480, 280] : [125 + (index % 5) * 178, 115 + Math.floor(index / 5) * 170]);
     const part: Part = {
       id: `${spec.prefix}${count}`, kind,
-      x: at ? clampX(at[0]) : 125 + (index % 5) * 178,
-      y: at ? clampY(at[1]) : 115 + Math.floor(index / 5) * 170,
+      ...clampTo(kind, x, y),
       value: spec.value,
       ...(kind === "switch" || kind === "push-button" ? { on: false } : {}),
       ...(kind === "potentiometer" ? { position: 0.5 } : {}),
@@ -257,7 +320,7 @@ export default function Playground() {
     setParts(current => [...current, part]);
     setSelectedId(part.id);
     setResult(null);
-    setMessage(`${spec.name} añadido. Conecta sus terminales.`);
+    setMessage(kind === "breadboard" ? "Protoboard añadida. Por dentro, cada columna une sus agujeros a–e y f–j, y cada riel va de punta a punta." : `${spec.name} añadido. Conecta sus terminales.`);
   }
 
   function connectTerminal(ref: TerminalRef) {
@@ -265,7 +328,8 @@ export default function Playground() {
     setResult(null);
     if (!pendingTerminal) {
       setPendingTerminal(ref);
-      setMessage(`Terminal ${ref.terminalId} seleccionada. Elige otra terminal para conectar.`);
+      const hole = parts.some(part => part.id === ref.componentId && part.kind === "breadboard");
+      setMessage(`${hole ? `Agujero ${holeName(ref.terminalId)} seleccionado` : `Terminal ${ref.terminalId} seleccionada`}. Elige otra terminal para conectar.`);
       return;
     }
     if (pendingTerminal.componentId === ref.componentId && pendingTerminal.terminalId === ref.terminalId) {
@@ -291,8 +355,8 @@ export default function Playground() {
   function simulate() {
     const circuit = new Circuit("playground", "Mi circuito");
     try {
-      for (const part of parts) circuit.addComponent(createComponent(part));
-      for (const wire of wires) circuit.addConnection(new Connection(wire.id, wire.from, wire.to));
+      for (const part of parts) if (part.kind !== "breadboard") circuit.addComponent(createComponent(part));
+      netlist(parts, wires).forEach((link, index) => circuit.addConnection(new Connection(`N${index + 1}`, link.from, link.to)));
       const nextResult = new DCSolver().simulate(circuit);
       setResult(nextResult);
       if (!nextResult.success) {
@@ -323,7 +387,7 @@ export default function Playground() {
   }
 
   function movePart(partId: string, x: number, y: number) {
-    setParts(current => current.map(part => part.id === partId ? { ...part, x: clampX(x), y: clampY(y) } : part));
+    setParts(current => current.map(part => part.id === partId ? { ...part, ...clampTo(part.kind, x, y) } : part));
   }
 
   // A screen point in canvas units, through whichever view is showing; null outside it.
@@ -399,7 +463,31 @@ export default function Playground() {
     setSelectedId(null);
     setPendingTerminal(null);
     setResult(null);
-    setMessage(`${specs[selected.kind].name} eliminado.`);
+    setMessage(`${specs[selected.kind].name} ${selected.kind === "breadboard" ? "eliminada" : "eliminado"}.`);
+  }
+
+  function renderPart(part: Part) {
+    const componentResult = result?.components.find(component => component.componentId === part.id);
+    const active = part.kind === "dc-motor" ? Number(componentResult?.measurements?.rpm) > 0 : part.kind === "active-buzzer" ? Boolean(componentResult?.measurements?.active) : false;
+    return <g key={part.id} className={`placed-part${selectedId === part.id ? " part-selected" : ""}${dragging === part.id ? " part-dragging" : ""}`} transform={`translate(${part.x} ${part.y})`} onPointerDown={event => startDrag(event, part)} onPointerMove={event => onDrag(event, part.id)} onPointerUp={() => setDragging(null)} onPointerCancel={() => setDragging(null)} onClick={() => setSelectedId(part.id)} onKeyDown={event => {
+      if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(event.key)) {
+        event.preventDefault();
+        const delta = event.shiftKey ? 20 : 8;
+        movePart(part.id, part.x + (event.key === "ArrowRight" ? delta : event.key === "ArrowLeft" ? -delta : 0), part.y + (event.key === "ArrowDown" ? delta : event.key === "ArrowUp" ? -delta : 0));
+      }
+    }} tabIndex={0} role="group" aria-label={`${specs[part.kind].name} ${part.id}. Usa flechas para mover`}>
+      {part.kind === "breadboard"
+        ? <BreadboardArt wired={new Set(wires.flatMap(wire => [wire.from, wire.to]).filter(end => end.componentId === part.id).map(end => end.terminalId))} pending={pendingTerminal?.componentId === part.id ? pendingTerminal.terminalId : null} />
+        : <ComponentArt part={part} lit={part.kind === "led" && ledLit} active={active} />}
+      {specs[part.kind].terminals.map(item => <line key={`lead-${item.id}`} className="component-lead" x1={item.ax} y1={item.ay} x2={item.x} y2={item.y} />)}
+      {specs[part.kind].terminals.map(item => {
+        const pending = pendingTerminal?.componentId === part.id && pendingTerminal.terminalId === item.id;
+        return <g key={item.id} className={`terminal-button${pending ? " terminal-pending" : ""}`} transform={`translate(${item.x} ${item.y})`} onPointerDown={event => event.stopPropagation()} onClick={event => { event.stopPropagation(); connectTerminal({ componentId: part.id, terminalId: item.id }); }} onKeyDown={event => { if (event.key === "Enter" || event.key === " ") { event.stopPropagation(); connectTerminal({ componentId: part.id, terminalId: item.id }); } }} tabIndex={0} role="button" aria-label={`Conectar terminal ${item.id} de ${specs[part.kind].name} ${part.id}`}>
+          <circle r="13" className="terminal-hit" /><circle r="5" className="terminal-dot" /><text className="terminal-label" x={item.labelX} y={item.labelY} textAnchor={item.anchor}>{item.id}</text>
+        </g>;
+      })}
+      {componentResult && <text className="component-readout" x="0" y="90">{(componentResult.voltage).toFixed(2)} V · {(componentResult.current * 1000).toFixed(1)} mA</text>}
+    </g>;
   }
 
   function controlLabel(part: Part) {
@@ -450,8 +538,10 @@ export default function Playground() {
         <div className={`canvas-wrap${ghost?.over ? " drop-target" : ""}`}>
           {view === "3d" ? <Circuit3D parts={placed} wires={jumpers} mount={mount} selectedId={selectedId} pending={pendingTerminal} onSelect={setSelectedId} onTerminal={connectTerminal} onRemoveWire={removeWire} onLocator={locate => { locate3d.current = locate; }} /> :
           <svg ref={svgRef} className="circuit-canvas" viewBox="0 0 960 560" role="group" aria-label="Área para colocar y conectar componentes">
-            <defs><pattern id="dot-grid" width="24" height="24" patternUnits="userSpaceOnUse"><circle cx="1.5" cy="1.5" r="1" fill="#d8dfdc" /></pattern></defs>
+            <defs><pattern id="dot-grid" width="24" height="24" patternUnits="userSpaceOnUse"><circle className="dot-grid-dot" cx="1.5" cy="1.5" r="1" /></pattern></defs>
             <rect width="960" height="560" fill="url(#dot-grid)" />
+            {/* Protoboards lie under everything; their holes go above the wires, the parts above both. */}
+            {parts.filter(part => part.kind === "breadboard").map(renderPart)}
             {wires.map(wire => {
               const from = parts.find(part => part.id === wire.from.componentId);
               const to = parts.find(part => part.id === wire.to.componentId);
@@ -463,27 +553,10 @@ export default function Playground() {
                 <path className={`wire${ledLit ? " wire-live" : ""}`} d={`M${x1} ${y1} H${mid} V${y2} H${x2}`} /><path className="wire-hit" d={`M${x1} ${y1} H${mid} V${y2} H${x2}`} />
               </g>;
             })}
-            {parts.map(part => {
-              const componentResult = result?.components.find(component => component.componentId === part.id);
-              const active = part.kind === "dc-motor" ? Number(componentResult?.measurements?.rpm) > 0 : part.kind === "active-buzzer" ? Boolean(componentResult?.measurements?.active) : false;
-              return <g key={part.id} className={`placed-part${selectedId === part.id ? " part-selected" : ""}${dragging === part.id ? " part-dragging" : ""}`} transform={`translate(${part.x} ${part.y})`} onPointerDown={event => startDrag(event, part)} onPointerMove={event => onDrag(event, part.id)} onPointerUp={() => setDragging(null)} onPointerCancel={() => setDragging(null)} onClick={() => setSelectedId(part.id)} onKeyDown={event => {
-                if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(event.key)) {
-                  event.preventDefault();
-                  const delta = event.shiftKey ? 20 : 8;
-                  movePart(part.id, part.x + (event.key === "ArrowRight" ? delta : event.key === "ArrowLeft" ? -delta : 0), part.y + (event.key === "ArrowDown" ? delta : event.key === "ArrowUp" ? -delta : 0));
-                }
-              }} tabIndex={0} role="group" aria-label={`${specs[part.kind].name} ${part.id}. Usa flechas para mover`}>
-                <ComponentArt part={part} lit={part.kind === "led" && ledLit} active={active} />
-                {specs[part.kind].terminals.map(item => <line key={`lead-${item.id}`} className="component-lead" x1={item.ax} y1={item.ay} x2={item.x} y2={item.y} />)}
-                {specs[part.kind].terminals.map(item => {
-                  const pending = pendingTerminal?.componentId === part.id && pendingTerminal.terminalId === item.id;
-                  return <g key={item.id} className={`terminal-button${pending ? " terminal-pending" : ""}`} transform={`translate(${item.x} ${item.y})`} onPointerDown={event => event.stopPropagation()} onClick={event => { event.stopPropagation(); connectTerminal({ componentId: part.id, terminalId: item.id }); }} onKeyDown={event => { if (event.key === "Enter" || event.key === " ") { event.stopPropagation(); connectTerminal({ componentId: part.id, terminalId: item.id }); } }} tabIndex={0} role="button" aria-label={`Conectar terminal ${item.id} de ${specs[part.kind].name} ${part.id}`}>
-                    <circle r="13" className="terminal-hit" /><circle r="5" className="terminal-dot" /><text className="terminal-label" x={item.labelX} y={item.labelY} textAnchor={item.anchor}>{item.id}</text>
-                  </g>;
-                })}
-                {componentResult && <text className="component-readout" x="0" y="90">{(componentResult.voltage).toFixed(2)} V · {(componentResult.current * 1000).toFixed(1)} mA</text>}
-              </g>;
-            })}
+            {parts.filter(part => part.kind === "breadboard").map(part => <g key={`${part.id}-holes`} transform={`translate(${part.x} ${part.y})`}>
+              <BreadboardHoles onHole={id => connectTerminal({ componentId: part.id, terminalId: id })} />
+            </g>)}
+            {parts.filter(part => part.kind !== "breadboard").map(renderPart)}
             {!parts.length && <g className="empty-canvas" transform="translate(480 270)"><circle r="27" /><path d="M-9 0h18m-9-9v18" /><text y="58">Arrastra un componente aquí para comenzar</text></g>}
           </svg>}
           <div className={`canvas-message${ledLit ? " message-success" : ""}`} role="status"><span className="message-indicator" />{message}</div>
@@ -517,8 +590,9 @@ export default function Playground() {
       </section>
 
       <footer className="play-footer"><span><kbd>Agregar</kbd> Arrastra una pieza al área o haz clic en ella</span>{view === "3d"
-        ? <><span><kbd>Girar</kbd> Arrastra la mesa</span><span><kbd>Desplazar</kbd> Arrastra con clic derecho</span><span><kbd>Acercar</kbd> Ctrl o ⌘ con la rueda</span><span><kbd>Conectar</kbd> {mount === "loose" ? "Haz clic en dos patitas o puntas" : "Haz clic en dos borneras"}</span><span><kbd>Quitar cable</kbd> Haz clic en el cable</span><span><kbd>Mover</kbd> Usa la vista 2D</span></>
-        : <><span><kbd>Conectar</kbd> Selecciona dos terminales</span><span><kbd>Mover</kbd> Arrastra o usa las flechas</span><span><kbd>Quitar cable</kbd> Selecciona el cable</span><span><kbd>Valores</kbd> Edita el componente seleccionado</span></>}
+        ? <><span><kbd>Girar</kbd> Arrastra la mesa</span><span><kbd>Desplazar</kbd> Arrastra con clic derecho</span><span><kbd>Acercar</kbd> Ctrl o ⌘ con la rueda</span><span><kbd>Conectar</kbd> {mount === "loose" ? "Haz clic en dos patitas, puntas o agujeros" : "Haz clic en dos borneras o agujeros"}</span><span><kbd>Quitar cable</kbd> Haz clic en el cable</span><span><kbd>Mover</kbd> Usa la vista 2D</span></>
+        : <><span><kbd>Conectar</kbd> Selecciona dos terminales o agujeros</span><span><kbd>Mover</kbd> Arrastra o usa las flechas</span><span><kbd>Quitar cable</kbd> Selecciona el cable</span><span><kbd>Valores</kbd> Edita el componente seleccionado</span></>}
+        <span><kbd>Protoboard</kbd> Cada columna une a–e y f–j; cada riel va de punta a punta</span>
         <span className="model-note">Modelo educativo DC: capacitor abierto e inductor en corto en estado estacionario.</span></footer>
       {ghost && <div className={`drag-ghost${ghost.over ? " ghost-over" : ""}`} style={{ left: ghost.x, top: ghost.y }} aria-hidden="true"><PartPicture kind={ghost.kind} /></div>}
     </main>

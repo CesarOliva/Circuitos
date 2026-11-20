@@ -1,13 +1,13 @@
-@media (prefers-color-scheme: light) {
-  .iso.sim-gallery {
-    --anatomy-page: #f2f2ef; --anatomy-card: #fbfbfa; --anatomy-text: #57575a; --anatomy-strong: #18181a; --anatomy-muted: #8c8c90;
-    --anatomy-paper: #fbfbfa; --anatomy-face: #ffffff; --anatomy-top: #ffffff;
-    --anatomy-shade-0: #dcdcd9; --anatomy-shade-1: #e5e5e2; --anatomy-shade-2: #ededea; --anatomy-shade-3: #f4f4f1;
-    --anatomy-lit-top: #ffffff; --anatomy-lit-shade: #eeeeeb;
-    --anatomy-hi: #26262a; --anatomy-mid: #8a8a8f; --anatomy-lo: #b4b4b8; --anatomy-faint: #d4d4d6; --anatomy-lit: #000000;
-    --anatomy-halo: #8a8a80; --anatomy-halo-opacity: .32; --anatomy-dot: #3a3a3e;
-    --anatomy-red: #e5484d; --anatomy-green: #30a46c; --anatomy-blue: #3e63dd;
-  }
+/* Always dark, in the playground's black and electric blue, whatever the system theme. */
+.iso.sim-gallery {
+  --anatomy-page: #05070c; --anatomy-card: #0a0e17; --anatomy-text: #8392ad; --anatomy-strong: #e6edf9; --anatomy-muted: #5d6b86;
+  --anatomy-paper: #0a0e17; --anatomy-face: #0e1420; --anatomy-top: #111827;
+  --anatomy-shade-0: #070a11; --anatomy-shade-1: #090d15; --anatomy-shade-2: #0b101a; --anatomy-shade-3: #0d131f;
+  --anatomy-lit-top: #16203a; --anatomy-lit-shade: #0f172a;
+  --anatomy-hi: #c9d3e6; --anatomy-mid: #3a4a66; --anatomy-lo: #283650; --anatomy-faint: #1a2335; --anatomy-lit: #5cb8ff;
+  --anatomy-halo: #02040a; --anatomy-halo-opacity: .9; --anatomy-dot: #5cb8ff;
+  --anatomy-red: #ff6b75; --anatomy-green: #4fd8a0; --anatomy-blue: #1f8fff;
+  color-scheme: dark;
 }
 
 .sim-gallery {

@@ -16,10 +16,11 @@ function paletteOf(element: Element): Palette {
   const style = getComputedStyle(element);
   const read = (name: string, fallback: string) => style.getPropertyValue(name).trim() || fallback;
   return {
-    dark: matchMedia("(prefers-color-scheme: dark)").matches,
-    ink: read("--anatomy-hi", "#26262a"),
-    faint: read("--anatomy-lo", "#b4b4b8"),
-    accent: "#f5a524",
+    // The pages are always dark, in black and electric blue.
+    dark: true,
+    ink: read("--anatomy-hi", "#c9d3e6"),
+    faint: read("--anatomy-lo", "#283650"),
+    accent: "#1f8fff",
   };
 }
 

@@ -7,6 +7,13 @@ const SHINE = "rgb(255 255 255 / 45%)";
 const leg = (d: string, colour = STEEL, width = 1.6) => <path d={d} fill="none" stroke={colour} strokeWidth={width} strokeLinecap="round" strokeLinejoin="round" />;
 
 const PICTURES: Record<string, ReactNode> = {
+  breadboard: <>
+    <rect x="3" y="8" width="42" height="33" rx="2.5" fill="#e4e2da" />
+    <rect x="3" y="23.6" width="42" height="1.8" fill="#c6c3ba" />
+    {[[9.6, "#d8433f"], [16.6, "#2c6fd1"], [32.4, "#2c6fd1"], [39.4, "#d8433f"]].map(([y, colour]) => <rect key={y} x="6" y={Number(y) - 0.3} width="36" height=".6" fill={String(colour)} />)}
+    {[11.6, 14, 19, 21.4, 27.6, 30, 35, 37.4].map(y => Array.from({ length: 13 }, (_, index) => <rect key={`${y}-${index}`} x={6.6 + index * 2.8} y={y - 0.6} width="1.2" height="1.2" fill="#2b2b2f" />))}
+    <rect x="4.5" y="8.5" width="39" height=".7" rx=".35" fill={SHINE} opacity=".7" />
+  </>,
   battery: <>
     <rect x="12" y="13" width="24" height="32" rx="3" fill="#2b2b2f" />
     <rect x="12" y="21" width="24" height="16" fill="#c99a2e" />

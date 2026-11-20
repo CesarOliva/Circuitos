@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   ActiveBuzzer,
+  Breadboard,
   Capacitor,
   Circuit,
   Connection,
@@ -642,5 +643,16 @@ describe("TransientSolver component models", () => {
     expect(result.samples.map(sample => componentResult(sample, "US1").measurements.triggered)).toEqual([false, true, true, true, false]);
     expect(result.samples[1].components.find(item => item.componentId === "US1").voltage).toBeCloseTo(5);
     expect(componentResult(result.samples[1], "US1").measurements.echoPulseWidthMicroseconds).toBe(290);
+  });
+
+  it("joins a breadboard's holes the way a real one does", () => {
+    const groups = new Breadboard("BB1").getConnectedTerminalGroups();
+    const groupOf = id => groups.findIndex(group => group.includes(id));
+    expect(groups).toHaveLength(64);
+    expect(groups[groupOf("a1")]).toEqual(["a1", "b1", "c1", "d1", "e1"]);
+    expect(groupOf("e1")).not.toBe(groupOf("f1"));
+    expect(groupOf("a1")).not.toBe(groupOf("a2"));
+    expect(groupOf("top+1")).toBe(groupOf("top+30"));
+    expect(groupOf("top+1")).not.toBe(groupOf("bottom+1"));
   });
 });

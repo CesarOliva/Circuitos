@@ -4,6 +4,7 @@ import * as React from "react";
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { BOARD, BOARD_T, CY, STANDOFF_H } from "@/components/simulador/layout";
+import { buildBreadboard } from "./breadboard";
 import { buildModel, type Built, type ModelSpec, type Mount, type Palette } from "./model";
 
 // The playground canvas is 960 × 560; its centre is the table's origin and its units shrink to board units.
@@ -14,8 +15,9 @@ const FLOOR = -BOARD_T - STANDOFF_H;
 const TOP = 45;
 const AZIMUTH = (76 * Math.PI) / 180;
 const ELEVATION = (48 * Math.PI) / 180;
-const PALETTE: Palette = { dark: false, ink: "#26262a", faint: "#b4b4b8", accent: "#236a54" };
-const WIRE_COLOURS = ["#c9352f", "#26262a", "#2f62a6", "#d9a521", "#2f8a57", "#e07b39"];
+const PALETTE: Palette = { dark: true, ink: "#c9d3e6", faint: "#3a4a66", accent: "#1f8fff" };
+// Jumper colours that read on a dark table; no black.
+const WIRE_COLOURS = ["#e5484d", "#1f8fff", "#e8ecf4", "#f2c230", "#33c27a", "#ff8a3d"];
 
 export interface TerminalRef {
   componentId: string;
@@ -112,10 +114,10 @@ class Table {
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFShadowMap;
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    this.renderer.toneMappingExposure = 1.15;
+    this.renderer.toneMappingExposure = 1.1;
     host.appendChild(this.renderer.domElement);
 
-    this.scene.add(new THREE.HemisphereLight("#ffffff", "#b9b7b0", 1.4));
+    this.scene.add(new THREE.HemisphereLight("#dfe9ff", "#10141c", 1.3));
     const sun = new THREE.DirectionalLight("#ffffff", 2.4);
     sun.position.set(-160, 380, 190);
     sun.castShadow = true;
@@ -133,11 +135,11 @@ class Table {
     this.scene.add(fill);
 
     // The table: the 2D dot grid becomes a faint line grid, with one shadow catcher for every board.
-    const grid = new THREE.GridHelper(CANVAS_W * SCALE * 1.5, 60, "#d8dfdc", "#e4eae7");
+    const grid = new THREE.GridHelper(CANVAS_W * SCALE * 1.5, 60, "#1f3358", "#152033");
     grid.position.y = FLOOR - 0.05;
     this.disposables.push(grid.geometry, grid.material as THREE.Material);
     this.scene.add(grid);
-    const ground = new THREE.Mesh(new THREE.PlaneGeometry(4000, 4000), new THREE.ShadowMaterial({ opacity: 0.16 }));
+    const ground = new THREE.Mesh(new THREE.PlaneGeometry(4000, 4000), new THREE.ShadowMaterial({ opacity: 0.5 }));
     ground.rotation.x = -Math.PI / 2;
     ground.position.y = FLOOR - 0.01;
     ground.receiveShadow = true;
@@ -200,7 +202,8 @@ class Table {
   }
 
   private place(spec: ModelSpec, mount: Mount, key: string): Slot {
-    const built = buildModel(spec, PALETTE, mount);
+    // The protoboard is what the parts get wired through, the same however they are mounted.
+    const built = spec.type === "breadboard" ? buildBreadboard(PALETTE, SCALE) : buildModel(spec, PALETTE, mount);
     // Each model brings its own shadow catcher; the table has one for all of them.
     for (const child of built.root.children) if (child.userData.ground) child.visible = false;
     const group = new THREE.Group();
@@ -243,12 +246,18 @@ class Table {
     this.slots.delete(id);
   }
 
-  // Where a jumper takes hold of a terminal: a terminal block's opening, or a loose lead's tip.
+  // Where a jumper takes hold of a terminal (a terminal block's opening, a loose lead's tip, a protoboard hole)
+  // and which way it leaves: out of the front and up, unless the model says otherwise.
   private socket({ componentId, terminalId }: TerminalRef) {
     const slot = this.slots.get(componentId);
     const end = slot?.built.ends.get(terminalId);
     if (!slot || !end) return null;
-    return new THREE.Vector3(end.x, end.z, end.y).add(slot.group.position);
+    const exit = slot.built.exit;
+    return {
+      at: new THREE.Vector3(end.x, end.z, end.y).add(slot.group.position),
+      out: exit ? new THREE.Vector3(exit.x, exit.z, exit.y) : new THREE.Vector3(0, 4, 7),
+      upright: Boolean(exit),
+    };
   }
 
   private lay(wires: Jumper[]) {
@@ -259,14 +268,14 @@ class Table {
       this.wires.remove(child);
     }
     for (const wire of wires) {
-      const a = this.socket(wire.from);
-      const b = this.socket(wire.to);
-      if (!a || !b) continue;
-      // Out to the front of each end, then one arch over whatever stands between them.
-      const out = new THREE.Vector3(0, 4, 7);
-      const lift = new THREE.Vector3(0, 26 + a.distanceTo(b) * 0.22, 12);
-      const a1 = a.clone().add(out);
-      const b1 = b.clone().add(out);
+      const from = this.socket(wire.from);
+      const to = this.socket(wire.to);
+      if (!from || !to) continue;
+      const [a, b] = [from.at, to.at];
+      // Out of each end, then one arch over whatever stands between them; hole to hole, a low bridge like a jumper on a real board.
+      const lift = from.upright && to.upright ? new THREE.Vector3(0, 2 + a.distanceTo(b) * 0.12, 0) : new THREE.Vector3(0, 26 + a.distanceTo(b) * 0.22, 12);
+      const a1 = a.clone().add(from.out);
+      const b1 = b.clone().add(to.out);
       const path = new THREE.CurvePath<THREE.Vector3>();
       path.add(new THREE.LineCurve3(a, a1));
       path.add(new THREE.CubicBezierCurve3(a1, a1.clone().add(lift), b1.clone().add(lift), b1));
@@ -292,8 +301,11 @@ class Table {
   // The pending terminal and the one under the pointer, painted in the accent.
   private paint() {
     this.restore();
-    for (const [ref, strength] of [[this.pending, 0.6], [this.hovered, 0.35]] as const) {
-      if (!ref) continue;
+    const marks: Array<[TerminalRef, number]> = [];
+    if (this.pending) marks.push([this.pending, 0.6]);
+    if (this.hovered) marks.push([this.hovered, 0.35]);
+    for (const [id, slot] of this.slots) slot.built.tint?.(marks.filter(([ref]) => ref.componentId === id).map(([ref, strength]) => [ref.terminalId, strength]));
+    for (const [ref, strength] of marks) {
       for (const object of this.slots.get(ref.componentId)?.built.terminals.get(ref.terminalId) ?? []) {
         if (!(object instanceof THREE.Mesh) || !(object.material instanceof THREE.MeshStandardMaterial)) continue;
         const material = object.material;
@@ -360,7 +372,9 @@ class Table {
     let object: THREE.Object3D | null = hit.object;
     while (object && !object.userData.part) object = object.parent;
     if (!object) return null;
-    const terminal = hit.object.userData.terminal as string | undefined;
+    // An instanced target (the protoboard's holes) names its terminal per instance.
+    const instances = hit.object.userData.instances as string[] | undefined;
+    const terminal = (hit.object.userData.terminal ?? (hit.instanceId === undefined ? undefined : instances?.[hit.instanceId])) as string | undefined;
     return { part: object.userData.part as string, terminal };
   }
 

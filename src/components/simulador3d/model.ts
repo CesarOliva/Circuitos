@@ -37,8 +37,12 @@ export interface Built {
   terminals: Map<string, THREE.Object3D[]>;
   // where a jumper wire takes hold of each terminal, in model units
   ends: Map<string, THREE.Vector3>;
+  // which way a jumper leaves its end, in model units; without one it comes out of the front, low
+  exit?: THREE.Vector3;
   // the solid parts' bounds in model units; min.z is what the model stands on
   extent: THREE.Box3;
+  // lights terminals the model can't light through `terminals`, with the strength of each mark; none puts them back
+  tint?(marks: Array<[string, number]>): void;
   dispose(): void;
 }
 

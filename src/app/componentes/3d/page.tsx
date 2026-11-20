@@ -9,22 +9,32 @@ import { Viewer3D } from "@/components/simulador3d/viewer";
 
 export const metadata: Metadata = {
   title: "Componentes del simulador en 3D",
-  description: "Cada clase de componente del simulador de circuitos como un modelo 3D que se puede girar, con sus terminales.",
+  description: "Cada clase de componente del simulador de circuitos como un modelo 3D que se puede girar, en su placa o suelto, con sus terminales.",
 };
 
-export default function Componentes3DPage() {
+export default async function Componentes3DPage({ searchParams }: PageProps<"/componentes/3d">) {
+  const loose = (await searchParams).montaje === "sueltos";
   const specs = CATALOG.map(specOf);
   return (
     <main className="iso sim-gallery">
       <header className="sim-header">
-        <nav className="sim-nav" aria-label="Vistas">
-          <Link href="/componentes">Isométrico</Link>
-          <span aria-current="page">3D</span>
-        </nav>
+        <div className="sim-navs">
+          <nav className="sim-nav" aria-label="Vistas">
+            <Link href="/componentes">Isométrico</Link>
+            <span aria-current="page">3D</span>
+          </nav>
+          <nav className="sim-nav" aria-label="Montaje">
+            {loose ? <Link href="/componentes/3d">En placa</Link> : <span aria-current="page">En placa</span>}
+            {loose ? <span aria-current="page">Sueltos</span> : <Link href="/componentes/3d?montaje=sueltos">Sueltos</Link>}
+          </nav>
+        </div>
         <h1>Componentes del simulador en 3D</h1>
         <p>
-          Los mismos {specs.length} componentes, montados en la misma placa, como modelos que puedes girar. Arrastra para rotar y usa Ctrl o ⌘ con la
-          rueda para acercarte; pasa el puntero sobre un terminal, o enfoca la tarjeta y usa las flechas, para seguirlo hasta su borne.
+          {loose
+            ? `Los mismos ${specs.length} componentes sueltos, como salen de la bolsa: con sus patitas, pines o cables libres.`
+            : `Los mismos ${specs.length} componentes, montados en la misma placa.`}{" "}
+          Arrastra para rotar y usa Ctrl o ⌘ con la rueda para acercarte; pasa el puntero sobre un terminal, o enfoca la tarjeta y usa las flechas,
+          para seguirlo {loose ? "hasta su punta" : "hasta su borne"}.
         </p>
       </header>
       <section className="sim-grid">
@@ -32,7 +42,7 @@ export default function Componentes3DPage() {
           const idle = `${spec.terminals.length} terminales`;
           return (
             <Plate key={spec.id} fig={figureNumber(index, spec)} title={spec.title} hint="Arrastra para girar" readout={idle} caption={<Caption spec={spec} />}>
-              <Viewer3D key="stage" spec={spec} idle={idle} />
+              <Viewer3D key="stage" spec={spec} idle={idle} mount={loose ? "loose" : "board"} />
             </Plate>
           );
         })}

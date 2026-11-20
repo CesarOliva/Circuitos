@@ -37,6 +37,12 @@
   max-width: 68ch;
 }
 
+.sim-navs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+}
+
 .sim-nav {
   display: flex;
   gap: 4px;

@@ -1,6 +1,7 @@
 "use client";
 
-import { useRef, useState, type PointerEvent } from "react";
+import { useMemo, useRef, useState, type PointerEvent } from "react";
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import {
   ActiveBuzzer,
@@ -21,7 +22,15 @@ import {
   Transistor,
   UltrasonicSensor,
 } from "@simulacion/index";
+import type { Jumper, Placed } from "./simulador3d/circuit";
+import type { Mount } from "./simulador3d/model";
 import "./playground.css";
+
+// three.js only loads once someone opens the 3D view.
+const Circuit3D = dynamic(() => import("./simulador3d/circuit"), {
+  ssr: false,
+  loading: () => <div className="circuit-3d"><p className="circuit-3d-note">Cargando vista 3D…</p></div>,
+});
 
 type Kind =
   | "battery" | "resistor" | "led" | "diode" | "capacitor" | "inductor"
@@ -88,6 +97,30 @@ function setValue(part: Part, value: number) {
 function terminalPoint(part: Part, id: string): [number, number] {
   const { x, y } = specs[part.kind].terminals.find(item => item.id === id)!;
   return [part.x + x, part.y + y];
+}
+
+function createComponent(part: Part) {
+  const value = setValue(part, part.value);
+  switch (part.kind) {
+    case "battery": return new DCVoltageSource(part.id, value);
+    case "resistor": return new Resistor(part.id, value);
+    case "led": return new LED(part.id, "red", value, 0.02);
+    case "diode": return new Diode(part.id, value);
+    case "capacitor": return new Capacitor(part.id, value, 25);
+    case "inductor": return new Inductor(part.id, value, 0, 1);
+    case "switch": return new Switch(part.id, part.on ?? false);
+    case "push-button": {
+      const button = new PushButton(part.id, "NO");
+      if (part.on) button.press();
+      return button;
+    }
+    case "potentiometer": return new Potentiometer(part.id, value, part.position ?? 0.5);
+    case "ldr": return new LDR(part.id, 10_000, 10, 0.7, value);
+    case "ultrasonic": return new UltrasonicSensor(part.id, 2, 400, value);
+    case "dc-motor": return new DCMotor(part.id, value, 0.1, 3000, 1.2);
+    case "active-buzzer": return new ActiveBuzzer(part.id, value, 0.03);
+    case "transistor": return new Transistor(part.id, part.polarity ?? "NPN", value, 0.6, 40);
+  }
 }
 
 function ComponentArt({ part, lit, active }: { part: Part; lit: boolean; active: boolean }) {
@@ -176,11 +209,28 @@ export default function Playground() {
   const [result, setResult] = useState<Result | null>(null);
   const [message, setMessage] = useState("Agrega componentes y conecta sus terminales para empezar.");
   const [dragging, setDragging] = useState<string | null>(null);
+  const [view, setView] = useState<"2d" | "3d">("2d");
+  const [mount, setMount] = useState<Mount>("board");
   const svgRef = useRef<SVGSVGElement>(null);
   const dragOffset = useRef<[number, number]>([0, 0]);
   const selected = parts.find(part => part.id === selectedId) ?? null;
   const selectedResult = result?.components.find(component => component.componentId === selectedId);
   const ledLit = Boolean(result?.success && result.components.some(component => component.type === "led" && component.current > 0.002));
+  const placed = useMemo<Placed[]>(() => parts.flatMap(part => {
+    try {
+      const component = createComponent(part);
+      const current = result?.components.find(item => item.componentId === part.id)?.current ?? 0;
+      return [{
+        spec: { type: component.type, id: component.id, className: component.name, terminals: component.terminals.map(item => ({ id: item.id, text: item.name })), properties: component.getProperties() },
+        x: part.x,
+        y: part.y,
+        glow: Boolean(result?.success) && part.kind === "led" && current > 0.002,
+      }];
+    } catch {
+      return [];
+    }
+  }), [parts, result]);
+  const jumpers = useMemo<Jumper[]>(() => wires.map(wire => ({ ...wire, live: ledLit })), [wires, ledLit]);
 
   function addPart(kind: Kind) {
     const spec = specs[kind];
@@ -233,30 +283,7 @@ export default function Playground() {
   function simulate() {
     const circuit = new Circuit("playground", "Mi circuito");
     try {
-      for (const part of parts) {
-        const value = setValue(part, part.value);
-        switch (part.kind) {
-          case "battery": circuit.addComponent(new DCVoltageSource(part.id, value)); break;
-          case "resistor": circuit.addComponent(new Resistor(part.id, value)); break;
-          case "led": circuit.addComponent(new LED(part.id, "red", value, 0.02)); break;
-          case "diode": circuit.addComponent(new Diode(part.id, value)); break;
-          case "capacitor": circuit.addComponent(new Capacitor(part.id, value, 25)); break;
-          case "inductor": circuit.addComponent(new Inductor(part.id, value, 0, 1)); break;
-          case "switch": circuit.addComponent(new Switch(part.id, part.on ?? false)); break;
-          case "push-button": {
-            const button = new PushButton(part.id, "NO");
-            if (part.on) button.press();
-            circuit.addComponent(button);
-            break;
-          }
-          case "potentiometer": circuit.addComponent(new Potentiometer(part.id, value, part.position ?? 0.5)); break;
-          case "ldr": circuit.addComponent(new LDR(part.id, 10_000, 10, 0.7, value)); break;
-          case "ultrasonic": circuit.addComponent(new UltrasonicSensor(part.id, 2, 400, value)); break;
-          case "dc-motor": circuit.addComponent(new DCMotor(part.id, value, 0.1, 3000, 1.2)); break;
-          case "active-buzzer": circuit.addComponent(new ActiveBuzzer(part.id, value, 0.03)); break;
-          case "transistor": circuit.addComponent(new Transistor(part.id, part.polarity ?? "NPN", value, 0.6, 40)); break;
-        }
-      }
+      for (const part of parts) circuit.addComponent(createComponent(part));
       for (const wire of wires) circuit.addConnection(new Connection(wire.id, wire.from, wire.to));
       const nextResult = new DCSolver().simulate(circuit);
       setResult(nextResult);
@@ -310,6 +337,12 @@ export default function Playground() {
     movePart(partId, ((event.clientX - rect.left) / rect.width) * 960 + dragOffset.current[0], ((event.clientY - rect.top) / rect.height) * 560 + dragOffset.current[1]);
   }
 
+  function removeWire(wireId: string) {
+    setWires(current => current.filter(item => item.id !== wireId));
+    setResult(null);
+    setMessage("Cable quitado.");
+  }
+
   function removeSelected() {
     if (!selected) return;
     setParts(current => current.filter(part => part.id !== selected.id));
@@ -354,10 +387,19 @@ export default function Playground() {
       <section className="workspace" aria-label="Constructor de circuitos">
         <div className="work-topbar">
           <div className="work-title"><span className="live-dot" /> Área de trabajo <span className="part-count">{parts.length} {parts.length === 1 ? "componente" : "componentes"}</span></div>
-          <button className="run-button" onClick={simulate} disabled={!parts.length}><span aria-hidden="true">▶</span> Simular</button>
+          <div className="work-controls">
+            {view === "3d" && <div className="view-toggle" role="group" aria-label="Montaje de los componentes">
+              {([["board", "En placa"], ["loose", "Sueltos"]] as const).map(([option, text]) => <button key={option} aria-pressed={mount === option} onClick={() => setMount(option)}>{text}</button>)}
+            </div>}
+            <div className="view-toggle" role="group" aria-label="Vista del área de trabajo">
+              {(["2d", "3d"] as const).map(option => <button key={option} aria-pressed={view === option} onClick={() => setView(option)}>{option.toUpperCase()}</button>)}
+            </div>
+            <button className="run-button" onClick={simulate} disabled={!parts.length}><span aria-hidden="true">▶</span> Simular</button>
+          </div>
         </div>
 
         <div className="canvas-wrap">
+          {view === "3d" ? <Circuit3D parts={placed} wires={jumpers} mount={mount} selectedId={selectedId} pending={pendingTerminal} onSelect={setSelectedId} onTerminal={connectTerminal} onRemoveWire={removeWire} /> :
           <svg ref={svgRef} className="circuit-canvas" viewBox="0 0 960 560" role="group" aria-label="Área para colocar y conectar componentes">
             <defs><pattern id="dot-grid" width="24" height="24" patternUnits="userSpaceOnUse"><circle cx="1.5" cy="1.5" r="1" fill="#d8dfdc" /></pattern></defs>
             <rect width="960" height="560" fill="url(#dot-grid)" />
@@ -368,7 +410,7 @@ export default function Playground() {
               const [x1, y1] = terminalPoint(from, wire.from.terminalId);
               const [x2, y2] = terminalPoint(to, wire.to.terminalId);
               const mid = (x1 + x2) / 2;
-              return <g key={wire.id} className="wire-group" onClick={() => { setWires(current => current.filter(item => item.id !== wire.id)); setResult(null); setMessage("Cable quitado."); }} role="button" tabIndex={0} aria-label={`Quitar cable ${wire.id}`} onKeyDown={event => { if (event.key === "Enter" || event.key === " ") { setWires(current => current.filter(item => item.id !== wire.id)); setResult(null); setMessage("Cable quitado."); } }}>
+              return <g key={wire.id} className="wire-group" onClick={() => removeWire(wire.id)} role="button" tabIndex={0} aria-label={`Quitar cable ${wire.id}`} onKeyDown={event => { if (event.key === "Enter" || event.key === " ") removeWire(wire.id); }}>
                 <path className={`wire${ledLit ? " wire-live" : ""}`} d={`M${x1} ${y1} H${mid} V${y2} H${x2}`} /><path className="wire-hit" d={`M${x1} ${y1} H${mid} V${y2} H${x2}`} />
               </g>;
             })}
@@ -394,7 +436,7 @@ export default function Playground() {
               </g>;
             })}
             {!parts.length && <g className="empty-canvas" transform="translate(480 270)"><circle r="27" /><path d="M-9 0h18m-9-9v18" /><text y="58">Agrega un componente para comenzar</text></g>}
-          </svg>
+          </svg>}
           <div className={`canvas-message${ledLit ? " message-success" : ""}`} role="status"><span className="message-indicator" />{message}</div>
         </div>
 
@@ -422,7 +464,10 @@ export default function Playground() {
         </div>
       </section>
 
-      <footer className="play-footer"><span><kbd>Conectar</kbd> Selecciona dos terminales</span><span><kbd>Mover</kbd> Arrastra o usa las flechas</span><span><kbd>Quitar cable</kbd> Selecciona el cable</span><span><kbd>Valores</kbd> Edita el componente seleccionado</span><span className="model-note">Modelo educativo DC: capacitor abierto e inductor en corto en estado estacionario.</span></footer>
+      <footer className="play-footer">{view === "3d"
+        ? <><span><kbd>Girar</kbd> Arrastra la mesa</span><span><kbd>Desplazar</kbd> Arrastra con clic derecho</span><span><kbd>Acercar</kbd> Ctrl o ⌘ con la rueda</span><span><kbd>Conectar</kbd> {mount === "loose" ? "Haz clic en dos patitas o puntas" : "Haz clic en dos borneras"}</span><span><kbd>Quitar cable</kbd> Haz clic en el cable</span><span><kbd>Mover</kbd> Usa la vista 2D</span></>
+        : <><span><kbd>Conectar</kbd> Selecciona dos terminales</span><span><kbd>Mover</kbd> Arrastra o usa las flechas</span><span><kbd>Quitar cable</kbd> Selecciona el cable</span><span><kbd>Valores</kbd> Edita el componente seleccionado</span></>}
+        <span className="model-note">Modelo educativo DC: capacitor abierto e inductor en corto en estado estacionario.</span></footer>
     </main>
   );
 }

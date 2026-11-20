@@ -17,6 +17,7 @@ export * from "./components/semiconductors/LED.ts";
 export * from "./components/passive/Inductor.ts";
 export * from "./components/passive/Capacitor.ts";
 export * from "./components/passive/Resistor.ts";
+export * from "./components/passive/Breadboard.ts";
 export * from "./components/actuators/ActiveBuzzer.ts";
 export * from "./simulation/SimulationResult.ts";
 export * from "./simulation/LinearSystemSolver.ts";

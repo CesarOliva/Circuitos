@@ -93,7 +93,9 @@ const LED_COLOURS: Record<string, string> = { red: "#e5484d", green: "#30a46c", 
 // Builds the scene for one component in world units: x and y on the board, z up.
 // The isometric kit draws +x to the right of a viewer at +x +y, which is the mirror image of a right-handed world,
 // so the root maps (x, y, z) to three's (x, z, y): a mirror, so the default view matches the 2D card.
-export function buildModel(spec: Spec, palette: Palette): Built {
+export type ModelSpec = Pick<Spec, "type" | "id" | "className" | "terminals" | "properties">;
+
+export function buildModel(spec: ModelSpec, palette: Palette): Built {
   const layout = LAYOUT[spec.type];
   if (!layout) throw new Error(`No model for component type "${spec.type}"`);
   const M = materials(palette);

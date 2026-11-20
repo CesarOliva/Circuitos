@@ -28,12 +28,22 @@ export interface Palette {
   accent: string;
 }
 
+// On its own board with a terminal block, or loose, the way the part comes out of the bag.
+export type Mount = "board" | "loose";
+
 export interface Built {
   root: THREE.Group;
   // every mesh and line that belongs to a terminal, by terminal id
   terminals: Map<string, THREE.Object3D[]>;
+  // where a jumper wire takes hold of each terminal, in model units
+  ends: Map<string, THREE.Vector3>;
+  // the solid parts' bounds in model units; min.z is what the model stands on
+  extent: THREE.Box3;
   dispose(): void;
 }
+
+// How far below the board's top face loose legs reach, long enough to read as legs.
+const LEG_Z = -9;
 
 // Materials for one scene; dark pages get lighter plastics so the parts still read.
 function materials(palette: Palette) {
@@ -95,14 +105,16 @@ const LED_COLOURS: Record<string, string> = { red: "#e5484d", green: "#30a46c", 
 // so the root maps (x, y, z) to three's (x, z, y): a mirror, so the default view matches the 2D card.
 export type ModelSpec = Pick<Spec, "type" | "id" | "className" | "terminals" | "properties">;
 
-export function buildModel(spec: ModelSpec, palette: Palette): Built {
+export function buildModel(spec: ModelSpec, palette: Palette, mount: Mount = "board"): Built {
   const layout = LAYOUT[spec.type];
   if (!layout) throw new Error(`No model for component type "${spec.type}"`);
+  const loose = mount === "loose";
   const M = materials(palette);
   const root = new THREE.Group();
   root.scale.y = -1;
   root.rotation.x = -Math.PI / 2;
   const terminals = new Map<string, THREE.Object3D[]>();
+  const ends = new Map<string, THREE.Vector3>();
   const disposables: Array<{ dispose(): void }> = Object.values(M);
   let owner: string | null = null;
 
@@ -307,49 +319,51 @@ export function buildModel(spec: ModelSpec, palette: Palette): Built {
 
   // The board ------------------------------------------------------------------------
 
-  const floor = -BOARD_T - STANDOFF_H;
+  // Placed under whatever the model stands on once it is built.
   const ground = new THREE.Mesh(new THREE.PlaneGeometry(400, 400), M.shadow);
-  ground.position.z = floor - 0.01;
   ground.receiveShadow = true;
   ground.raycast = () => {};
   ground.userData.ground = true;
   disposables.push(ground.geometry);
   root.add(ground);
 
-  const corners: Array<[number, number]> = [
-    [BOARD.x + 7, BOARD.y + 7],
-    [BOARD.x + BOARD.w - 7, BOARD.y + 7],
-    [BOARD.x + 7, BOARD.y + BOARD.d - 7],
-    [BOARD.x + BOARD.w - 7, BOARD.y + BOARD.d - 7],
-  ];
-  for (const [x, y] of corners) {
-    cylinder(x, y, 3.4, floor, 1.4, M.black, 28);
-    prism(hexagon(x, y, 2.9), floor + 1.4, STANDOFF_H - 1.4, M.brass);
-  }
-  slab(BOARD, -BOARD_T, BOARD_T, M.board, 0.6);
-  outlineOn({ ...BOARD, x: BOARD.x + 3.2, y: BOARD.y + 3.2, w: BOARD.w - 6.4, d: BOARD.d - 6.4, r: 1 }, 0.02);
-  for (const [x, y] of corners) {
-    cylinder(x, y, 2.5, 0, 0.9, M.steel, 28);
-    strip([x - 1.9, y], [x + 1.9, y], 0.45, 0.9, 0.06, M.hole);
-    strip([x, y - 1.9], [x, y + 1.9], 0.45, 0.9, 0.06, M.hole);
-  }
-  for (const [x, y] of [[BOARD.x + 16, BOARD.y + 7], [BOARD.x + BOARD.w - 7, BOARD.y + BOARD.d - 18]] as Array<[number, number]>) {
-    cylinder(x, y, 1.6, 0, 0.06, M.copper, 24, false);
-  }
-  outlineOn(layout.footprint, 0.02);
-  label(spec.id, layout.footprint.x + 1, layout.footprint.y - 2.4, 0, 3.2, "start");
-
   const ids = spec.terminals.map((terminal) => terminal.id);
   if (layout.pads.length !== ids.length) throw new Error(`${spec.className}: ${layout.pads.length} pads for ${ids.length} terminals`);
 
-  traces(layout.pads, ids.length).forEach((route, index) =>
-    within(ids[index], () => {
-      for (let step = 1; step < route.length; step++) strip(route[step - 1], route[step], 1.1, 0, 0.08, M.copper);
-      const [x, y] = layout.pads[index];
-      cylinder(x, y, 1.9, 0, 0.1, M.copper, 24, false);
-      joint(x, y);
-    }),
-  );
+  if (!loose) {
+    const floor = -BOARD_T - STANDOFF_H;
+    const corners: Array<[number, number]> = [
+      [BOARD.x + 7, BOARD.y + 7],
+      [BOARD.x + BOARD.w - 7, BOARD.y + 7],
+      [BOARD.x + 7, BOARD.y + BOARD.d - 7],
+      [BOARD.x + BOARD.w - 7, BOARD.y + BOARD.d - 7],
+    ];
+    for (const [x, y] of corners) {
+      cylinder(x, y, 3.4, floor, 1.4, M.black, 28);
+      prism(hexagon(x, y, 2.9), floor + 1.4, STANDOFF_H - 1.4, M.brass);
+    }
+    slab(BOARD, -BOARD_T, BOARD_T, M.board, 0.6);
+    outlineOn({ ...BOARD, x: BOARD.x + 3.2, y: BOARD.y + 3.2, w: BOARD.w - 6.4, d: BOARD.d - 6.4, r: 1 }, 0.02);
+    for (const [x, y] of corners) {
+      cylinder(x, y, 2.5, 0, 0.9, M.steel, 28);
+      strip([x - 1.9, y], [x + 1.9, y], 0.45, 0.9, 0.06, M.hole);
+      strip([x, y - 1.9], [x, y + 1.9], 0.45, 0.9, 0.06, M.hole);
+    }
+    for (const [x, y] of [[BOARD.x + 16, BOARD.y + 7], [BOARD.x + BOARD.w - 7, BOARD.y + BOARD.d - 18]] as Array<[number, number]>) {
+      cylinder(x, y, 1.6, 0, 0.06, M.copper, 24, false);
+    }
+    outlineOn(layout.footprint, 0.02);
+    label(spec.id, layout.footprint.x + 1, layout.footprint.y - 2.4, 0, 3.2, "start");
+
+    traces(layout.pads, ids.length).forEach((route, index) =>
+      within(ids[index], () => {
+        for (let step = 1; step < route.length; step++) strip(route[step - 1], route[step], 1.1, 0, 0.08, M.copper);
+        const [x, y] = layout.pads[index];
+        cylinder(x, y, 1.9, 0, 0.1, M.copper, 24, false);
+        joint(x, y);
+      }),
+    );
+  }
 
   // The component --------------------------------------------------------------------
 
@@ -357,11 +371,46 @@ export function buildModel(spec: ModelSpec, palette: Palette): Built {
   const lead = (points: V3[], material = M.steel, r = 0.42, bend = 1.6) => tube(points, r, material, bend);
   const props = spec.properties;
 
+  // A loose terminal's free end, where a jumper clips on, with a wide invisible target round it.
+  const tip = (index: number, at: V3) => {
+    ends.set(ids[index], new THREE.Vector3(...at));
+    const geometry = new THREE.SphereGeometry(3.2, 12, 8);
+    geometry.translate(...at);
+    add(geometry, M.hit, { edges: false });
+  };
+
+  // A loose leg: a lead that ends in a free tip.
+  const leg = (index: number, points: V3[], r = 0.4, material = M.steel, bend = 1.4) =>
+    term(index, () => {
+      lead(points, material, r, bend);
+      tip(index, points[points.length - 1]);
+    });
+
+  // A lead that ends on its pad on the board or, loose, carries on down to a free tip.
+  const pin = (index: number, points: V3[], material = M.steel, r = 0.42, bend = 1.6) => {
+    if (!loose) return term(index, () => lead(points, material, r, bend));
+    const [x, y] = points[points.length - 1];
+    leg(index, [...points, [x, y, LEG_Z]], r, material, bend);
+  };
+
+  // A loose hook-up wire: insulation lying on the table, then a short tinned tip.
+  const wire = (index: number, points: V3[], material: THREE.MeshStandardMaterial) =>
+    term(index, () => {
+      lead(points, material, 0.55, 3);
+      const [a, b] = points.slice(-2).map((p) => new THREE.Vector3(...p));
+      const end = b.clone().addScaledVector(b.clone().sub(a).normalize(), 4).toArray() as V3;
+      lead([points[points.length - 1], end], M.solder, 0.36, 1);
+      tip(index, end);
+    });
+
   switch (spec.type) {
     case "dc-voltage-source": {
-      slab({ x: -13, y: -27, w: 26, d: 22, r: 2 }, 0, 3, M.black, 0.5);
-      slab({ x: -13, y: -22, w: 2.2, d: 12, r: 0.6 }, 3, 11, M.black, 0.3);
-      slab({ x: 10.8, y: -22, w: 2.2, d: 12, r: 0.6 }, 3, 11, M.black, 0.3);
+      // On the board the battery sits in a holder; loose it is just the battery and its snap.
+      if (!loose) {
+        slab({ x: -13, y: -27, w: 26, d: 22, r: 2 }, 0, 3, M.black, 0.5);
+        slab({ x: -13, y: -22, w: 2.2, d: 12, r: 0.6 }, 3, 11, M.black, 0.3);
+        slab({ x: 10.8, y: -22, w: 2.2, d: 12, r: 0.6 }, 3, 11, M.black, 0.3);
+      }
       const body = { x: -10, y: -22.5, w: 20, d: 13, r: 1.8 };
       slab(body, 3, 30, M.black, 0.5);
       slab({ ...body, x: body.x - 0.08, y: body.y - 0.08, w: body.w + 0.16, d: body.d + 0.16 }, 9, 18, M.label, 0);
@@ -370,6 +419,11 @@ export function buildModel(spec: ModelSpec, palette: Palette): Built {
       cylinder(-4.2, -16, 2.2, 35.4, 2, M.steel, 24);
       prism(hexagon(4.2, -16, 3), 34.4, 2.6, M.steel, 0.2);
       cylinder(4.2, -16, 1.7, 37, 0.06, M.hole, 20, false);
+      if (loose) {
+        wire(0, [[-4.2, -16, 37.4], [-4.2, -16, 41], [-17, -16, 41], [-22, -8, 12], [-22, 0, 3.55], [-22, 10, 3.55]], M.wireRed);
+        wire(1, [[4.2, -16, 37], [4.2, -16, 41], [17, -16, 41], [22, -8, 12], [22, 0, 3.55], [22, 10, 3.55]], M.wireBlack);
+        break;
+      }
       term(0, () => {
         lead([[-4.2, -16, 37.4], [-4.2, -16, 41], [-17, -16, 41], [-22, -6, 10], [-22, -2, 0]], M.wireRed, 0.55, 4);
       });
@@ -381,7 +435,7 @@ export function buildModel(spec: ModelSpec, palette: Palette): Built {
     case "dc-motor": {
       const y = CY;
       const z = 12;
-      for (const x of [-14, 6]) slab({ x, y: -22, w: 5, d: 16, r: 1 }, 0, 4, M.black, 0.4);
+      if (!loose) for (const x of [-14, 6]) slab({ x, y: -22, w: 5, d: 16, r: 1 }, 0, 4, M.black, 0.4);
       cylinderX(-22, -19, 10, y, z, M.darkSteel, 56);
       cylinderX(-19, 14, 11, y, z, M.steel, 64);
       cylinderX(14, 17, 9.6, y, z, M.darkSteel, 56);
@@ -392,7 +446,10 @@ export function buildModel(spec: ModelSpec, palette: Palette): Built {
       for (const [index, ty] of [[1, -18], [0, -10]] as const) {
         slab({ x: -21.2, y: ty - 1.4, w: 1.4, d: 2.8, r: 0.3 }, 21.6, 4, M.brass, 0.1);
         const x = index === 0 ? -34 : -28;
-        term(index, () => lead([[-20.5, ty, 25.4], [x, ty, 25.4], [x, ty, 0]], index === 0 ? M.wireRed : M.wireBlack, 0.55, 3));
+        const material = index === 0 ? M.wireRed : M.wireBlack;
+        // Loose, the can lies on the table (its underside at z 1) and the wires run forward along it.
+        if (loose) wire(index, [[-20.5, ty, 25.4], [x, ty, 25.4], [x, ty, 1.55], [x, 2, 1.55]], material);
+        else term(index, () => lead([[-20.5, ty, 25.4], [x, ty, 25.4], [x, ty, 0]], material, 0.55, 3));
       }
       break;
     }
@@ -402,12 +459,16 @@ export function buildModel(spec: ModelSpec, palette: Palette): Built {
       cylinder(0, CY, 1.4, 10, 0.06, M.hole, 24, false);
       strip([-6.6, CY - 3.2], [-4.6, CY - 3.2], 0.35, 10, 0.05, M.white);
       strip([-5.6, CY - 4.2], [-5.6, CY - 2.2], 0.35, 10, 0.05, M.white);
+      if (loose) [-3.8, 3.8].forEach((x, index) => leg(index, [[x, CY, 0.5], [x, CY, LEG_Z - 3]], 0.35));
       break;
     }
     case "potentiometer": {
       const cy = -15;
       slab({ x: -10, y: -25, w: 20, d: 19, r: 1.2 }, 0, 1.4, M.steel, 0.2);
-      [-6, 0, 6].forEach((x, index) => term(index, () => slab({ x: x - 1.1, y: -7.8, w: 2.2, d: 4.4, r: 0.4 }, 0, 2.2, M.steel, 0.1)));
+      [-6, 0, 6].forEach((x, index) => {
+        term(index, () => slab({ x: x - 1.1, y: -7.8, w: 2.2, d: 4.4, r: 0.4 }, 0, 2.2, M.steel, 0.1));
+        if (loose) leg(index, [[x, -5.6, 0.6], [x, -5.6, LEG_Z]], 0.45);
+      });
       cylinder(0, cy, 8.6, 1.4, 6, M.black, 64);
       const from = (-150 * Math.PI) / 180;
       const span = (300 * Math.PI) / 180;
@@ -426,18 +487,25 @@ export function buildModel(spec: ModelSpec, palette: Palette): Built {
       break;
     }
     case "push-button": {
-      term(0, () => lead([[-7, -12, 2], [-9.6, -12, 2], [-11, -10, 0]], M.steel, 0.4, 1));
+      pin(0, [[-7, -12, 2], [-9.6, -12, 2], [-11, -10, 0]], M.steel, 0.4, 1);
       slab({ x: -7, y: -21, w: 14, d: 14, r: 1 }, 0, 4, M.black, 0.4);
       slab({ x: -7.2, y: -21.2, w: 14.4, d: 14.4, r: 0.8 }, 4, 0.7, M.steel, 0.15);
       cylinder(0, -14, 3.4, 4.7, 1.5, M.black, 32);
       cylinder(0, -14, 4.8, 6.2, 3.8, M.cap, 40);
-      term(1, () => lead([[7, -12, 2], [9.6, -12, 2], [11, -10, 0]], M.steel, 0.4, 1));
+      pin(1, [[7, -12, 2], [9.6, -12, 2], [11, -10, 0]], M.steel, 0.4, 1);
       break;
     }
     case "switch": {
       const cy = -15.5;
       slab({ x: -7, y: -22, w: 14, d: 13, r: 1 }, 0, 9, M.black, 0.5);
-      [-4.5, 4.5].forEach((x, index) => term(index, () => slab({ x: x - 1.2, y: -9, w: 2.4, d: 3.4, r: 0.3 }, 0, 1, M.brass, 0.1)));
+      [-4.5, 4.5].forEach((x, index) =>
+        term(index, () => {
+          if (!loose) return void slab({ x: x - 1.2, y: -9, w: 2.4, d: 3.4, r: 0.3 }, 0, 1, M.brass, 0.1);
+          // Loose, the solder lugs hang below the body.
+          slab({ x: x - 1.2, y: cy - 0.35, w: 2.4, d: 0.7, r: 0.2 }, LEG_Z, -LEG_Z, M.brass, 0.1);
+          tip(index, [x, cy, LEG_Z]);
+        }),
+      );
       prism(hexagon(0, cy, 4.6), 9, 1.8, M.steel, 0.2);
       cylinder(0, cy, 3.2, 10.8, 4.2, M.steel, 32);
       const tilt = props.closed ? 0.42 : -0.42;
@@ -445,7 +513,7 @@ export function buildModel(spec: ModelSpec, palette: Palette): Built {
       break;
     }
     case "resistor": {
-      term(0, () => lead([[-10, CY, 4.6], [-17, CY, 4.6], [-17, CY, 0]]));
+      pin(0, [[-10, CY, 4.6], [-17, CY, 4.6], [-17, CY, 0]]);
       const profile: Array<[number, number]> = [[-10, 2.2], [-9.6, 3], [-8.6, 3.6], [-7.2, 3.5], [-5.8, 3.05], [5.8, 3.05], [7.2, 3.5], [8.6, 3.6], [9.6, 3], [10, 2.2]];
       lathe(profile, [0, CY, 4.6], [1, 0, 0], M.beige);
       const colours = colourCode(Number(props.resistance), Number(props.tolerance));
@@ -456,7 +524,7 @@ export function buildModel(spec: ModelSpec, palette: Palette): Built {
         disposables.push(material);
         cylinderX(s - 0.55, s + 0.55, 3.12, CY, 4.6, material);
       });
-      term(1, () => lead([[10, CY, 4.6], [17, CY, 4.6], [17, CY, 0]]));
+      pin(1, [[10, CY, 4.6], [17, CY, 4.6], [17, CY, 0]]);
       break;
     }
     case "capacitor": {
@@ -474,29 +542,37 @@ export function buildModel(spec: ModelSpec, palette: Palette): Built {
         const a = (index / 3) * Math.PI * 2 + Math.PI / 6;
         strip([0, CY], [3.6 * Math.cos(a), CY + 3.6 * Math.sin(a)], 0.3, 16.4, 0.05, M.hole);
       }
+      // Loose, two legs out of the rubber seal; the negative one is shorter, as it comes.
+      if (loose) [-2.5, 2.5].forEach((x, index) => leg(index, [[x, CY, 0.5], [x, CY, index === 0 ? LEG_Z - 3 : LEG_Z - 1]], 0.35));
       break;
     }
     case "inductor": {
-      term(0, () => lead([[-11, CY, 7], [-17, CY, 7], [-17, CY, 0]], M.copper, 0.42, 1.8));
+      pin(0, [[-11, CY, 7], [-17, CY, 7], [-17, CY, 0]], M.copper, 0.42, 1.8);
       cylinderX(-11, -9.6, 6.2, CY, 7, M.ferrite, 48);
       cylinderX(-9.6, 9.6, 3, CY, 7, M.ferrite, 40);
       const turns = 13;
       add(new THREE.TubeGeometry(new Helix(-9.3, 9.3, CY, 7, 3.35, turns), turns * 24, 0.36, 8, false), M.copper, { edges: false });
       cylinderX(9.6, 11, 6.2, CY, 7, M.ferrite, 48);
-      term(1, () => lead([[11, CY, 7], [17, CY, 7], [17, CY, 0]], M.copper, 0.42, 1.8));
+      pin(1, [[11, CY, 7], [17, CY, 7], [17, CY, 0]], M.copper, 0.42, 1.8);
       break;
     }
     case "diode": {
-      term(0, () => lead([[-6.5, CY, 3.4], [-14, CY, 3.4], [-14, CY, 0]], M.steel, 0.4, 1.4));
+      pin(0, [[-6.5, CY, 3.4], [-14, CY, 3.4], [-14, CY, 0]], M.steel, 0.4, 1.4);
       lathe([[-6.5, 1.6], [-6.1, 2.4], [-5, 2.7], [5, 2.7], [6.1, 2.4], [6.5, 1.6]], [0, CY, 3.4], [1, 0, 0], M.black);
       cylinderX(3.6, 4.8, 2.76, CY, 3.4, M.solder, 40);
-      term(1, () => lead([[6.5, CY, 3.4], [14, CY, 3.4], [14, CY, 0]], M.steel, 0.4, 1.4));
+      pin(1, [[6.5, CY, 3.4], [14, CY, 3.4], [14, CY, 0]], M.steel, 0.4, 1.4);
       break;
     }
     case "led": {
-      [-1, 1].forEach((side, index) =>
-        term(index, () => lead([[2.6 * side, CY, 0], [2.6 * side, CY, 1.2], [1.27 * side, CY, 2.6], [1.27 * side, CY, 3.6]], M.steel, 0.3, 0.6)),
-      );
+      if (loose) {
+        // Straight legs out of the flange; the longer anode is kinked so both tips reach the table.
+        leg(0, [[-1.27, CY, 3.6], [-1.27, CY, -2], [-2.6, CY, -3.4], [-2.6, CY, LEG_Z - 9]], 0.3, M.steel, 0.6);
+        leg(1, [[1.27, CY, 3.6], [1.27, CY, LEG_Z - 9]], 0.3);
+      } else {
+        [-1, 1].forEach((side, index) =>
+          term(index, () => lead([[2.6 * side, CY, 0], [2.6 * side, CY, 1.2], [1.27 * side, CY, 2.6], [1.27 * side, CY, 3.6]], M.steel, 0.3, 0.6)),
+        );
+      }
       const colour = LED_COLOURS[String(props.color)] ?? LED_COLOURS.red;
       const epoxy = new THREE.MeshStandardMaterial({ color: colour, roughness: 0.15, metalness: 0, transparent: true, opacity: 0.82, emissive: colour, emissiveIntensity: 0.35 });
       disposables.push(epoxy);
@@ -511,7 +587,8 @@ export function buildModel(spec: ModelSpec, palette: Palette): Built {
     case "transistor-bjt": {
       [-2.54, 0, 2.54].forEach((x, index) => {
         const pad = [-5, 0, 5][index];
-        term(index, () => lead([[x, -12.6, 4.2], [x, -12.6, 2.2], [pad, -7.4, 0.6], [pad, -6, 0]], M.steel, 0.32, 0.8));
+        if (loose) leg(index, [[x, -12.6, 4.2], [x, -12.6, LEG_Z - 4]], 0.32);
+        else term(index, () => lead([[x, -12.6, 4.2], [x, -12.6, 2.2], [pad, -7.4, 0.6], [pad, -6, 0]], M.steel, 0.32, 0.8));
       });
       const low = (-20.4 * Math.PI) / 180;
       const high = (200.4 * Math.PI) / 180;
@@ -525,7 +602,11 @@ export function buildModel(spec: ModelSpec, palette: Palette): Built {
       break;
     }
     case "ldr": {
-      [-1, 1].forEach((side, index) => term(index, () => lead([[2.6 * side, -11, 0], [2.6 * side, -11, 2.4], [2.2 * side, -12.6, 4.1]], M.steel, 0.3, 0.8)));
+      [-1, 1].forEach((side, index) => {
+        const points: V3[] = [[2.2 * side, -12.6, 4.1], [2.6 * side, -11, 2.4], [2.6 * side, -11, 0]];
+        if (loose) leg(index, [...points, [2.6 * side, -11, LEG_Z - 6]], 0.3, M.steel, 0.8);
+        else term(index, () => lead(points, M.steel, 0.3, 0.8));
+      });
       const r = 5.4;
       cylinder(0, CY, r, 4, 2, M.ceramic, 56);
       const edge = 3.2;
@@ -553,7 +634,11 @@ export function buildModel(spec: ModelSpec, palette: Palette): Built {
         mesh.translate(x, -19.5, 15.6);
         add(mesh, new THREE.MeshStandardMaterial({ color: "#6b6e74", roughness: 0.9, metalness: 0.3, wireframe: true }), { edges: false });
       }
-      [-4.5, -1.5, 1.5, 4.5].forEach((x, index) => term(index, () => lead([[x, -9.6, 1.3], [x, -7.2, 1.3], [x, -6, 0]], M.solder, 0.32, 0.8)));
+      // Loose, the header pins stick straight out of the front edge.
+      [-4.5, -1.5, 1.5, 4.5].forEach((x, index) => {
+        if (loose) leg(index, [[x, -9.6, 1.3], [x, -1, 1.3]], 0.32, M.solder, 0.8);
+        else term(index, () => lead([[x, -9.6, 1.3], [x, -7.2, 1.3], [x, -6, 0]], M.solder, 0.32, 0.8));
+      });
       break;
     }
     default:
@@ -562,32 +647,47 @@ export function buildModel(spec: ModelSpec, palette: Palette): Built {
 
   // The terminal block ----------------------------------------------------------------
 
-  const count = ids.length;
-  const plan: Plan = { x: -(count * PITCH) / 2, y: BLOCK_Y, w: count * PITCH, d: BLOCK_D, r: 1 };
-  slab(plan, 0, STEP_Z, M.plastic, 0.4);
-  slab({ ...plan, d: TOWER_D }, STEP_Z, TOWER_Z - STEP_Z, M.plastic, 0.4);
-  const front = BLOCK_Y + BLOCK_D;
-  ids.forEach((id, index) =>
-    within(id, () => {
-      const cx = cellX(index, count);
-      const sy = BLOCK_Y + TOWER_D / 2;
-      const area = new THREE.BoxGeometry(PITCH, BLOCK_D, TOWER_Z);
-      area.translate(cx, BLOCK_Y + BLOCK_D / 2, TOWER_Z / 2);
-      add(area, M.hit, { edges: false });
-      cylinder(cx, sy, 3.6, TOWER_Z, 0.05, M.hole, 32, false);
-      cylinder(cx, sy, 2.7, TOWER_Z, 0.7, M.steel, 32);
-      const slot = Math.PI / 4;
-      strip([cx - 2.2 * Math.cos(slot), sy - 2.2 * Math.sin(slot)], [cx + 2.2 * Math.cos(slot), sy + 2.2 * Math.sin(slot)], 0.5, TOWER_Z + 0.7, 0.05, M.hole);
-      const opening = new THREE.BoxGeometry(6.8, 0.6, 4);
-      opening.translate(cx, front - 0.27, 3.4);
-      add(opening, M.hole, { edges: false });
-      label(id, cx, BLOCK_Y + TOWER_D + 3.6, STEP_Z, id.length > 2 ? 2.6 : 3.6);
-    }),
-  );
+  if (!loose) {
+    const count = ids.length;
+    const plan: Plan = { x: -(count * PITCH) / 2, y: BLOCK_Y, w: count * PITCH, d: BLOCK_D, r: 1 };
+    slab(plan, 0, STEP_Z, M.plastic, 0.4);
+    slab({ ...plan, d: TOWER_D }, STEP_Z, TOWER_Z - STEP_Z, M.plastic, 0.4);
+    const front = BLOCK_Y + BLOCK_D;
+    ids.forEach((id, index) =>
+      within(id, () => {
+        const cx = cellX(index, count);
+        const sy = BLOCK_Y + TOWER_D / 2;
+        const area = new THREE.BoxGeometry(PITCH, BLOCK_D, TOWER_Z);
+        area.translate(cx, BLOCK_Y + BLOCK_D / 2, TOWER_Z / 2);
+        add(area, M.hit, { edges: false });
+        cylinder(cx, sy, 3.6, TOWER_Z, 0.05, M.hole, 32, false);
+        cylinder(cx, sy, 2.7, TOWER_Z, 0.7, M.steel, 32);
+        const slot = Math.PI / 4;
+        strip([cx - 2.2 * Math.cos(slot), sy - 2.2 * Math.sin(slot)], [cx + 2.2 * Math.cos(slot), sy + 2.2 * Math.sin(slot)], 0.5, TOWER_Z + 0.7, 0.05, M.hole);
+        const opening = new THREE.BoxGeometry(6.8, 0.6, 4);
+        opening.translate(cx, front - 0.27, 3.4);
+        add(opening, M.hole, { edges: false });
+        label(id, cx, BLOCK_Y + TOWER_D + 3.6, STEP_Z, id.length > 2 ? 2.6 : 3.6);
+        // A jumper goes into the cell's opening.
+        ends.set(id, new THREE.Vector3(cx, front - 1.5, 3.4));
+      }),
+    );
+  }
+
+  // Everything solid, without the invisible pointer targets; the shadow catcher goes under it.
+  const extent = new THREE.Box3();
+  for (const child of root.children) {
+    if (!(child instanceof THREE.Mesh) || child === ground || child.material === M.hit) continue;
+    child.geometry.computeBoundingBox();
+    extent.union(child.geometry.boundingBox!);
+  }
+  ground.position.z = extent.min.z - 0.01;
 
   return {
     root,
     terminals,
+    ends,
+    extent,
     dispose() {
       for (const item of disposables) item.dispose();
     },

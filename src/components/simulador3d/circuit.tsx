@@ -3,8 +3,8 @@
 import * as React from "react";
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
-import { BLOCK_D, BLOCK_Y, BOARD, BOARD_T, CY, STANDOFF_H, cellX } from "@/components/simulador/layout";
-import { buildModel, type Built, type ModelSpec, type Palette } from "./model";
+import { BOARD, BOARD_T, CY, STANDOFF_H } from "@/components/simulador/layout";
+import { buildModel, type Built, type ModelSpec, type Mount, type Palette } from "./model";
 
 // The playground canvas is 960 × 560; its centre is the table's origin and its units shrink to board units.
 const CANVAS_W = 960;
@@ -40,6 +40,7 @@ export interface Jumper {
 export interface Circuit3DProps {
   parts: Placed[];
   wires: Jumper[];
+  mount: Mount;
   selectedId: string | null;
   pending: TerminalRef | null;
   onSelect(id: string): void;
@@ -49,9 +50,10 @@ export interface Circuit3DProps {
 
 interface Slot {
   key: string;
-  ids: string[];
   group: THREE.Group;
   built: Built;
+  // how far the model rises or sinks so that what it stands on rests on the table
+  lift: number;
   mark: THREE.Mesh;
   epoxy: THREE.MeshStandardMaterial[];
   light: THREE.PointLight | null;
@@ -84,9 +86,8 @@ class Table {
   private wires = new THREE.Group();
   private accent = new THREE.Color(PALETTE.accent);
   private originals = new Map<THREE.MeshStandardMaterial, [THREE.Color, THREE.Color, number]>();
-  private markGeometry = new THREE.ShapeGeometry(roundedRect(BOARD.w + 10, BOARD.d + 10, 7));
   private markMaterial = new THREE.MeshBasicMaterial({ color: PALETTE.accent, transparent: true, opacity: 0.22, depthWrite: false });
-  private disposables: Array<{ dispose(): void }> = [this.markGeometry, this.markMaterial];
+  private disposables: Array<{ dispose(): void }> = [this.markMaterial];
   private raycaster = new THREE.Raycaster();
   private pointer = new THREE.Vector2();
   private raf = 0;
@@ -161,20 +162,20 @@ class Table {
     this.fit();
   }
 
-  update({ parts, wires, selectedId, pending }: Circuit3DProps) {
+  update({ parts, wires, mount, selectedId, pending }: Circuit3DProps) {
     this.restore();
     const seen = new Set<string>();
     for (const part of parts) {
       const id = part.spec.id;
       seen.add(id);
-      const key = JSON.stringify([part.spec.type, part.spec.terminals.map((terminal) => terminal.id), part.spec.properties]);
+      const key = JSON.stringify([mount, part.spec.type, part.spec.terminals.map((terminal) => terminal.id), part.spec.properties]);
       let slot = this.slots.get(id);
       if (slot && slot.key !== key) {
         this.drop(id);
         slot = undefined;
       }
-      slot ??= this.place(part.spec, key);
-      slot.group.position.copy(toTable(part.x, part.y));
+      slot ??= this.place(part.spec, mount, key);
+      slot.group.position.copy(toTable(part.x, part.y)).setY(slot.lift);
       slot.mark.visible = id === selectedId;
       for (const material of slot.epoxy) material.emissiveIntensity = part.glow ? 2.6 : 0.35;
       // Dimmed, never hidden: toggling a light's visibility would recompile every material.
@@ -184,8 +185,8 @@ class Table {
     this.lay(wires);
     this.pending = pending;
     this.paint();
-    // Reframe when parts come or go, keeping the turn the user gave the table.
-    const framed = [...seen].sort().join(" ");
+    // Reframe when parts come or go or change mount, keeping the turn the user gave the table.
+    const framed = [mount, ...[...seen].sort()].join(" ");
     if (framed !== this.framed) {
       this.framed = framed;
       this.fit();
@@ -193,16 +194,20 @@ class Table {
     this.invalidate();
   }
 
-  private place(spec: ModelSpec, key: string): Slot {
-    const built = buildModel(spec, PALETTE);
-    // Each board brings its own shadow catcher; the table has one for all of them.
+  private place(spec: ModelSpec, mount: Mount, key: string): Slot {
+    const built = buildModel(spec, PALETTE, mount);
+    // Each model brings its own shadow catcher; the table has one for all of them.
     for (const child of built.root.children) if (child.userData.ground) child.visible = false;
     const group = new THREE.Group();
     group.userData.part = spec.id;
     group.add(built.root);
-    const mark = new THREE.Mesh(this.markGeometry, this.markMaterial);
+    // The model's z is the scene's y and its y the scene's z; whatever it stands on rests on the table.
+    const { min, max } = built.extent;
+    const w = max.x - min.x + 10;
+    const d = max.y - min.y + 10;
+    const mark = new THREE.Mesh(new THREE.ShapeGeometry(roundedRect(w, d, Math.min(7, w / 4, d / 4))), this.markMaterial);
     mark.rotation.x = -Math.PI / 2;
-    mark.position.set(BOARD.x + BOARD.w / 2, FLOOR + 0.05, BOARD.y + BOARD.d / 2);
+    mark.position.set((min.x + max.x) / 2, min.z + 0.05, (min.y + max.y) / 2);
     mark.raycast = () => {};
     group.add(mark);
 
@@ -218,7 +223,7 @@ class Table {
     }
 
     this.scene.add(group);
-    const slot = { key, ids: spec.terminals.map((terminal) => terminal.id), group, built, mark, epoxy, light };
+    const slot = { key, group, built, lift: FLOOR - min.z, mark, epoxy, light };
     this.slots.set(spec.id, slot);
     return slot;
   }
@@ -228,16 +233,17 @@ class Table {
     if (!slot) return;
     this.scene.remove(slot.group);
     slot.built.dispose();
+    slot.mark.geometry.dispose();
     slot.light?.dispose();
     this.slots.delete(id);
   }
 
-  // Where a jumper meets a terminal: the opening on the front of its cell of the terminal block.
+  // Where a jumper takes hold of a terminal: a terminal block's opening, or a loose lead's tip.
   private socket({ componentId, terminalId }: TerminalRef) {
     const slot = this.slots.get(componentId);
-    const index = slot?.ids.indexOf(terminalId) ?? -1;
-    if (!slot || index < 0) return null;
-    return new THREE.Vector3(cellX(index, slot.ids.length), 3.4, BLOCK_Y + BLOCK_D - 1.5).add(slot.group.position);
+    const end = slot?.built.ends.get(terminalId);
+    if (!slot || !end) return null;
+    return new THREE.Vector3(end.x, end.z, end.y).add(slot.group.position);
   }
 
   private lay(wires: Jumper[]) {
@@ -251,8 +257,8 @@ class Table {
       const a = this.socket(wire.from);
       const b = this.socket(wire.to);
       if (!a || !b) continue;
-      // Out of the front of each block, then one arch over whatever stands between them.
-      const out = new THREE.Vector3(0, 0, 7);
+      // Out to the front of each end, then one arch over whatever stands between them.
+      const out = new THREE.Vector3(0, 4, 7);
       const lift = new THREE.Vector3(0, 26 + a.distanceTo(b) * 0.22, 12);
       const a1 = a.clone().add(out);
       const b1 = b.clone().add(out);
@@ -294,13 +300,14 @@ class Table {
     }
   }
 
-  // Frames every board (or the whole canvas when it is empty) from the current direction.
+  // Frames every part (or the whole canvas when it is empty) from the current direction.
   private fit() {
     const box = new THREE.Box3();
     for (const slot of this.slots.values()) {
       const { x, z } = slot.group.position;
-      box.expandByPoint(new THREE.Vector3(x + BOARD.x, FLOOR, z + BOARD.y));
-      box.expandByPoint(new THREE.Vector3(x + BOARD.x + BOARD.w, TOP, z + BOARD.y + BOARD.d));
+      const { min, max } = slot.built.extent;
+      box.expandByPoint(new THREE.Vector3(x + min.x, FLOOR, z + min.y));
+      box.expandByPoint(new THREE.Vector3(x + max.x, FLOOR + max.z - min.z, z + max.y));
     }
     if (box.isEmpty()) {
       box.expandByPoint(toTable(80, 90).add(new THREE.Vector3(BOARD.x, FLOOR, BOARD.y)));
@@ -434,7 +441,7 @@ export default function Circuit3D(props: Circuit3DProps) {
   const note = React.useRef<HTMLParagraphElement>(null);
   const table = React.useRef<Table | null>(null);
   const latest = React.useRef(props);
-  const { parts, wires, selectedId, pending } = props;
+  const { parts, wires, mount, selectedId, pending } = props;
 
   // The table calls back through the latest props, so its handlers never see stale state.
   React.useEffect(() => {
@@ -463,15 +470,15 @@ export default function Circuit3D(props: Circuit3DProps) {
   }, []);
 
   React.useEffect(() => {
-    table.current?.update({ ...latest.current, parts, wires, selectedId, pending });
-  }, [parts, wires, selectedId, pending]);
+    table.current?.update({ ...latest.current, parts, wires, mount, selectedId, pending });
+  }, [parts, wires, mount, selectedId, pending]);
 
   return (
     <div
       ref={host}
       className="circuit-3d"
       role="group"
-      aria-label="Vista 3D del circuito: arrastra para girar, clic derecho para desplazar y Ctrl o ⌘ con la rueda para acercar. Haz clic en dos borneras para conectarlas."
+      aria-label="Vista 3D del circuito: arrastra para girar, clic derecho para desplazar y Ctrl o ⌘ con la rueda para acercar. Haz clic en dos terminales para conectarlas."
     >
       <p ref={note} className="circuit-3d-note" hidden>Este navegador no pudo crear un contexto WebGL.</p>
     </div>

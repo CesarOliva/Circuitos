@@ -23,6 +23,7 @@ import {
   UltrasonicSensor,
 } from "@simulacion/index";
 import type { Jumper, Placed } from "./simulador3d/circuit";
+import type { Mount } from "./simulador3d/model";
 import "./playground.css";
 
 // three.js only loads once someone opens the 3D view.
@@ -209,6 +210,7 @@ export default function Playground() {
   const [message, setMessage] = useState("Agrega componentes y conecta sus terminales para empezar.");
   const [dragging, setDragging] = useState<string | null>(null);
   const [view, setView] = useState<"2d" | "3d">("2d");
+  const [mount, setMount] = useState<Mount>("board");
   const svgRef = useRef<SVGSVGElement>(null);
   const dragOffset = useRef<[number, number]>([0, 0]);
   const selected = parts.find(part => part.id === selectedId) ?? null;
@@ -386,6 +388,9 @@ export default function Playground() {
         <div className="work-topbar">
           <div className="work-title"><span className="live-dot" /> Área de trabajo <span className="part-count">{parts.length} {parts.length === 1 ? "componente" : "componentes"}</span></div>
           <div className="work-controls">
+            {view === "3d" && <div className="view-toggle" role="group" aria-label="Montaje de los componentes">
+              {([["board", "En placa"], ["loose", "Sueltos"]] as const).map(([option, text]) => <button key={option} aria-pressed={mount === option} onClick={() => setMount(option)}>{text}</button>)}
+            </div>}
             <div className="view-toggle" role="group" aria-label="Vista del área de trabajo">
               {(["2d", "3d"] as const).map(option => <button key={option} aria-pressed={view === option} onClick={() => setView(option)}>{option.toUpperCase()}</button>)}
             </div>
@@ -394,7 +399,7 @@ export default function Playground() {
         </div>
 
         <div className="canvas-wrap">
-          {view === "3d" ? <Circuit3D parts={placed} wires={jumpers} selectedId={selectedId} pending={pendingTerminal} onSelect={setSelectedId} onTerminal={connectTerminal} onRemoveWire={removeWire} /> :
+          {view === "3d" ? <Circuit3D parts={placed} wires={jumpers} mount={mount} selectedId={selectedId} pending={pendingTerminal} onSelect={setSelectedId} onTerminal={connectTerminal} onRemoveWire={removeWire} /> :
           <svg ref={svgRef} className="circuit-canvas" viewBox="0 0 960 560" role="group" aria-label="Área para colocar y conectar componentes">
             <defs><pattern id="dot-grid" width="24" height="24" patternUnits="userSpaceOnUse"><circle cx="1.5" cy="1.5" r="1" fill="#d8dfdc" /></pattern></defs>
             <rect width="960" height="560" fill="url(#dot-grid)" />
@@ -460,7 +465,7 @@ export default function Playground() {
       </section>
 
       <footer className="play-footer">{view === "3d"
-        ? <><span><kbd>Girar</kbd> Arrastra la mesa</span><span><kbd>Desplazar</kbd> Arrastra con clic derecho</span><span><kbd>Acercar</kbd> Ctrl o ⌘ con la rueda</span><span><kbd>Conectar</kbd> Haz clic en dos borneras</span><span><kbd>Quitar cable</kbd> Haz clic en el cable</span><span><kbd>Mover</kbd> Usa la vista 2D</span></>
+        ? <><span><kbd>Girar</kbd> Arrastra la mesa</span><span><kbd>Desplazar</kbd> Arrastra con clic derecho</span><span><kbd>Acercar</kbd> Ctrl o ⌘ con la rueda</span><span><kbd>Conectar</kbd> {mount === "loose" ? "Haz clic en dos patitas o puntas" : "Haz clic en dos borneras"}</span><span><kbd>Quitar cable</kbd> Haz clic en el cable</span><span><kbd>Mover</kbd> Usa la vista 2D</span></>
         : <><span><kbd>Conectar</kbd> Selecciona dos terminales</span><span><kbd>Mover</kbd> Arrastra o usa las flechas</span><span><kbd>Quitar cable</kbd> Selecciona el cable</span><span><kbd>Valores</kbd> Edita el componente seleccionado</span></>}
         <span className="model-note">Modelo educativo DC: capacitor abierto e inductor en corto en estado estacionario.</span></footer>
     </main>

@@ -20,21 +20,25 @@ You can start editing the page by modifying `app/page.tsx`. The page auto-update
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
-## Comparar dos imágenes con DINOv2
+## Experimentos DINOv2
 
-El experimento en `src/app/experiments/dinov2/compare_pair.py` compara dos imágenes usando DINOv2 ViT-S/14. Imprime la similitud coseno de las representaciones globales y una comparación adicional por parches. Los valores son índices de similitud, no porcentajes ni probabilidades.
-
-En este equipo ya está disponible Python 3.14. Ejecuta estos comandos en PowerShell desde la raíz del proyecto:
+En Windows, crea un entorno con Python 3.12 e instala las dependencias desde la raíz del proyecto:
 
 ```powershell
-py -3.14 -m venv .venv
-.\.venv\Scripts\Activate.ps1
-python -m pip install --upgrade pip
-python -m pip install -r src\app\experiments\requirements.txt
-python src\app\experiments\dinov2\compare_pair.py "C:\ruta\a\imagen1.jpg" "C:\ruta\a\imagen2.jpg"
+py -3.12 -m venv .venv
+.\.venv\Scripts\python.exe -m pip install --upgrade pip
+.\.venv\Scripts\python.exe -m pip install -r src\app\experiments\requirements.txt
 ```
 
-La primera ejecución descarga el código y los pesos de DINOv2 mediante `torch.hub`. Para comparar componentes, conviene usar fotos o recortes con encuadre similar: la comparación por parches empareja regiones que ocupan la misma posición y ambas medidas pueden verse afectadas por el fondo, la iluminación y la orientación. Puedes guardar las imágenes en `src\app\experiments\dinov2\images` o en cualquier otra carpeta e indicar sus rutas al ejecutar el script.
+### Comparar dos imágenes
+
+El script `src\app\experiments\dinov2\compare_pair.py` compara dos imágenes usando DINOv2 ViT-S/14. Imprime la similitud coseno de las representaciones globales y una comparación adicional por parches. Los valores son índices de similitud, no porcentajes ni probabilidades.
+
+```powershell
+.\.venv\Scripts\python.exe src\app\experiments\dinov2\compare_pair.py "C:\ruta\a\imagen1.jpg" "C:\ruta\a\imagen2.jpg"
+```
+
+La primera ejecución descarga el código y los pesos de DINOv2 mediante `torch.hub`. Para comparar componentes, conviene usar fotos o recortes con encuadre similar: la comparación por parches empareja regiones que ocupan la misma posición y ambas medidas pueden verse afectadas por el fondo, la iluminación y la orientación.
 
 ### Primer paso: clases del dataset
 
@@ -54,6 +58,22 @@ src\app\experiments\dinov2\dataset\
 ```
 
 Coloca en `led` fotografías de LEDs y en `no_led` fotografías de componentes u objetos que no sean LEDs. Mantén separadas las imágenes de entrenamiento, validación y prueba; no copies la misma imagen a más de una partición. Conviene comenzar con imágenes recortadas donde aparezca principalmente un solo componente.
+
+### Entrenar y usar el clasificador
+
+El clasificador usa embeddings congelados de DINOv2 y una regresión logística. Selecciona la regularización con `validation`, vuelve a ajustar con `train` y `validation`, y reporta el resultado final usando `test`.
+
+```powershell
+.\.venv\Scripts\python.exe src\app\experiments\dinov2\train_classifier.py
+```
+
+El modelo queda en `src\app\experiments\dinov2\models\led_classifier.joblib`. Para clasificar una imagen:
+
+```powershell
+.\.venv\Scripts\python.exe src\app\experiments\dinov2\predict_image.py "C:\ruta\a\componente.jpg"
+```
+
+Usa imágenes diferentes para `train`, `validation` y `test`; no ajustes el modelo basándote en el resultado de `test`.
 
 ## Learn More
 

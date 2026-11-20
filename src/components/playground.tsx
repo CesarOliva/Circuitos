@@ -22,8 +22,9 @@ import {
   Transistor,
   UltrasonicSensor,
 } from "@simulacion/index";
-import type { Jumper, Placed } from "./simulador3d/circuit";
+import type { Jumper, Locate, Placed } from "./simulador3d/circuit";
 import type { Mount } from "./simulador3d/model";
+import { PartPicture } from "./part-picture";
 import "./playground.css";
 
 // three.js only loads once someone opens the 3D view.
@@ -98,6 +99,9 @@ function terminalPoint(part: Part, id: string): [number, number] {
   const { x, y } = specs[part.kind].terminals.find(item => item.id === id)!;
   return [part.x + x, part.y + y];
 }
+
+const clampX = (x: number) => Math.max(80, Math.min(880, x));
+const clampY = (y: number) => Math.max(90, Math.min(470, y));
 
 function createComponent(part: Part) {
   const value = setValue(part, part.value);
@@ -207,12 +211,16 @@ export default function Playground() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [pendingTerminal, setPendingTerminal] = useState<TerminalRef | null>(null);
   const [result, setResult] = useState<Result | null>(null);
-  const [message, setMessage] = useState("Agrega componentes y conecta sus terminales para empezar.");
+  const [message, setMessage] = useState("Arrastra componentes al área de trabajo y conecta sus terminales para empezar.");
   const [dragging, setDragging] = useState<string | null>(null);
   const [view, setView] = useState<"2d" | "3d">("2d");
   const [mount, setMount] = useState<Mount>("board");
+  const [ghost, setGhost] = useState<{ kind: Kind; x: number; y: number; over: boolean } | null>(null);
   const svgRef = useRef<SVGSVGElement>(null);
   const dragOffset = useRef<[number, number]>([0, 0]);
+  const trayDrag = useRef<{ kind: Kind; x: number; y: number; moved: boolean } | null>(null);
+  const skipClick = useRef(false);
+  const locate3d = useRef<Locate | null>(null);
   const selected = parts.find(part => part.id === selectedId) ?? null;
   const selectedResult = result?.components.find(component => component.componentId === selectedId);
   const ledLit = Boolean(result?.success && result.components.some(component => component.type === "led" && component.current > 0.002));
@@ -232,15 +240,15 @@ export default function Playground() {
   }), [parts, result]);
   const jumpers = useMemo<Jumper[]>(() => wires.map(wire => ({ ...wire, live: ledLit })), [wires, ledLit]);
 
-  function addPart(kind: Kind) {
+  function addPart(kind: Kind, at?: [number, number]) {
     const spec = specs[kind];
     let count = 1;
     while (parts.some(part => part.id === `${spec.prefix}${count}`)) count++;
     const index = parts.length % 15;
     const part: Part = {
       id: `${spec.prefix}${count}`, kind,
-      x: 125 + (index % 5) * 178,
-      y: 115 + Math.floor(index / 5) * 170,
+      x: at ? clampX(at[0]) : 125 + (index % 5) * 178,
+      y: at ? clampY(at[1]) : 115 + Math.floor(index / 5) * 170,
       value: spec.value,
       ...(kind === "switch" || kind === "push-button" ? { on: false } : {}),
       ...(kind === "potentiometer" ? { position: 0.5 } : {}),
@@ -315,7 +323,48 @@ export default function Playground() {
   }
 
   function movePart(partId: string, x: number, y: number) {
-    setParts(current => current.map(part => part.id === partId ? { ...part, x: Math.max(80, Math.min(880, x)), y: Math.max(90, Math.min(470, y)) } : part));
+    setParts(current => current.map(part => part.id === partId ? { ...part, x: clampX(x), y: clampY(y) } : part));
+  }
+
+  // A screen point in canvas units, through whichever view is showing; null outside it.
+  function canvasPoint(clientX: number, clientY: number): [number, number] | null {
+    if (view === "3d") return locate3d.current?.(clientX, clientY) ?? null;
+    const svg = svgRef.current;
+    if (!svg) return null;
+    const rect = svg.getBoundingClientRect();
+    if (clientX < rect.left || clientX > rect.right || clientY < rect.top || clientY > rect.bottom) return null;
+    return [((clientX - rect.left) / rect.width) * 960, ((clientY - rect.top) / rect.height) * 560];
+  }
+
+  // Tray tiles: a press that travels becomes a drag onto the canvas; a press that doesn't is a plain click.
+  function trayDown(event: PointerEvent<HTMLButtonElement>, kind: Kind) {
+    if (event.button !== 0) return;
+    skipClick.current = false;
+    trayDrag.current = { kind, x: event.clientX, y: event.clientY, moved: false };
+    event.currentTarget.setPointerCapture(event.pointerId);
+  }
+
+  function trayMove(event: PointerEvent<HTMLButtonElement>) {
+    const drag = trayDrag.current;
+    if (!drag || (!drag.moved && Math.hypot(event.clientX - drag.x, event.clientY - drag.y) < 5)) return;
+    drag.moved = true;
+    setGhost({ kind: drag.kind, x: event.clientX, y: event.clientY, over: canvasPoint(event.clientX, event.clientY) !== null });
+  }
+
+  function trayUp(event: PointerEvent<HTMLButtonElement>) {
+    const drag = trayDrag.current;
+    trayDrag.current = null;
+    setGhost(null);
+    if (!drag?.moved) return;
+    skipClick.current = true;
+    const at = canvasPoint(event.clientX, event.clientY);
+    if (at) addPart(drag.kind, at);
+    else setMessage("Suelta el componente dentro del área de trabajo.");
+  }
+
+  function trayCancel() {
+    trayDrag.current = null;
+    setGhost(null);
   }
 
   function startDrag(event: PointerEvent<SVGGElement>, part: Part) {
@@ -398,8 +447,8 @@ export default function Playground() {
           </div>
         </div>
 
-        <div className="canvas-wrap">
-          {view === "3d" ? <Circuit3D parts={placed} wires={jumpers} mount={mount} selectedId={selectedId} pending={pendingTerminal} onSelect={setSelectedId} onTerminal={connectTerminal} onRemoveWire={removeWire} /> :
+        <div className={`canvas-wrap${ghost?.over ? " drop-target" : ""}`}>
+          {view === "3d" ? <Circuit3D parts={placed} wires={jumpers} mount={mount} selectedId={selectedId} pending={pendingTerminal} onSelect={setSelectedId} onTerminal={connectTerminal} onRemoveWire={removeWire} onLocator={locate => { locate3d.current = locate; }} /> :
           <svg ref={svgRef} className="circuit-canvas" viewBox="0 0 960 560" role="group" aria-label="Área para colocar y conectar componentes">
             <defs><pattern id="dot-grid" width="24" height="24" patternUnits="userSpaceOnUse"><circle cx="1.5" cy="1.5" r="1" fill="#d8dfdc" /></pattern></defs>
             <rect width="960" height="560" fill="url(#dot-grid)" />
@@ -435,17 +484,20 @@ export default function Playground() {
                 {componentResult && <text className="component-readout" x="0" y="90">{(componentResult.voltage).toFixed(2)} V · {(componentResult.current * 1000).toFixed(1)} mA</text>}
               </g>;
             })}
-            {!parts.length && <g className="empty-canvas" transform="translate(480 270)"><circle r="27" /><path d="M-9 0h18m-9-9v18" /><text y="58">Agrega un componente para comenzar</text></g>}
+            {!parts.length && <g className="empty-canvas" transform="translate(480 270)"><circle r="27" /><path d="M-9 0h18m-9-9v18" /><text y="58">Arrastra un componente aquí para comenzar</text></g>}
           </svg>}
           <div className={`canvas-message${ledLit ? " message-success" : ""}`} role="status"><span className="message-indicator" />{message}</div>
         </div>
 
         <div className="work-bottom">
-          <div className="component-tray" aria-label="Agregar componentes">
+          <div className="component-tray" aria-label="Agregar componentes: arrastra uno al área de trabajo o haz clic para agregarlo">
             {groups.map(group => <div className="palette-group" key={group}>
               <span className="tray-label">{group}</span>
-              {kinds.filter(kind => specs[kind].group === group).map(kind => <button key={kind} onClick={() => addPart(kind)} aria-label={`Agregar ${specs[kind].name}`} title={`Agregar ${specs[kind].name}`}>
-                <span className={`tray-symbol tray-${kind}`} aria-hidden="true"><TrayIcon kind={kind} /></span><span>{specs[kind].name}</span><b>+</b>
+              {kinds.filter(kind => specs[kind].group === group).map(kind => <button key={kind} className="part-tile" aria-label={`Agregar ${specs[kind].name}`}
+                onPointerDown={event => trayDown(event, kind)} onPointerMove={trayMove} onPointerUp={trayUp} onPointerCancel={trayCancel}
+                onClick={() => { if (skipClick.current) skipClick.current = false; else addPart(kind); }}>
+                <PartPicture kind={kind} />
+                <span className="part-tile-name">{specs[kind].name}</span>
               </button>)}
             </div>)}
           </div>
@@ -464,25 +516,11 @@ export default function Playground() {
         </div>
       </section>
 
-      <footer className="play-footer">{view === "3d"
+      <footer className="play-footer"><span><kbd>Agregar</kbd> Arrastra una pieza al área o haz clic en ella</span>{view === "3d"
         ? <><span><kbd>Girar</kbd> Arrastra la mesa</span><span><kbd>Desplazar</kbd> Arrastra con clic derecho</span><span><kbd>Acercar</kbd> Ctrl o ⌘ con la rueda</span><span><kbd>Conectar</kbd> {mount === "loose" ? "Haz clic en dos patitas o puntas" : "Haz clic en dos borneras"}</span><span><kbd>Quitar cable</kbd> Haz clic en el cable</span><span><kbd>Mover</kbd> Usa la vista 2D</span></>
         : <><span><kbd>Conectar</kbd> Selecciona dos terminales</span><span><kbd>Mover</kbd> Arrastra o usa las flechas</span><span><kbd>Quitar cable</kbd> Selecciona el cable</span><span><kbd>Valores</kbd> Edita el componente seleccionado</span></>}
         <span className="model-note">Modelo educativo DC: capacitor abierto e inductor en corto en estado estacionario.</span></footer>
+      {ghost && <div className={`drag-ghost${ghost.over ? " ghost-over" : ""}`} style={{ left: ghost.x, top: ghost.y }} aria-hidden="true"><PartPicture kind={ghost.kind} /></div>}
     </main>
   );
-}
-
-function TrayIcon({ kind }: { kind: Kind }) {
-  if (kind === "battery") return <svg viewBox="0 0 20 20"><path d="M4 10h5m2 0h5M7 7v6m6-4v2" /></svg>;
-  if (kind === "resistor") return <svg viewBox="0 0 20 20"><path d="M2 10h3l2-4 4 8 3-8 2 4h2" /></svg>;
-  if (kind === "led" || kind === "diode") return <svg viewBox="0 0 20 20"><path d="M5 4v12l9-6zM16 4v12" /></svg>;
-  if (kind === "capacitor") return <svg viewBox="0 0 20 20"><path d="M7 3v14m6-14v14M2 10h5m6 0h5" /></svg>;
-  if (kind === "inductor") return <svg viewBox="0 0 20 20"><path d="M2 10h2c0-6 4-6 4 0s4 6 4 0 4-6 4 0h2" /></svg>;
-  if (kind === "switch" || kind === "push-button") return <svg viewBox="0 0 20 20"><path d="M2 14h5l8-8m0 8h3" /></svg>;
-  if (kind === "potentiometer") return <svg viewBox="0 0 20 20"><path d="M2 13h4l3-6 3 6h6M10 2v6m-2-2 2 2 2-2" /></svg>;
-  if (kind === "ldr") return <svg viewBox="0 0 20 20"><circle cx="11" cy="11" r="5" /><path d="m2 4 4 3m-2-6 4 5" /></svg>;
-  if (kind === "ultrasonic") return <svg viewBox="0 0 20 20"><circle cx="6" cy="10" r="4" /><circle cx="15" cy="10" r="4" /></svg>;
-  if (kind === "dc-motor") return <svg viewBox="0 0 20 20"><circle cx="10" cy="10" r="7" /><path d="M10 5v10m-5-5h10" /></svg>;
-  if (kind === "active-buzzer") return <svg viewBox="0 0 20 20"><path d="M3 8h4l5-4v12l-5-4H3zM15 7q4 3 0 6" /></svg>;
-  return <svg viewBox="0 0 20 20"><circle cx="10" cy="10" r="7" /><path d="M4 10h4m0-5v10m0-7 6-4m-6 8 6 4" /></svg>;
 }

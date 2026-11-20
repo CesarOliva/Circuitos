@@ -46,7 +46,12 @@ export interface Circuit3DProps {
   onSelect(id: string): void;
   onTerminal(ref: TerminalRef): void;
   onRemoveWire(id: string): void;
+  // hands over a way to turn a screen point into playground canvas units, or null when the view goes
+  onLocator?(locate: Locate | null): void;
 }
+
+// A screen point to playground canvas units, through the table; null off the view.
+export type Locate = (clientX: number, clientY: number) => [number, number] | null;
 
 interface Slot {
   key: string;
@@ -335,6 +340,15 @@ class Table {
     this.invalidate();
   }
 
+  locate: Locate = (clientX, clientY) => {
+    const rect = this.renderer.domElement.getBoundingClientRect();
+    if (clientX < rect.left || clientX > rect.right || clientY < rect.top || clientY > rect.bottom) return null;
+    this.pointer.set(((clientX - rect.left) / rect.width) * 2 - 1, -((clientY - rect.top) / rect.height) * 2 + 1);
+    this.raycaster.setFromCamera(this.pointer, this.camera);
+    const hit = this.raycaster.ray.intersectPlane(new THREE.Plane(new THREE.Vector3(0, 1, 0), -FLOOR), new THREE.Vector3());
+    return hit ? [hit.x / SCALE + CANVAS_W / 2, hit.z / SCALE + CANVAS_H / 2] : null;
+  };
+
   private pick(event: PointerEvent): { wire: string } | { part: string; terminal?: string } | null {
     const rect = this.renderer.domElement.getBoundingClientRect();
     this.pointer.set(((event.clientX - rect.left) / rect.width) * 2 - 1, -((event.clientY - rect.top) / rect.height) * 2 + 1);
@@ -460,9 +474,11 @@ export default function Circuit3D(props: Circuit3DProps) {
     }
     table.current = instance;
     instance.update(latest.current);
+    latest.current.onLocator?.(instance.locate);
     const resize = new ResizeObserver(() => instance.resize());
     resize.observe(element);
     return () => {
+      latest.current.onLocator?.(null);
       resize.disconnect();
       instance.destroy();
       table.current = null;

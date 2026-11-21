@@ -590,7 +590,7 @@ export default function Playground() {
       </section>
 
       <footer className="play-footer"><span><kbd>Agregar</kbd> Arrastra una pieza al área o haz clic en ella</span>{view === "3d"
-        ? <><span><kbd>Girar</kbd> Arrastra la mesa</span><span><kbd>Desplazar</kbd> Arrastra con clic derecho</span><span><kbd>Acercar</kbd> Ctrl o ⌘ con la rueda</span><span><kbd>Conectar</kbd> {mount === "loose" ? "Haz clic en dos patitas, puntas o agujeros" : "Haz clic en dos borneras o agujeros"}</span><span><kbd>Quitar cable</kbd> Haz clic en el cable</span><span><kbd>Mover</kbd> Usa la vista 2D</span></>
+        ? <><span><kbd>Girar</kbd> Arrastra para mover la cámara</span><span><kbd>Piezas</kbd> Se mueven en modo 2D</span><span><kbd>Desplazar</kbd> Arrastra con clic derecho</span><span><kbd>Acercar</kbd> Ctrl o ⌘ con la rueda</span><span><kbd>Conectar</kbd> {mount === "loose" ? "Haz clic en dos patitas, puntas o agujeros" : "Haz clic en dos borneras o agujeros"}</span><span><kbd>Quitar cable</kbd> Haz clic en el cable</span></>
         : <><span><kbd>Conectar</kbd> Selecciona dos terminales o agujeros</span><span><kbd>Mover</kbd> Arrastra o usa las flechas</span><span><kbd>Quitar cable</kbd> Selecciona el cable</span><span><kbd>Valores</kbd> Edita el componente seleccionado</span></>}
         <span><kbd>Protoboard</kbd> Cada columna une a–e y f–j; cada riel va de punta a punta</span>
         <span className="model-note">Modelo educativo DC: capacitor abierto e inductor en corto en estado estacionario.</span></footer>

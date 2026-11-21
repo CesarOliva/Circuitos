@@ -100,6 +100,7 @@ class Table {
   private raf = 0;
   private dirty = 1;
   private down: [number, number] | null = null;
+  private wireKey = "";
   private hovered: TerminalRef | null = null;
   private pending: TerminalRef | null = null;
   private framed = "";
@@ -110,7 +111,7 @@ class Table {
     private props: () => Circuit3DProps,
   ) {
     this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-    this.renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+    this.renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFShadowMap;
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -121,7 +122,7 @@ class Table {
     const sun = new THREE.DirectionalLight("#ffffff", 2.4);
     sun.position.set(-160, 380, 190);
     sun.castShadow = true;
-    sun.shadow.mapSize.set(2048, 2048);
+    sun.shadow.mapSize.set(1024, 1024);
     sun.shadow.camera.left = -460;
     sun.shadow.camera.right = 460;
     sun.shadow.camera.top = 460;
@@ -154,12 +155,12 @@ class Table {
     this.controls.minDistance = 60;
     this.controls.maxDistance = 2400;
     this.controls.maxPolarAngle = THREE.MathUtils.degToRad(84);
-    this.controls.addEventListener("change", () => (this.dirty = Math.max(this.dirty, 1)));
+    this.controls.addEventListener("change", () => this.invalidate());
     const direction = new THREE.Vector3(Math.cos(ELEVATION) * Math.cos(AZIMUTH), Math.sin(ELEVATION), Math.cos(ELEVATION) * Math.sin(AZIMUTH));
     this.camera.position.copy(direction);
 
     const canvas = this.renderer.domElement;
-    canvas.addEventListener("pointerdown", this.press);
+    canvas.addEventListener("pointerdown", this.press, true);
     canvas.addEventListener("pointerup", this.release);
     canvas.addEventListener("pointermove", this.hover);
     canvas.addEventListener("pointerleave", this.leave);
@@ -189,7 +190,15 @@ class Table {
       if (slot.light) slot.light.intensity = part.glow ? 70 : 0;
     }
     for (const id of [...this.slots.keys()]) if (!seen.has(id)) this.drop(id);
-    this.lay(wires);
+    const wireKey = JSON.stringify(wires.map(wire => [
+      wire.id, wire.from, wire.to, wire.live,
+      this.slots.get(wire.from.componentId)?.group.position.toArray(),
+      this.slots.get(wire.to.componentId)?.group.position.toArray(),
+    ]));
+    if (wireKey !== this.wireKey) {
+      this.wireKey = wireKey;
+      this.lay(wires);
+    }
     this.pending = pending;
     this.paint();
     // Reframe when parts come or go or change mount, keeping the turn the user gave the table.
@@ -282,7 +291,7 @@ class Table {
       path.add(new THREE.LineCurve3(b1, b));
       const colour = WIRE_COLOURS[(Number(wire.id.replace(/\D/g, "")) || 0) % WIRE_COLOURS.length];
       const material = new THREE.MeshStandardMaterial({ color: colour, roughness: 0.5, emissive: colour, emissiveIntensity: wire.live ? 0.55 : 0 });
-      const mesh = new THREE.Mesh(new THREE.TubeGeometry(path, 96, 1.05, 10, false), material);
+      const mesh = new THREE.Mesh(new THREE.TubeGeometry(path, 32, 1.05, 6, false), material);
       mesh.castShadow = true;
       mesh.userData.wire = wire.id;
       this.wires.add(mesh);
@@ -450,7 +459,7 @@ class Table {
     this.raf = 0;
     this.controls.dispose();
     const canvas = this.renderer.domElement;
-    canvas.removeEventListener("pointerdown", this.press);
+    canvas.removeEventListener("pointerdown", this.press, true);
     canvas.removeEventListener("pointerup", this.release);
     canvas.removeEventListener("pointermove", this.hover);
     canvas.removeEventListener("pointerleave", this.leave);

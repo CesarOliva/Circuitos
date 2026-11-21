@@ -23,3 +23,5 @@ export * from "./simulation/SimulationResult.ts";
 export * from "./simulation/LinearSystemSolver.ts";
 export * from "./simulation/DCSolver.ts";
 export * from "./simulation/TransientSolver.ts";
+export * from "./microcontrollers/types.ts";
+export { loadIntelHex } from "./microcontrollers/uno.ts";

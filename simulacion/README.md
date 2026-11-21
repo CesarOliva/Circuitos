@@ -78,3 +78,19 @@ const result = new DCSolver().simulate(circuit);
 ```
 
 Las clases del núcleo, componentes y solucionadores se exportan desde `src/index.ts`.
+
+## Microcontroladores
+
+`runSketch()` compila y ejecuta sketches Arduino C++ para Arduino Uno R3 y ESP32 DevKit V1. Recibe las entradas digitales como `Record<pin, boolean | SignalPoint<boolean>[]>`; las entradas analógicas del Uno usan canales `0..5` y las del ESP32 usan números GPIO. `outputSources` enlaza pines de salida con fuentes `DCVoltageSource` del circuito para calcular la respuesta eléctrica transitoria.
+
+El motor requiere Arduino CLI con los cores `arduino:avr` y `esp32:esp32`. La emulación Uno se ejecuta con `avr8js`; ESP32 usa el binario local `esp32sim`. Configura `ARDUINO_CLI_PATH` y `ESP32SIM_PATH` si no están en `PATH`. El emulador ESP32 necesita además sus archivos ROM locales (`ESP32SIM_ROM_DIR` o la ubicación por defecto de `esp32sim`). No se llama a servicios alojados.
+
+```ts
+const result = await runSketch({
+  board: "arduino-uno-r3",
+  sketch: "void setup() { pinMode(13, OUTPUT); } void loop() { digitalWrite(13, HIGH); delay(500); digitalWrite(13, LOW); delay(500); }",
+  durationSeconds: 2,
+});
+```
+
+Cada ejecución usa un directorio temporal, tiene límites de código, duración, salida y concurrencia, y se puede cancelar con `AbortSignal`. Wi-Fi, Bluetooth y bibliotecas Arduino adicionales no forman parte de esta primera versión.

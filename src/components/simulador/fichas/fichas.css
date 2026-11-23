@@ -1,0 +1,560 @@
+/* Technical sheets: the gallery's dark tokens (.iso.sim-gallery), laid out as a document. */
+.ficha .sim-header,
+.ficha-cuerpo {
+  max-width: 1100px;
+}
+
+.ficha-cuerpo {
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 190px minmax(0, 1fr);
+  gap: 40px;
+  align-items: start;
+}
+
+.ficha-ruta {
+  font-family: var(--anatomy-mono);
+  font-size: 12px;
+}
+
+.ficha-ruta a:hover,
+.ficha a:not(.sim-nav a):hover {
+  color: var(--anatomy-strong);
+}
+
+.ficha-clase {
+  font-family: var(--anatomy-mono);
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+
+.ficha-indice {
+  position: sticky;
+  top: 24px;
+  display: grid;
+  gap: 2px;
+  font-size: 13px;
+}
+
+.ficha-indice a {
+  padding: 6px 10px;
+  border-left: 1px solid var(--anatomy-lo);
+  color: var(--anatomy-text);
+}
+
+.ficha-indice a:hover {
+  border-left-color: var(--anatomy-lit);
+  color: var(--anatomy-strong);
+}
+
+.ficha-contenido {
+  display: grid;
+  gap: 44px;
+  font-size: 14.5px;
+  line-height: 1.6;
+}
+
+.ficha-contenido section {
+  scroll-margin-top: 24px;
+  display: grid;
+  gap: 12px;
+  align-content: start;
+}
+
+.ficha-contenido h2 {
+  color: var(--anatomy-strong);
+  font-size: 18px;
+  font-weight: 600;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--anatomy-lo);
+}
+
+.ficha-contenido h3 {
+  color: var(--anatomy-strong);
+  font-size: 14.5px;
+  font-weight: 600;
+  margin-top: 6px;
+}
+
+.ficha-contenido strong {
+  color: var(--anatomy-strong);
+  font-weight: 600;
+}
+
+.ficha-contenido code {
+  font-family: var(--anatomy-mono);
+  font-size: 0.92em;
+  color: var(--anatomy-strong);
+}
+
+.ficha-contenido ul {
+  list-style: disc;
+  padding-left: 20px;
+  display: grid;
+  gap: 4px;
+}
+
+.ficha-contenido a {
+  color: var(--anatomy-lit);
+}
+
+/* Figure beside the description when the part has a card. */
+.ficha-intro {
+  grid-template-columns: minmax(0, 380px) minmax(0, 1fr);
+  gap: 28px !important;
+  align-items: start;
+}
+
+.ficha-intro .iso-figure {
+  margin: 0;
+}
+
+.ficha-intro > div {
+  display: grid;
+  gap: 12px;
+}
+
+.ficha-tabla {
+  overflow-x: auto;
+  box-shadow: 0 0 0 1px var(--anatomy-lo);
+  background: var(--anatomy-card);
+}
+
+.ficha-tabla table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13.5px;
+}
+
+.ficha-tabla th,
+.ficha-tabla td {
+  padding: 9px 12px;
+  text-align: left;
+  vertical-align: top;
+  border-top: 1px solid var(--anatomy-faint);
+}
+
+.ficha-tabla thead th {
+  border-top: none;
+  color: var(--anatomy-muted);
+  font-family: var(--anatomy-mono);
+  font-size: 11px;
+  font-weight: 400;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.ficha-tabla tbody th {
+  color: var(--anatomy-strong);
+  font-weight: 500;
+  min-width: 150px;
+}
+
+.ficha-tabla td:nth-child(2) {
+  color: var(--anatomy-strong);
+  font-variant-numeric: tabular-nums;
+}
+
+.ficha-nivel {
+  margin-right: 4px;
+  font-family: var(--anatomy-mono);
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.ficha-nivel-error { color: var(--anatomy-red); }
+.ficha-nivel-advertencia { color: #ffc24a; }
+.ficha-nivel-info { color: var(--anatomy-lit); }
+
+.ficha-propiedades {
+  padding: 12px;
+  box-shadow: 0 0 0 1px var(--anatomy-faint);
+}
+
+.ficha-lecturas {
+  display: grid;
+  gap: 10px;
+}
+
+.ficha-lecturas div {
+  display: grid;
+  grid-template-columns: minmax(0, 260px) minmax(0, 1fr);
+  gap: 16px;
+}
+
+.ficha-lecturas dt {
+  color: var(--anatomy-strong);
+}
+
+.ficha-pruebas {
+  display: grid;
+  gap: 16px;
+  counter-reset: prueba;
+}
+
+.ficha-pruebas > li {
+  counter-increment: prueba;
+  display: grid;
+  gap: 8px;
+  padding: 16px 18px;
+  background: var(--anatomy-card);
+  box-shadow: 0 0 0 1px var(--anatomy-lo);
+}
+
+.ficha-pruebas > li > h3 {
+  margin: 0;
+}
+
+.ficha-pruebas > li > h3::before {
+  content: counter(prueba, decimal-leading-zero) " · ";
+  color: var(--anatomy-muted);
+  font-family: var(--anatomy-mono);
+  font-weight: 400;
+}
+
+.ficha-pruebas ol {
+  list-style: decimal;
+  padding-left: 20px;
+}
+
+.ficha-pruebas pre {
+  overflow-x: auto;
+  padding: 12px;
+  background: var(--anatomy-page);
+  box-shadow: 0 0 0 1px var(--anatomy-faint);
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+
+.ficha-etiqueta {
+  margin-right: 6px;
+  color: var(--anatomy-muted);
+  font-family: var(--anatomy-mono);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.ficha-esperado {
+  padding-top: 8px;
+  border-top: 1px dashed var(--anatomy-lo);
+  color: var(--anatomy-strong);
+}
+
+.ficha-paginas {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--anatomy-lo);
+  font-size: 13px;
+}
+
+.ficha-paginas a {
+  color: var(--anatomy-text) !important;
+}
+
+/* Index of sheets, grouped. */
+.fichas-grupo {
+  max-width: 1100px;
+  margin: 0 auto 36px;
+  display: grid;
+  gap: 14px;
+}
+
+.fichas-grupo h2 {
+  color: var(--anatomy-strong);
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.fichas-grupo ul {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
+  gap: 14px;
+}
+
+.fichas-grupo a {
+  display: grid;
+  gap: 4px;
+  height: 100%;
+  padding: 16px 18px;
+  background: var(--anatomy-card);
+  box-shadow: 0 0 0 1px var(--anatomy-lo);
+  font-size: 13.5px;
+}
+
+.fichas-grupo a:hover {
+  box-shadow: 0 0 0 1px var(--anatomy-lit);
+}
+
+.fichas-grupo strong {
+  color: var(--anatomy-strong);
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.fichas-grupo span {
+  font-family: var(--anatomy-mono);
+  font-size: 11px;
+  color: var(--anatomy-muted);
+}
+
+/* Voltage validator. */
+.validador {
+  display: grid;
+  gap: 14px;
+  padding: 18px;
+  background: var(--anatomy-card);
+  box-shadow: 0 0 0 1px var(--anatomy-mid);
+}
+
+.validador-campos {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 200px), 1fr));
+  gap: 14px;
+}
+
+.validador-campo {
+  display: grid;
+  gap: 5px;
+  align-content: start;
+  font-size: 12.5px;
+}
+
+.validador-campo small {
+  color: var(--anatomy-muted);
+  font-size: 11px;
+}
+
+.validador-input {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 9px;
+  background: var(--anatomy-page);
+  box-shadow: 0 0 0 1px var(--anatomy-lo);
+  font-family: var(--anatomy-mono);
+  font-size: 12px;
+}
+
+.validador-input:focus-within {
+  box-shadow: 0 0 0 1px var(--anatomy-lit);
+}
+
+.validador-input input {
+  min-width: 0;
+  flex: 1;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--anatomy-strong);
+  font: inherit;
+}
+
+.validador-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  align-self: end;
+}
+
+.validador-campo input[type="range"] {
+  accent-color: var(--anatomy-lit);
+}
+
+.validador-montaje {
+  font-size: 13px;
+}
+
+.validador-montaje span,
+.validador-avisos li span {
+  margin-right: 6px;
+  color: var(--anatomy-muted);
+  font-family: var(--anatomy-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.validador-lectura {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 28px;
+  font-family: var(--anatomy-mono);
+  font-size: 12px;
+}
+
+.validador-lectura dt {
+  color: var(--anatomy-muted);
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.validador-lectura dd {
+  color: var(--anatomy-strong);
+  font-size: 15px;
+  font-variant-numeric: tabular-nums;
+}
+
+.ficha-contenido .validador-avisos {
+  list-style: none;
+  padding: 0;
+  gap: 6px;
+  font-size: 13px;
+}
+
+.validador-avisos li {
+  padding: 8px 10px;
+  border-left: 2px solid var(--anatomy-lo);
+  background: var(--anatomy-page);
+}
+
+.validador-avisos li.validador-error { border-left-color: var(--anatomy-red); color: #ffc9cd; }
+.validador-avisos li.validador-error span { color: var(--anatomy-red); }
+.validador-avisos li.validador-advertencia { border-left-color: #ffc24a; }
+.validador-avisos li.validador-advertencia span { color: #ffc24a; }
+.validador-avisos li.validador-info span { color: var(--anatomy-lit); }
+
+.validador-ok {
+  color: var(--anatomy-green);
+  font-size: 13px;
+}
+
+/* Lesson. */
+.ficha-leccion-tema {
+  display: grid;
+  gap: 8px;
+}
+
+.ficha-practica {
+  display: grid;
+  gap: 8px;
+  padding: 16px 18px;
+  background: var(--anatomy-card);
+  box-shadow: 0 0 0 1px var(--anatomy-lo);
+}
+
+.ficha-practica ol {
+  list-style: decimal;
+  padding-left: 20px;
+}
+
+.cuestionario > ol {
+  display: grid;
+  gap: 18px;
+  list-style: decimal;
+  padding-left: 20px;
+}
+
+.cuestionario fieldset {
+  display: grid;
+  gap: 8px;
+  border: 0;
+  padding: 0;
+  margin: 0;
+}
+
+.cuestionario legend {
+  color: var(--anatomy-strong);
+  margin-bottom: 8px;
+}
+
+.cuestionario-opciones {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr));
+  gap: 8px;
+}
+
+.cuestionario-opcion {
+  padding: 8px 12px;
+  border: 0;
+  background: var(--anatomy-card);
+  box-shadow: 0 0 0 1px var(--anatomy-lo);
+  color: var(--anatomy-text);
+  font: inherit;
+  font-size: 13.5px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.cuestionario-opcion:hover:not(:disabled) {
+  box-shadow: 0 0 0 1px var(--anatomy-lit);
+  color: var(--anatomy-strong);
+}
+
+.cuestionario-opcion:disabled {
+  cursor: default;
+}
+
+.cuestionario-opcion.correcta {
+  box-shadow: 0 0 0 1px var(--anatomy-green);
+  color: var(--anatomy-green);
+}
+
+.cuestionario-opcion.incorrecta {
+  box-shadow: 0 0 0 1px var(--anatomy-red);
+  color: var(--anatomy-red);
+}
+
+.cuestionario-explicacion {
+  font-size: 13px;
+}
+
+.cuestionario-puntaje {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-top: 6px;
+  color: var(--anatomy-strong);
+  font-family: var(--anatomy-mono);
+  font-size: 13px;
+}
+
+.cuestionario-puntaje button {
+  border: 0;
+  background: none;
+  color: var(--anatomy-lit);
+  font: inherit;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+@media (max-width: 860px) {
+  .ficha-cuerpo {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 24px;
+  }
+
+  .ficha-indice {
+    position: static;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .ficha-indice a {
+    border-left: none;
+    box-shadow: 0 0 0 1px var(--anatomy-lo);
+    border-radius: 999px;
+    padding: 4px 10px;
+  }
+
+  .ficha-intro {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .ficha-lecturas div {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 2px;
+  }
+}
+
+@media (max-width: 480px) {
+  .sim-gallery.ficha {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+}

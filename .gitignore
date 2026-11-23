@@ -42,3 +42,6 @@ next-env.d.ts
 
 /simulacion/dist/
 /simulacion/node_modules/
+
+.agents/
+.claude/

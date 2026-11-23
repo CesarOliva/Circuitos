@@ -18,6 +18,7 @@ import {
   traces,
   type Plan,
 } from "@/components/simulador/layout";
+import { TOP, crackOn, waveOn, type Cues } from "@/components/simulador/faults";
 
 type V3 = [number, number, number];
 
@@ -76,6 +77,8 @@ function materials(palette: Palette) {
     wireRed: standard("#c9352f", 0.5),
     wireBlack: standard("#26262a", 0.5),
     cap: standard(dark ? "#5b5e64" : "#4a4b50", 0.5),
+    char: standard(dark ? "#1f1a16" : "#2b2622", 0.9),
+    fault: standard(dark ? "#ff6b75" : "#e5484d", 0.5),
     hit: new THREE.MeshBasicMaterial({ colorWrite: false, depthWrite: false }),
     shadow: new THREE.ShadowMaterial({ opacity: dark ? 0.45 : 0.16 }),
     edge: new THREE.LineBasicMaterial({ color: palette.ink, transparent: true, opacity: dark ? 0.32 : 0.42 }),
@@ -109,11 +112,13 @@ const LED_COLOURS: Record<string, string> = { red: "#e5484d", green: "#30a46c", 
 // so the root maps (x, y, z) to three's (x, z, y): a mirror, so the default view matches the 2D card.
 export type ModelSpec = Pick<Spec, "type" | "id" | "className" | "terminals" | "properties">;
 
-export function buildModel(spec: ModelSpec, palette: Palette, mount: Mount = "board"): Built {
+// With a fault's cues, the part is drawn failed: its burnt body goes black, its open terminals lose their leads, and the marks go on top.
+export function buildModel(spec: ModelSpec, palette: Palette, mount: Mount = "board", cues: Cues = {}): Built {
   const layout = LAYOUT[spec.type];
   if (!layout) throw new Error(`No model for component type "${spec.type}"`);
   const loose = mount === "loose";
   const M = materials(palette);
+  const METAL = new Set<THREE.Material>([M.steel, M.darkSteel, M.brass, M.copper, M.solder]);
   const root = new THREE.Group();
   root.scale.y = -1;
   root.rotation.x = -Math.PI / 2;
@@ -121,6 +126,7 @@ export function buildModel(spec: ModelSpec, palette: Palette, mount: Mount = "bo
   const ends = new Map<string, THREE.Vector3>();
   const disposables: Array<{ dispose(): void }> = Object.values(M);
   let owner: string | null = null;
+  let charring = false;
 
   const keep = <T extends THREE.Object3D>(object: T) => {
     if (owner !== null) {
@@ -135,10 +141,12 @@ export function buildModel(spec: ModelSpec, palette: Palette, mount: Mount = "bo
 
   // A mesh with its crease lines, cast and received shadows, filed under the current terminal.
   // A terminal's meshes get their own copy of the material, so lighting one only changes uniforms, never a program.
+  // A burnt part keeps its metal and goes black everywhere else.
   const add = (geometry: THREE.BufferGeometry, material: THREE.Material, { edges = true }: { edges?: boolean } = {}) => {
     disposables.push(geometry);
-    const own = owner !== null && material instanceof THREE.MeshStandardMaterial ? material.clone() : material;
-    if (own !== material) disposables.push(own);
+    const surface = charring && material instanceof THREE.MeshStandardMaterial && !METAL.has(material) ? M.char : material;
+    const own = owner !== null && surface instanceof THREE.MeshStandardMaterial ? surface.clone() : surface;
+    if (own !== surface) disposables.push(own);
     const mesh = new THREE.Mesh(geometry, own);
     mesh.castShadow = material !== M.hit;
     mesh.receiveShadow = true;
@@ -371,7 +379,12 @@ export function buildModel(spec: ModelSpec, palette: Palette, mount: Mount = "bo
 
   // The component --------------------------------------------------------------------
 
-  const term = (index: number, build: () => void) => within(ids[index], build);
+  // An open terminal draws nothing of the component's: no lead, no tip to clip a jumper on.
+  const openIds = new Set((cues.open ?? []).map((index) => ids[index]));
+  const term = (index: number, build: () => void) =>
+    within(ids[index], () => {
+      if (!openIds.has(ids[index])) build();
+    });
   const lead = (points: V3[], material = M.steel, r = 0.42, bend = 1.6) => tube(points, r, material, bend);
   const props = spec.properties;
 
@@ -407,6 +420,7 @@ export function buildModel(spec: ModelSpec, palette: Palette, mount: Mount = "bo
       tip(index, end);
     });
 
+  charring = Boolean(cues.burnt);
   switch (spec.type) {
     case "dc-voltage-source": {
       // On the board the battery sits in a holder; loose it is just the battery and its snap.
@@ -648,6 +662,26 @@ export function buildModel(spec: ModelSpec, palette: Palette, mount: Mount = "bo
     default:
       throw new Error(`No model for component type "${spec.type}"`);
   }
+  charring = false;
+
+  // The fault's marks, red: a cross on each open pad, a copper bridge, a crack or a waveform on the top --------------
+
+  // Where a bridge takes hold of a terminal: its pad on the board, its tip loose.
+  const contact = (index: number): V3 => (loose ? (ends.get(ids[index])!.toArray() as V3) : [layout.pads[index][0], layout.pads[index][1], 0.6]);
+  if (!loose) {
+    for (const index of cues.open ?? []) {
+      const [x, y] = layout.pads[index];
+      strip([x - 1.4, y - 1.4], [x + 1.4, y + 1.4], 0.5, 1, 0.1, M.fault);
+      strip([x - 1.4, y + 1.4], [x + 1.4, y - 1.4], 0.5, 1, 0.1, M.fault);
+    }
+  }
+  if (cues.bridge) {
+    const [from, to] = cues.bridge.map(contact);
+    const up = TOP[spec.type][2] + 2;
+    tube([from, [from[0], from[1], up], [to[0], to[1], up], to], 0.42, M.fault, 2);
+  }
+  if (cues.cracked) tube(crackOn(TOP[spec.type]), 0.22, M.fault, 0.3);
+  if (cues.wave) tube(waveOn(TOP[spec.type]), 0.22, M.fault, 0.5);
 
   // The terminal block ----------------------------------------------------------------
 

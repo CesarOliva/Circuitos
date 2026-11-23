@@ -6,6 +6,7 @@ import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import type { Spec } from "@/components/simulador/catalog";
 import { useReadout } from "@/components/iso/react/live";
 import { buildModel, type Mount, type Palette } from "./model";
+import type { Cues } from "@/components/simulador/faults";
 
 const ASPECT = 300 / 420;
 const AZIMUTH = (40 * Math.PI) / 180;
@@ -47,6 +48,7 @@ class View {
     mount: Mount,
     palette: Palette,
     private onHover: (id: string | null) => void,
+    cues: Cues | undefined,
   ) {
     this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     this.renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));
@@ -57,7 +59,7 @@ class View {
     this.renderer.domElement.className = "sim-canvas";
     host.appendChild(this.renderer.domElement);
 
-    this.model = buildModel(spec, palette, mount);
+    this.model = buildModel(spec, palette, mount, cues);
     this.scene.add(this.model.root);
     this.accent = new THREE.Color(palette.accent);
 
@@ -201,7 +203,7 @@ class View {
   }
 }
 
-export function Viewer3D({ spec, idle, mount = "board" }: { spec: Spec; idle: string; mount?: Mount }) {
+export function Viewer3D({ spec, idle, mount = "board", cues }: { spec: Spec; idle: string; mount?: Mount; cues?: Cues }) {
   const { anchor, say } = useReadout<HTMLDivElement>();
   const host = React.useRef<HTMLDivElement>(null);
   const view = React.useRef<View | null>(null);
@@ -219,7 +221,7 @@ export function Viewer3D({ spec, idle, mount = "board" }: { spec: Spec; idle: st
     const create = () => {
       if (view.current) return;
       try {
-        view.current = new View(element, spec, mount, paletteOf(element), (id) => setLit(id === null ? null : spec.terminals.findIndex((terminal) => terminal.id === id)));
+        view.current = new View(element, spec, mount, paletteOf(element), (id) => setLit(id === null ? null : spec.terminals.findIndex((terminal) => terminal.id === id)), cues);
         view.current.run();
       } catch {
         setFailed(true);
@@ -249,7 +251,7 @@ export function Viewer3D({ spec, idle, mount = "board" }: { spec: Spec; idle: st
       scheme.removeEventListener("change", rebuild);
       release();
     };
-  }, [spec, mount]);
+  }, [spec, mount, cues]);
 
   React.useEffect(() => {
     view.current?.light(lit === null ? null : spec.terminals[lit].id);

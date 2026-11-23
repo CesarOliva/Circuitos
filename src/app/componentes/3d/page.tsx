@@ -22,6 +22,7 @@ export default async function Componentes3DPage({ searchParams }: PageProps<"/co
           <nav className="sim-nav" aria-label="Vistas">
             <Link href="/componentes">Isométrico</Link>
             <span aria-current="page">3D</span>
+            <Link href="/componentes/fallos">Fallos</Link>
           </nav>
           <nav className="sim-nav" aria-label="Montaje">
             {loose ? <Link href="/componentes/3d">En placa</Link> : <span aria-current="page">En placa</span>}

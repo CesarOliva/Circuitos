@@ -100,6 +100,7 @@
 .transistor-mark { stroke: #9db4d6; }
 /* The protoboard is white plastic in every theme, like the real one. */
 .breadboard-body { fill: #f2f1ec; stroke: #c9c6bc; }
+.board-body { fill: #14233d; stroke: #2f62a6; }
 .bb-channel { fill: #d6d3ca; }
 .bb-rail-plus line,.bb-rail-minus line { stroke-width: 1.2; stroke-linecap: round; }
 .bb-rail-plus line { stroke: #d8433f; }

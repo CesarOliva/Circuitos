@@ -3,6 +3,8 @@ import Link from "next/link";
 import "@/components/iso/iso.css";
 import "@/components/simulador/simulador.css";
 import { CATALOG } from "@/components/simulador/catalog";
+import { BOARD_LIST } from "@/components/simulador/boards";
+import { BoardFigure } from "@/components/simulador/board-figure";
 import { ComponentFigure } from "@/components/simulador/figure";
 
 export const metadata: Metadata = {
@@ -29,6 +31,9 @@ export default function ComponentesPage() {
       <section className="sim-grid">
         {CATALOG.map((entry, index) => (
           <ComponentFigure key={entry.component.id} entry={entry} index={index} />
+        ))}
+        {BOARD_LIST.map((design, index) => (
+          <BoardFigure key={design.id} design={design} index={CATALOG.length + index} />
         ))}
       </section>
     </main>

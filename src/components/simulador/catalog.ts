@@ -16,7 +16,7 @@ import {
   type ElectronicComponent,
 } from "@simulacion/index.ts";
 
-export type Folder = "sources" | "actuators" | "controls" | "passive" | "semiconductors" | "sensors";
+export type Folder = "sources" | "actuators" | "controls" | "passive" | "semiconductors" | "sensors" | "boards";
 
 export interface Entry {
   component: ElectronicComponent;
@@ -119,6 +119,7 @@ const UNITS: Record<string, string> = {
   maxCollectorCurrent: "A",
   maxCollectorEmitterVoltage: "V",
   nominalBaseEmitterVoltage: "V",
+  clockHz: "Hz",
 };
 
 const PREFIXES: Array<[number, string]> = [

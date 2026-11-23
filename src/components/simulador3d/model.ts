@@ -17,7 +17,9 @@ import {
   colourCode,
   traces,
   type Plan,
+  type Plane,
 } from "@/components/simulador/layout";
+import { BOARDS, HEADER_H, PCB_T, PIN_TOP, terminalPins } from "@/components/simulador/boards";
 import { TOP, crackOn, waveOn, type Cues } from "@/components/simulador/faults";
 
 type V3 = [number, number, number];
@@ -114,7 +116,8 @@ export type ModelSpec = Pick<Spec, "type" | "id" | "className" | "terminals" | "
 
 // With a fault's cues, the part is drawn failed: its burnt body goes black, its open terminals lose their leads, and the marks go on top.
 export function buildModel(spec: ModelSpec, palette: Palette, mount: Mount = "board", cues: Cues = {}): Built {
-  const layout = LAYOUT[spec.type];
+  const board = BOARDS[spec.type];
+  const layout = board ? { footprint: board.pcb, pads: terminalPins(board).map((pin): Plane => [pin.x, pin.y]) } : LAYOUT[spec.type];
   if (!layout) throw new Error(`No model for component type "${spec.type}"`);
   const loose = mount === "loose";
   const M = materials(palette);
@@ -367,7 +370,7 @@ export function buildModel(spec: ModelSpec, palette: Palette, mount: Mount = "bo
     outlineOn(layout.footprint, 0.02);
     label(spec.id, layout.footprint.x + 1, layout.footprint.y - 2.4, 0, 3.2, "start");
 
-    traces(layout.pads, ids.length).forEach((route, index) =>
+    (board ? [] : traces(layout.pads, ids.length)).forEach((route, index) =>
       within(ids[index], () => {
         for (let step = 1; step < route.length; step++) strip(route[step - 1], route[step], 1.1, 0, 0.08, M.copper);
         const [x, y] = layout.pads[index];
@@ -659,8 +662,30 @@ export function buildModel(spec: ModelSpec, palette: Palette, mount: Mount = "bo
       });
       break;
     }
-    default:
-      throw new Error(`No model for component type "${spec.type}"`);
+    default: {
+      if (!board) throw new Error(`No model for component type "${spec.type}"`);
+      slab(board.pcb, 0, PCB_T, M.pcb, 0.3);
+      // Loose, the header blocks stay in the bag: only the bare board and its pins come out.
+      if (!loose) for (const header of board.headers) slab(header, PCB_T, HEADER_H, M.black, 0.2);
+      for (const part of board.parts) {
+        const material = part.tone === "shield" ? M.steel : part.tone === "button" ? M.white : M.black;
+        if (part.kind === "round") cylinder(part.plan.x + part.plan.w / 2, part.plan.y + part.plan.d / 2, part.plan.w / 2, PCB_T, part.h, material, 24);
+        else slab(part.plan, PCB_T, part.h, material, 0.4);
+      }
+      // Each pin stands out of its header; the ones the simulator drives are terminals, the rest only carry a printed name.
+      for (const pin of board.pins) {
+        const build = () => {
+          cylinder(pin.x, pin.y, 0.32, PCB_T + HEADER_H, PIN_TOP - PCB_T - HEADER_H, M.steel, 12, false);
+          label(pin.name, pin.x + pin.dx, pin.y + pin.dy, PCB_T, 1.8);
+        };
+        if (pin.id) {
+          term(ids.indexOf(pin.id), build);
+          // A jumper clips onto the top of the pin.
+          ends.set(pin.id, new THREE.Vector3(pin.x, pin.y, PIN_TOP));
+        } else build();
+      }
+      break;
+    }
   }
   charring = false;
 
@@ -685,7 +710,7 @@ export function buildModel(spec: ModelSpec, palette: Palette, mount: Mount = "bo
 
   // The terminal block ----------------------------------------------------------------
 
-  if (!loose) {
+  if (!loose && !board) {
     const count = ids.length;
     const plan: Plan = { x: -(count * PITCH) / 2, y: BLOCK_Y, w: count * PITCH, d: BLOCK_D, r: 1 };
     slab(plan, 0, STEP_Z, M.plastic, 0.4);

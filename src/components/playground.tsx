@@ -27,6 +27,7 @@ import type { Jumper, Locate, Placed } from "./simulador3d/circuit";
 import type { Mount } from "./simulador3d/model";
 import { BB_COLUMNS, BB_H, BB_HOLE, BB_HOLES, BB_LABEL_X, BB_LETTERS, BB_NUMBER_Y, BB_PITCH, BB_RAIL_LINES, BB_W, bbX, bbY, holeName, stripBox } from "./breadboard";
 import { PartPicture } from "./part-picture";
+import { BOARDS, specOfBoard, terminalPins, type BoardDesign } from "./simulador/boards";
 import "./playground.css";
 
 // three.js only loads once someone opens the 3D view.
@@ -39,7 +40,8 @@ type Kind =
   | "breadboard"
   | "battery" | "resistor" | "led" | "diode" | "capacitor" | "inductor"
   | "switch" | "push-button" | "potentiometer" | "ldr" | "ultrasonic"
-  | "dc-motor" | "active-buzzer" | "transistor";
+  | "dc-motor" | "active-buzzer" | "transistor"
+  | "arduino-uno-r3" | "esp32-devkit-v1";
 type Part = {
   id: string;
   kind: Kind;
@@ -52,8 +54,8 @@ type Part = {
 };
 type TerminalRef = { componentId: string; terminalId: string };
 type Wire = { id: string; from: TerminalRef; to: TerminalRef };
-type TerminalSpec = { id: string; x: number; y: number; ax: number; ay: number; labelX: number; labelY: number; anchor: "start" | "middle" | "end" };
-type GroupName = "Montaje" | "Pasivos y controles" | "Sensores y actuadores" | "Semiconductores";
+type TerminalSpec = { id: string; name?: string; x: number; y: number; ax: number; ay: number; labelX: number; labelY: number; anchor: "start" | "middle" | "end" };
+type GroupName = "Montaje" | "Pasivos y controles" | "Sensores y actuadores" | "Semiconductores" | "Microcontroladores";
 // `half` is how far the part reaches from its centre, which keeps it inside the canvas.
 type ComponentSpec = { name: string; prefix: string; unit: string; value: number; group: GroupName; terminals: TerminalSpec[]; half?: [number, number] };
 type Result = ReturnType<DCSolver["simulate"]>;
@@ -62,6 +64,24 @@ const terminal = (id: string, side: -1 | 1, anchor = 40): TerminalSpec => ({
   id, x: side * 58, y: 0, ax: side * anchor, ay: 0,
   labelX: side * 18, labelY: 4, anchor: side < 0 ? "end" : "start",
 });
+// Boards are schematic blocks, not to scale: their pins sit on rows along the long edges (UNO) or in columns down the sides (ESP32),
+// spaced to fit each terminal's hit area.
+const PIN_GAP = 26;
+const isBoard = (kind: Kind) => kind === "arduino-uno-r3" || kind === "esp32-devkit-v1";
+function boardSpec(design: BoardDesign): ComponentSpec {
+  const pins = terminalPins(design);
+  const at = (index: number, count: number) => (index - (count - 1) / 2) * PIN_GAP;
+  const row = (list: typeof pins, y: number, labelY: number): TerminalSpec[] =>
+    list.map((pin, index) => ({ id: pin.id, name: pin.name, x: at(index, list.length), y, ax: at(index, list.length), ay: y, labelX: at(index, list.length), labelY, anchor: "middle" }));
+  const column = (list: typeof pins, x: number, labelX: number, anchor: TerminalSpec["anchor"]): TerminalSpec[] =>
+    list.map((pin, index) => ({ id: pin.id, name: pin.name, x, y: at(index, list.length), ax: x, ay: at(index, list.length), labelX, labelY: at(index, list.length) + 4, anchor }));
+  const common = { name: design.name, prefix: "U", unit: "", value: 0, group: "Microcontroladores" as const };
+  if (design.id === "arduino-uno-r3") {
+    return { ...common, half: [190, 100], terminals: [...row(pins.filter(pin => pin.y > 0), -80, -62), ...row(pins.filter(pin => pin.y <= 0), 80, 62)] };
+  }
+  return { ...common, half: [60, 190], terminals: [...column(pins.filter(pin => pin.x < 0), -46, -28, "start"), ...column(pins.filter(pin => pin.x > 0), 46, 28, "end")] };
+}
+
 const specs: Record<Kind, ComponentSpec> = {
   // Its terminals are the holes, laid out in ./breadboard.
   breadboard: { name: "Protoboard", prefix: "PB", unit: "", value: 0, group: "Montaje", terminals: [], half: [BB_W / 2, BB_H / 2] },
@@ -88,9 +108,11 @@ const specs: Record<Kind, ComponentSpec> = {
     { id: "C", x: 38, y: -48, ax: 18, ay: -24, labelX: 8, labelY: -32, anchor: "middle" },
     { id: "E", x: 38, y: 48, ax: 18, ay: 24, labelX: 8, labelY: 42, anchor: "middle" },
   ] },
+  "arduino-uno-r3": boardSpec(BOARDS["arduino-uno-r3"]),
+  "esp32-devkit-v1": boardSpec(BOARDS["esp32-devkit-v1"]),
 };
 
-const groups: GroupName[] = ["Montaje", "Pasivos y controles", "Sensores y actuadores", "Semiconductores"];
+const groups: GroupName[] = ["Montaje", "Pasivos y controles", "Sensores y actuadores", "Semiconductores", "Microcontroladores"];
 const kinds = Object.keys(specs) as Kind[];
 const initialParts: Part[] = [];
 
@@ -126,7 +148,10 @@ function netlist(parts: Part[], wires: Wire[]) {
     return root;
   };
   const terminals = new Map<string, TerminalRef>();
+  // A microcontroller isn't solved here: wires to its pins are drawn, but they carry no current.
+  const microcontrollers = new Set(parts.filter(part => isBoard(part.kind)).map(part => part.id));
   for (const wire of wires) {
+    if (microcontrollers.has(wire.from.componentId) || microcontrollers.has(wire.to.componentId)) continue;
     for (const end of [wire.from, wire.to]) if (!boards.has(end.componentId)) terminals.set(key(end), end);
     parent.set(find(key(wire.from)), find(key(wire.to)));
   }
@@ -157,6 +182,8 @@ function createComponent(part: Part) {
     case "dc-motor": return new DCMotor(part.id, value, 0.1, 3000, 1.2);
     case "active-buzzer": return new ActiveBuzzer(part.id, value, 0.03);
     case "transistor": return new Transistor(part.id, part.polarity ?? "NPN", value, 0.6, 40);
+    case "arduino-uno-r3":
+    case "esp32-devkit-v1": throw new Error("Las placas no son componentes eléctricos del circuito");
   }
 }
 
@@ -234,6 +261,14 @@ function ComponentArt({ part, lit, active }: { part: Part; lit: boolean; active:
       <text className="part-name" x="0" y="59">BJT {part.polarity ?? "NPN"}</text>
       <text className="part-value" x="0" y="74">β {part.value}</text>
   </>;
+    case "arduino-uno-r3":
+    case "esp32-devkit-v1": {
+      const [w, h] = specs[part.kind].half ?? [0, 0];
+      return <>
+        <rect className="part-body board-body" x={-w} y={-h} width={2 * w} height={2 * h} rx="8" />
+        <text className="part-name" x="0" y="4">{specs[part.kind].name}</text>
+      </>;
+    }
   default: return null;
   }
 }
@@ -288,6 +323,7 @@ export default function Playground() {
   const selectedResult = result?.components.find(component => component.componentId === selectedId);
   const ledLit = Boolean(result?.success && result.components.some(component => component.type === "led" && component.current > 0.002));
   const placed = useMemo<Placed[]>(() => parts.flatMap(part => {
+    if (isBoard(part.kind)) return [{ spec: { ...specOfBoard(BOARDS[part.kind]), id: part.id }, x: part.x, y: part.y, glow: false } as Placed];
     try {
       const component = createComponent(part);
       const current = result?.components.find(item => item.componentId === part.id)?.current ?? 0;
@@ -320,7 +356,7 @@ export default function Playground() {
     setParts(current => [...current, part]);
     setSelectedId(part.id);
     setResult(null);
-    setMessage(kind === "breadboard" ? "Protoboard añadida. Por dentro, cada columna une sus agujeros a–e y f–j, y cada riel va de punta a punta." : `${spec.name} añadido. Conecta sus terminales.`);
+    setMessage(kind === "breadboard" ? "Protoboard añadida. Por dentro, cada columna une sus agujeros a–e y f–j, y cada riel va de punta a punta." : isBoard(kind) ? `${spec.name} añadida. Cablea sus pines; el circuito no la resuelve.` : `${spec.name} añadido. Conecta sus terminales.`);
   }
 
   function connectTerminal(ref: TerminalRef) {
@@ -355,7 +391,7 @@ export default function Playground() {
   function simulate() {
     const circuit = new Circuit("playground", "Mi circuito");
     try {
-      for (const part of parts) if (part.kind !== "breadboard") circuit.addComponent(createComponent(part));
+      for (const part of parts) if (part.kind !== "breadboard" && !isBoard(part.kind)) circuit.addComponent(createComponent(part));
       netlist(parts, wires).forEach((link, index) => circuit.addConnection(new Connection(`N${index + 1}`, link.from, link.to)));
       const nextResult = new DCSolver().simulate(circuit);
       setResult(nextResult);
@@ -483,7 +519,7 @@ export default function Playground() {
       {specs[part.kind].terminals.map(item => {
         const pending = pendingTerminal?.componentId === part.id && pendingTerminal.terminalId === item.id;
         return <g key={item.id} className={`terminal-button${pending ? " terminal-pending" : ""}`} transform={`translate(${item.x} ${item.y})`} onPointerDown={event => event.stopPropagation()} onClick={event => { event.stopPropagation(); connectTerminal({ componentId: part.id, terminalId: item.id }); }} onKeyDown={event => { if (event.key === "Enter" || event.key === " ") { event.stopPropagation(); connectTerminal({ componentId: part.id, terminalId: item.id }); } }} tabIndex={0} role="button" aria-label={`Conectar terminal ${item.id} de ${specs[part.kind].name} ${part.id}`}>
-          <circle r="13" className="terminal-hit" /><circle r="5" className="terminal-dot" /><text className="terminal-label" x={item.labelX} y={item.labelY} textAnchor={item.anchor}>{item.id}</text>
+          <circle r="13" className="terminal-hit" /><circle r="5" className="terminal-dot" /><text className="terminal-label" x={item.labelX} y={item.labelY} textAnchor={item.anchor}>{item.name ?? item.id}</text>
         </g>;
       })}
       {componentResult && <text className="component-readout" x="0" y="90">{(componentResult.voltage).toFixed(2)} V · {(componentResult.current * 1000).toFixed(1)} mA</text>}

@@ -28,6 +28,12 @@ export interface Footprint {
   pads: Plane[];
 }
 
+export interface FootprintLandmark {
+  id: string;
+  name: string;
+  point: Plane;
+}
+
 export const LAYOUT: Record<string, Footprint> = {
   "dc-voltage-source": { footprint: { x: -15, y: -29, w: 30, d: 26, r: 2 }, pads: [[-22, -2], [22, -2]] },
   "dc-motor": { footprint: { x: -16, y: -23, w: 48, d: 18, r: 1 }, pads: [[-34, -10], [-28, -18]] },
@@ -44,6 +50,18 @@ export const LAYOUT: Record<string, Footprint> = {
   ldr: { footprint: { x: -7, y: CY - 7, w: 14, d: 14, r: 7 }, pads: [[-2.6, -11], [2.6, -11]] },
   ultrasonic: { footprint: { x: -23, y: -32, w: 46, d: 23, r: 1 }, pads: [[-4.5, -6], [-1.5, -6], [1.5, -6], [4.5, -6]] },
 };
+
+export function footprintLandmarks(footprint: Plan): FootprintLandmark[] {
+  const right = footprint.x + footprint.w;
+  const bottom = footprint.y + footprint.d;
+  return [
+    { id: "P1", name: "Esquina superior izquierda", point: [footprint.x, footprint.y] },
+    { id: "P2", name: "Esquina superior derecha", point: [right, footprint.y] },
+    { id: "P3", name: "Esquina inferior derecha", point: [right, bottom] },
+    { id: "P4", name: "Esquina inferior izquierda", point: [footprint.x, bottom] },
+    { id: "Centro", name: "Centro del componente", point: [footprint.x + footprint.w / 2, footprint.y + footprint.d / 2] },
+  ];
+}
 
 export const cellX = (index: number, count: number) => (index - (count - 1) / 2) * PITCH;
 

@@ -18,6 +18,7 @@ export default function ComponentesPage() {
         <nav className="sim-nav" aria-label="Vistas">
           <span aria-current="page">Isométrico</span>
           <Link href="/componentes/3d">3D</Link>
+          <Link href="/componentes/coordenadas">Coordenadas</Link>
         </nav>
         <h1>Componentes del simulador</h1>
         <p>

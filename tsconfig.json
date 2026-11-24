@@ -18,10 +18,8 @@
         "name": "next"
       }
     ],
-    "allowImportingTsExtensions": true,
     "paths": {
-      "@/*": ["./src/*"],
-      "@simulacion/*": ["./simulacion/src/*"]
+      "@/*": ["./src/*"]
     }
   },
   "include": [

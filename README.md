@@ -20,10 +20,6 @@ You can start editing the page by modifying `app/page.tsx`. The page auto-update
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
-## Coordenadas del simulador
-
-En `/componentes/coordenadas` se puede consultar el mapa de cada componente, con sus cuatro esquinas, centro y terminales. Las coordenadas se derivan de `src/components/simulador/layout.ts`, la geometría compartida por las vistas isométrica y 3D. El origen `(0, 0)` está en el centro del protoboard y las medidas son unidades del modelo, no milímetros calibrados.
-
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:

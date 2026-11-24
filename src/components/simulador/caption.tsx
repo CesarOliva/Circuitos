@@ -1,9 +1,16 @@
 import { formatProperty, type Spec } from "./catalog";
+import { cueNotes, type Fault } from "./faults";
 
 // Under each card: the class, its name and id, and every property from getProperties().
-export function Caption({ spec }: { spec: Spec }) {
+// A failed part also says which failure it is, what the datasheet says it does, and what the drawing marks.
+export function Caption({ spec, fault }: { spec: Spec; fault?: Fault }) {
   return (
     <>
+      {fault ? (
+        <span className="sim-fault">
+          <strong>{fault.label}.</strong> {fault.symptom} En el dibujo: {cueNotes(fault.cues, spec.terminals.map((terminal) => terminal.id)).join("; ")}.
+        </span>
+      ) : null}
       <span className="sim-class">
         <code>{spec.className}</code> · {spec.name} · <code>{spec.id}</code> · <code>type: {spec.type}</code>
       </span>

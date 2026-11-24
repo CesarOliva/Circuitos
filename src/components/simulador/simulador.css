@@ -154,6 +154,59 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* Failures: one section per component, each fault as a 2D card and a 3D card side by side. */
+.sim-fault-group {
+  max-width: 1240px;
+  margin: 0 auto 44px;
+}
+
+.sim-fault-group > h2 {
+  color: var(--anatomy-strong);
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 16px;
+}
+
+.sim-fault-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 380px), 1fr));
+  gap: 28px;
+  margin-bottom: 28px;
+}
+
+.sim-fault-row .iso-figure {
+  margin: 0;
+}
+
+.sim-fault {
+  display: block;
+  color: var(--anatomy-text);
+  font-size: 12.5px;
+  line-height: 1.5;
+  margin-bottom: 4px;
+}
+
+.sim-fault strong {
+  color: var(--anatomy-red);
+  font-weight: 600;
+}
+
+/* A fault's marks: the cross on an open pad, the bridge, the crack and the waveform. */
+.iso-line.sim-mark {
+  stroke-width: 1.5px;
+}
+
+/* A burnt part: its body goes black, its edges stay so the outline still reads. */
+.sim-charred .iso-fill,
+.sim-charred .iso-top,
+.sim-charred .iso-shade {
+  fill: #1f1a16;
+}
+
+.sim-charred .iso-top {
+  fill: #2b2521;
+}
+
 /* Pointer targets: invisible, wider than the lines they cover. */
 .sim-hit {
   fill: none;

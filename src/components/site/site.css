@@ -1,0 +1,163 @@
+/* Header global: barra pegajosa con la marca, la navegación entre secciones y el cambio de tema. */
+
+.site-header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  border-bottom: 1px solid var(--line);
+  background: color-mix(in srgb, var(--background) 80%, transparent);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  transition: background 0.25s ease, border-color 0.25s ease;
+}
+
+.site-header-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  width: min(1440px, 100%);
+  height: 60px;
+  margin: 0 auto;
+  padding: 0 48px;
+}
+
+.site-brand {
+  display: inline-flex;
+  align-items: center;
+  flex: none;
+  gap: 10px;
+  color: var(--foreground);
+  font-size: 15px;
+  font-weight: 650;
+  text-decoration: none;
+}
+
+.site-brand-mark {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  background: linear-gradient(140deg, var(--accent-bright), var(--accent) 60%, #1259d6);
+  color: #fff;
+  font-weight: 700;
+  box-shadow: var(--glow);
+}
+
+.site-nav {
+  display: flex;
+  flex: 1 1 auto;
+  min-width: 0;
+  gap: 4px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.site-nav::-webkit-scrollbar {
+  display: none;
+}
+
+.site-nav a {
+  padding: 7px 12px;
+  border-radius: 999px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 550;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+}
+
+.site-nav a:hover {
+  background: var(--surface-2);
+  color: var(--foreground);
+}
+
+.site-nav a[aria-current="page"] {
+  background: var(--accent-soft);
+  color: var(--accent-ink);
+  box-shadow: inset 0 0 0 1px rgb(31 143 255 / 40%);
+}
+
+.site-nav a:focus-visible,
+.site-brand:focus-visible,
+.theme-toggle:focus-visible {
+  outline: 3px solid var(--accent-bright);
+  outline-offset: 2px;
+}
+
+.site-login {
+  flex: none;
+  padding: 7px 14px;
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--foreground);
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.site-login:hover {
+  border-color: var(--accent);
+  box-shadow: 0 0 12px rgb(31 143 255 / 20%);
+}
+
+.site-login[aria-current="page"] {
+  border-color: var(--accent);
+  color: var(--accent-ink);
+}
+
+.theme-toggle {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 34px;
+  height: 34px;
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--muted);
+  cursor: pointer;
+  transition: color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.theme-toggle:hover {
+  border-color: var(--accent);
+  color: var(--foreground);
+  box-shadow: 0 0 12px rgb(31 143 255 / 25%);
+}
+
+/* En oscuro se ofrece el sol; en claro, la luna. */
+.theme-icon-moon { display: none; }
+[data-theme="light"] .theme-icon-sun { display: none; }
+[data-theme="light"] .theme-icon-moon { display: block; }
+
+@media (max-width: 760px) {
+  .site-header-inner {
+    gap: 10px;
+    height: 54px;
+    padding: 0 18px;
+  }
+
+  .site-brand-name { display: none; }
+
+  .site-nav {
+    justify-content: flex-start;
+    -webkit-mask-image: linear-gradient(90deg, #000 82%, transparent);
+    mask-image: linear-gradient(90deg, #000 82%, transparent);
+  }
+
+  .site-nav a {
+    padding: 6px 10px;
+    font-size: 12px;
+  }
+
+  .site-login {
+    padding: 6px 10px;
+    font-size: 12px;
+  }
+}

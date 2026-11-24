@@ -1,4 +1,4 @@
-/* Always dark, in the playground's black and electric blue, whatever the system theme. */
+/* En el negro y azul eléctrico del playground; el tema lo decide [data-theme] en <html>. */
 .iso.sim-gallery {
   --anatomy-page: #05070c; --anatomy-card: #0a0e17; --anatomy-text: #8392ad; --anatomy-strong: #e6edf9; --anatomy-muted: #5d6b86;
   --anatomy-paper: #0a0e17; --anatomy-face: #0e1420; --anatomy-top: #111827;
@@ -8,6 +8,17 @@
   --anatomy-halo: #02040a; --anatomy-halo-opacity: .9; --anatomy-dot: #5cb8ff;
   --anatomy-red: #ff6b75; --anatomy-green: #4fd8a0; --anatomy-blue: #1f8fff;
   color-scheme: dark;
+}
+
+[data-theme="light"] .iso.sim-gallery {
+  --anatomy-page: #f4f6fb; --anatomy-card: #ffffff; --anatomy-text: #4a5c7e; --anatomy-strong: #0c1527; --anatomy-muted: #7585a5;
+  --anatomy-paper: #ffffff; --anatomy-face: #f3f6fc; --anatomy-top: #eef2fa;
+  --anatomy-shade-0: #d9e0ee; --anatomy-shade-1: #e2e8f3; --anatomy-shade-2: #eaeff7; --anatomy-shade-3: #f1f4fa;
+  --anatomy-lit-top: #ffffff; --anatomy-lit-shade: #e8eefb;
+  --anatomy-hi: #1c2a44; --anatomy-mid: #8294b4; --anatomy-lo: #aebdd6; --anatomy-faint: #d2dcec; --anatomy-lit: #0b6fdd;
+  --anatomy-halo: #90a0bd; --anatomy-halo-opacity: .3; --anatomy-dot: #0b6fdd;
+  --anatomy-red: #e5484d; --anatomy-green: #188f5e; --anatomy-blue: #0b6fdd;
+  color-scheme: light;
 }
 
 .sim-gallery {

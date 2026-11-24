@@ -2,7 +2,6 @@
 
 import { useMemo, useRef, useState, type PointerEvent } from "react";
 import dynamic from "next/dynamic";
-import Link from "next/link";
 import {
   ActiveBuzzer,
   Breadboard,
@@ -544,17 +543,10 @@ export default function Playground() {
 
   return (
     <main className="playground">
-      <header className="play-header">
-        <Link className="brand" href="/" aria-label="Circuitos, inicio"><span className="brand-mark">C</span> Circuitos</Link>
-        <div className="header-note"><span className="status-dot" /> Simulador básico</div>
-      </header>
-
       <section className="intro">
-        <div>
-          <h1>Arma tu circuito.</h1>
-          <p>Agrega componentes, conecta sus terminales y descubre qué pasa al cerrar el circuito.</p>
-        </div>
-        <div className="step-hint"><span>Playground</span> Componentes, controles y sensores en un mismo lugar.</div>
+        <span className="intro-eyebrow"><span className="live-dot" /> Playground · simulador básico</span>
+        <h1>Arma tu circuito</h1>
+        <p>Agrega componentes, conecta sus terminales y descubre qué pasa al cerrar el circuito.</p>
       </section>
 
       <section className="workspace" aria-label="Constructor de circuitos">

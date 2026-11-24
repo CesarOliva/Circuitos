@@ -12,7 +12,7 @@ export const ficha: Ficha = {
     "Una fuente real tiene resistencia interna y un límite de corriente; cuando la carga pide demasiado, su voltaje cae. La fuente del simulador es ideal: mantiene el voltaje sin importar la corriente.",
   ],
   especificaciones: [
-    { parametro: "Voltaje de salida", simulador: "9 V (editable, cualquier valor finito, incluso negativo)", real: "Pila 9 V: ~9.6 V nueva, ~7 V descargada; pila AA: 1.5 V" },
+    { parametro: "Voltaje de salida", simulador: "9 V (editable, cualquier valor finito, incluso negativo)", real: "Pila 9 V alcalina: ~9.5 V nueva; muchos aparatos dejan de funcionar hacia ~7 V y el fabricante la da por agotada entre 4.8 y 5.4 V (0.8–0.9 V por celda). Pila AA: 1.5 V" },
     { parametro: "Corriente máxima", simulador: "Sin límite (Infinity)", real: "Pila 9 V alcalina: decenas de mA continuos; fuente de laboratorio: ajustable" },
     { parametro: "Resistencia interna", simulador: "0 Ω (fuente ideal)", real: "Pila 9 V alcalina: ~1–2 Ω; crece al descargarse" },
     { parametro: "Polaridad", simulador: "Terminal + y terminal −", real: "Marcada en la carcasa; invertirla daña componentes polarizados" },

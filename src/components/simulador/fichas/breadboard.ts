@@ -12,11 +12,11 @@ export const ficha: Ficha = {
     "El canal central está pensado para los circuitos integrados DIP: cada pata queda en una tira distinta.",
   ],
   especificaciones: [
-    { parametro: "Filas", simulador: "30 columnas numeradas", real: "Media placa: 30; completa (830 puntos): 63" },
+    { parametro: "Columnas numeradas", simulador: "30", real: "Media placa (400 puntos): 30; completa (830 puntos): 63" },
     { parametro: "Tiras por columna", simulador: "2 (a–e, f–j)", real: "2" },
     { parametro: "Rieles de alimentación", simulador: "4 (top+, top−, bottom+, bottom−), continuos", real: "4; en algunas placas largas el riel está cortado a la mitad" },
     { parametro: "Puntos de conexión", simulador: "420 (300 de tiras + 120 de rieles)", real: "400 o 830 típicos" },
-    { parametro: "Límite eléctrico", simulador: "No se modela", real: "Solo baja tensión y corrientes de ~1 A como máximo; nunca tensión de red" },
+    { parametro: "Límite eléctrico", simulador: "No se modela", real: "Solo baja tensión; el límite de corriente lo fija cada fabricante (orientativo: ~1 A). Nunca tensión de red" },
   ],
   pines: [
     { id: "a1 … e30", nombre: "Tira superior de cada columna", funcion: "Los cinco agujeros a–e de una misma columna están unidos." },
@@ -31,7 +31,7 @@ export const ficha: Ficha = {
       "Por eso no tiene voltaje ni corriente propios: solo define qué terminales quedan conectados.",
     ],
     editable: "Posición en el área de trabajo; los componentes se conectan a sus agujeros.",
-    lecturas: [{ clave: "rows / connectedGroups / powerRails", significado: "30 filas, 60 tiras y 4 rieles." }],
+    lecturas: [{ clave: "rows / connectedGroups / powerRails", significado: "30 columnas, 60 tiras y 4 rieles." }],
     limitaciones: ["Contactos perfectos: no hay falsos contactos ni resistencia de contacto."],
   },
   pruebas: [

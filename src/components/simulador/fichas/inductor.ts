@@ -41,14 +41,14 @@ export const ficha: Ficha = {
     {
       titulo: "El inductor en DC es un cable",
       montaje: "Batería 9 V → resistencia 470 Ω → inductor → batería.",
-      pasos: ["Arma el circuito en serie.", "Simula y selecciona el inductor."],
-      esperado: "Voltaje en el inductor 0 V; corriente ≈ 19.1 mA, igual que sin inductor.",
+      pasos: ["Arma el circuito en serie.", "Simúlalo con el validador de esta ficha (DCR de 1 mΩ): el playground todavía rechaza el inductor ideal (ver limitaciones)."],
+      esperado: "Voltaje en el inductor ≈ 0 V (unos 19 µV con 1 mΩ); corriente ≈ 19.1 mA, igual que sin inductor.",
     },
     {
       titulo: "Exceso de corriente",
       montaje: "Batería 9 V → resistencia de 5 Ω → inductor.",
-      pasos: ["Cambia la resistencia a 5 Ω.", "Simula."],
-      esperado: "I = 1.8 A: maxCurrentExceeded = sí.",
+      pasos: ["Cambia la resistencia a 5 Ω.", "Simula, con la misma salvedad de la prueba anterior."],
+      esperado: "I ≈ 1.8 A: maxCurrentExceeded = sí. La resistencia de 5 Ω disipa ≈ 16 W, así que también marca ratedPowerExceeded (su límite es 0.25 W).",
     },
   ],
   fallos: [

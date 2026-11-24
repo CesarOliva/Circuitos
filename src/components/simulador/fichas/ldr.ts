@@ -29,14 +29,18 @@ export const ficha: Ficha = {
       { clave: "illuminanceLux / resistanceOhms", significado: "Luz aplicada y resistencia resultante." },
       { clave: "voltage / current", significado: "Para leerla como divisor." },
     ],
-    limitaciones: ["Respuesta instantánea: una LDR real tarda decenas de ms en reaccionar.", "No depende del color de la luz."],
+    limitaciones: [
+      "Respuesta instantánea: una LDR real tarda decenas de ms en reaccionar.",
+      "No depende del color de la luz.",
+      "No avisa si se supera su potencia máxima (100 mW en el GL5528).",
+    ],
   },
   pruebas: [
     {
       titulo: "LED que responde a la luz",
-      montaje: "Batería 9 V → LDR → LED → −.",
+      montaje: "Batería 9 V → LDR → resistencia 470 Ω → LED → −.",
       pasos: ["Simula con 10 lx.", "Cambia a 100 lx y luego a 1000 lx."],
-      esperado: "10 lx: R = 10 kΩ e I ≈ 0.69 mA (apagado). 100 lx: R ≈ 2 kΩ e I ≈ 3.5 mA (enciende). 1000 lx: R ≈ 398 Ω e I ≈ 17 mA.",
+      esperado: "10 lx: R = 10 kΩ e I ≈ 0.66 mA (apagado). 100 lx: R ≈ 2 kΩ e I ≈ 2.8 mA (enciende). 1000 lx: R ≈ 398 Ω e I ≈ 8 mA. La resistencia de 470 Ω deja a la LDR en ≈25 mW a 1000 lx; sin ella pasarían ≈17 mA y la LDR disiparía ≈0.12 W, más que sus 100 mW.",
     },
     {
       titulo: "Divisor de voltaje con LDR",

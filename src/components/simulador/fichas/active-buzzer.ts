@@ -31,7 +31,11 @@ export const ficha: Ficha = {
       { clave: "active", significado: "Si está sonando." },
       { clave: "current", significado: "Consumo." },
     ],
-    limitaciones: ["Umbral estricto: un zumbador real suena, más débil, por debajo de su voltaje nominal.", "No genera audio."],
+    limitaciones: [
+      "Umbral estricto: un zumbador real suena, más débil, por debajo de su voltaje nominal.",
+      "Ignora la polaridad: usa |V|, así que conectado al revés también aparece activo, aunque uno real no sonaría.",
+      "No genera audio.",
+    ],
   },
   pruebas: [
     {
@@ -56,7 +60,7 @@ export const ficha: Ficha = {
   fallos: [
     { fallo: "Polaridad invertida", efecto: "No suena." },
     { fallo: "Oscilador dañado", efecto: "Sonido débil, distorsionado o ausente." },
-    { fallo: "Conectado a un pin sin transistor", efecto: "Funciona con ~30 mA, pero está cerca del límite de 40 mA por pin del Arduino." },
+    { fallo: "Conectado a un pin sin transistor", efecto: "Consume ~30 mA: supera los 20 mA recomendados por pin del Arduino y se acerca al máximo absoluto de 40 mA. Mejor manejarlo con un transistor." },
   ],
   referencias: [],
 };

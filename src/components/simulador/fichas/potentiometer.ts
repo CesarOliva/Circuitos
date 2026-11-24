@@ -43,9 +43,9 @@ export const ficha: Ficha = {
     },
     {
       titulo: "Regulador de brillo de un LED",
-      montaje: "Batería 9 V → A; W → ánodo del LED; cátodo → −. B queda libre.",
-      pasos: ["Simula con el cursor en 0.5.", "Baja el cursor a 0.1 y simula de nuevo."],
-      esperado: "En 0.5 (5 kΩ) circulan ≈1.4 mA y el playground no da el LED por encendido (umbral 2 mA). En 0.1 (1 kΩ) circulan ≈6.9 mA y el LED enciende.",
+      montaje: "Batería 9 V → A; W → resistencia 470 Ω → ánodo del LED; cátodo → −. B queda libre.",
+      pasos: ["Simula con el cursor en 0.5.", "Baja el cursor a 0.1 y simula de nuevo.", "Llévalo a 0 y simula."],
+      esperado: "En 0.5 (5 kΩ + 470 Ω) circulan ≈1.3 mA y el playground no da el LED por encendido (umbral 2 mA). En 0.1 (1 kΩ + 470 Ω) circulan ≈4.7 mA y el LED enciende. En 0 solo queda la resistencia fija: ≈14.7 mA. Sin ella, el LED quedaría conectado directo a 9 V.",
     },
   ],
   fallos: [

@@ -14,10 +14,12 @@ export const ficha: Ficha = {
   especificaciones: [
     { parametro: "Polaridad", simulador: "NPN (la clase admite PNP)", real: "2N2222A: NPN" },
     { parametro: "Ganancia β (hFE)", simulador: "100 (editable)", real: "2N2222A: 100–300 a 150 mA" },
-    { parametro: "Corriente máxima de colector", simulador: "0.6 A en el playground; 0.2 A en la galería", real: "2N2222A: 600 mA" },
+    { parametro: "Corriente máxima de colector", simulador: "0.6 A en el playground; 0.2 A en la galería", real: "2N2222A: 600 mA (los 0.2 A de la galería corresponden a otro transistor, como el 2N3904)" },
     { parametro: "VCE máxima", simulador: "40 V", real: "2N2222A: VCEO = 40 V (varía por fabricante)" },
     { parametro: "VBE de encendido", simulador: "0.7 V", real: "0.6–0.7 V; hasta ~1.2 V en saturación fuerte" },
-    { parametro: "Potencia", simulador: "—", real: "TO-92: ~625 mW" },
+    { parametro: "VCE de saturación", simulador: "No se modela", real: "2N2222A: ≤ 0.3 V a 150 mA; ≤ 1 V a 500 mA" },
+    { parametro: "VEB máxima (inversa)", simulador: "—", real: "2N2222A: 6 V" },
+    { parametro: "Potencia", simulador: "No se vigila", real: "TO-92: ~625 mW" },
   ],
   pines: [
     { id: "B", nombre: "Base", funcion: "Control: siempre a través de una resistencia (p. ej. 1–10 kΩ)." },

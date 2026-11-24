@@ -17,6 +17,7 @@ export const ficha: Ficha = {
     { parametro: "Polaridad", simulador: "Playground: sin polaridad (terminales 1/2); galería: polarizado (+/−)", real: "Electrolítico: polarizado; cerámico: no" },
     { parametro: "ESR (resistencia serie equivalente)", simulador: "0 Ω", real: "Electrolítico 100 µF: décimas de Ω a algunos Ω; crece con la edad" },
     { parametro: "Tolerancia", simulador: "—", real: "±20 % típico en electrolíticos" },
+    { parametro: "Voltaje inverso", simulador: "No se detecta en el playground", real: "Electrolítico: no admite inversa más allá de ~1 V" },
   ],
   pines: [
     { id: "+", nombre: "Positivo", funcion: "Al potencial más alto. En el playground (sin polaridad) este terminal se llama 1." },
@@ -33,7 +34,7 @@ export const ficha: Ficha = {
       { clave: "current", significado: "Siempre 0 en DC." },
       { clave: "ratedVoltageExceeded", significado: "Verdadero si |V| supera los 25 V nominales." },
     ],
-    limitaciones: ["En el playground no se ve la curva de carga RC; solo el estado final.", "No detecta polaridad invertida en el modo sin polaridad del playground."],
+    limitaciones: ["En el playground no se ve la curva de carga RC; solo el estado final.", "No detecta polaridad invertida en el modo sin polaridad del playground. Un electrolítico real conectado al revés se daña, así que revisa la franja aunque el simulador no avise."],
   },
   pruebas: [
     {

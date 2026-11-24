@@ -1,0 +1,388 @@
+/* Always dark, in the playground's black and electric blue, whatever the system theme. */
+.iso.sim-gallery {
+  --anatomy-page: #05070c; --anatomy-card: #0a0e17; --anatomy-text: #8392ad; --anatomy-strong: #e6edf9; --anatomy-muted: #5d6b86;
+  --anatomy-paper: #0a0e17; --anatomy-face: #0e1420; --anatomy-top: #111827;
+  --anatomy-shade-0: #070a11; --anatomy-shade-1: #090d15; --anatomy-shade-2: #0b101a; --anatomy-shade-3: #0d131f;
+  --anatomy-lit-top: #16203a; --anatomy-lit-shade: #0f172a;
+  --anatomy-hi: #c9d3e6; --anatomy-mid: #3a4a66; --anatomy-lo: #283650; --anatomy-faint: #1a2335; --anatomy-lit: #5cb8ff;
+  --anatomy-halo: #02040a; --anatomy-halo-opacity: .9; --anatomy-dot: #5cb8ff;
+  --anatomy-red: #ff6b75; --anatomy-green: #4fd8a0; --anatomy-blue: #1f8fff;
+  color-scheme: dark;
+}
+
+.sim-gallery {
+  min-height: 100%;
+  background: var(--anatomy-page);
+  color: var(--anatomy-text);
+  padding: 48px 24px 72px;
+}
+
+.sim-header {
+  max-width: 1240px;
+  margin: 0 auto 28px;
+  display: grid;
+  gap: 6px;
+}
+
+.sim-header h1 {
+  color: var(--anatomy-strong);
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.sim-header p {
+  color: var(--anatomy-muted);
+  font-size: 14px;
+  max-width: 68ch;
+}
+
+.sim-navs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+}
+
+.sim-nav {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 10px;
+  font-family: var(--anatomy-mono);
+  font-size: 12px;
+}
+
+.sim-nav > * {
+  padding: 4px 10px;
+  border-radius: 999px;
+  box-shadow: 0 0 0 1px var(--anatomy-lo);
+  color: var(--anatomy-text);
+}
+
+.sim-nav [aria-current="page"] {
+  background: var(--anatomy-strong);
+  color: var(--anatomy-page);
+  box-shadow: none;
+}
+
+.sim-nav a:hover {
+  box-shadow: 0 0 0 1px var(--anatomy-mid);
+  color: var(--anatomy-strong);
+}
+
+/* 3D views keep the card's 420 × 300 frame. */
+.sim-canvas-host {
+  position: relative;
+  aspect-ratio: 420 / 300;
+}
+
+.sim-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  cursor: grab;
+  touch-action: pan-y;
+}
+
+.sim-canvas:active {
+  cursor: grabbing;
+}
+
+.sim-fallback {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: var(--anatomy-muted);
+  font-size: 13px;
+}
+
+.sim-grid {
+  max-width: 1240px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 380px), 1fr));
+  gap: 28px;
+}
+
+.sim-grid .iso-figure {
+  margin: 0;
+}
+
+.sim-coordinate-grid {
+  max-width: 1240px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 520px), 1fr));
+  gap: 20px;
+}
+
+.sim-coordinate-card {
+  min-width: 0;
+  padding: 18px;
+  border: 1px solid var(--anatomy-lo);
+  border-radius: 6px;
+  background: var(--anatomy-card);
+}
+
+.sim-coordinate-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.sim-coordinate-heading h2 {
+  color: var(--anatomy-strong);
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.sim-coordinate-heading span,
+.sim-coordinate-list {
+  font-family: var(--anatomy-mono);
+}
+
+.sim-coordinate-heading span {
+  color: var(--anatomy-muted);
+  font-size: 11px;
+}
+
+.sim-coordinate-content {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(210px, 0.9fr);
+  align-items: start;
+  gap: 14px;
+}
+
+.sim-coordinate-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.sim-coordinate-board {
+  fill: var(--anatomy-paper);
+  stroke: var(--anatomy-mid);
+  stroke-width: 1.4;
+}
+
+.sim-coordinate-axis {
+  stroke: var(--anatomy-faint);
+  stroke-dasharray: 3 4;
+  stroke-width: 0.8;
+}
+
+.sim-coordinate-origin {
+  fill: var(--anatomy-strong);
+}
+
+.sim-coordinate-origin-label {
+  fill: var(--anatomy-text);
+  font-size: 7px;
+}
+
+.sim-coordinate-footprint {
+  fill: var(--anatomy-lit-shade);
+  fill-opacity: 0.5;
+  stroke: var(--anatomy-mid);
+  stroke-dasharray: 2 2;
+  stroke-width: 1;
+}
+
+.sim-coordinate-landmark circle {
+  fill: var(--anatomy-red);
+  stroke: var(--anatomy-paper);
+  stroke-width: 0.8;
+}
+
+.sim-coordinate-center circle {
+  fill: var(--anatomy-blue);
+  stroke: var(--anatomy-paper);
+  stroke-width: 0.8;
+}
+
+.sim-coordinate-landmark text,
+.sim-coordinate-center text,
+.sim-coordinate-terminal text {
+  fill: var(--anatomy-strong);
+  font-family: var(--anatomy-mono);
+  font-size: 7px;
+}
+
+.sim-coordinate-terminal circle {
+  fill: var(--anatomy-green);
+  stroke: var(--anatomy-paper);
+  stroke-width: 0.8;
+}
+
+.sim-coordinate-list {
+  display: grid;
+  gap: 7px;
+  font-size: 10px;
+}
+
+.sim-coordinate-section {
+  padding-top: 5px;
+  color: var(--anatomy-muted);
+  font-size: 9px;
+  text-transform: uppercase;
+}
+
+.sim-coordinate-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+}
+
+.sim-coordinate-row dt {
+  overflow-wrap: anywhere;
+}
+
+.sim-coordinate-row dd {
+  color: var(--anatomy-strong);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* The component's name is the card's title: larger and stronger than the kit's corner label. */
+.sim-grid .iso-plate-corner[data-corner="title"] {
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--anatomy-strong);
+  top: -3px;
+}
+
+.sim-stage {
+  outline: none;
+  border-radius: 4px;
+}
+
+.sim-stage:focus-visible {
+  box-shadow: 0 0 0 1px var(--anatomy-mid);
+}
+
+.sim-class code,
+.sim-properties {
+  font-family: var(--anatomy-mono);
+}
+
+.sim-class {
+  color: var(--anatomy-text);
+}
+
+.sim-properties {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 16px;
+  font-size: 11.5px;
+}
+
+.sim-properties div {
+  display: flex;
+  gap: 6px;
+}
+
+.sim-properties dd {
+  color: var(--anatomy-strong);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Pointer targets: invisible, wider than the lines they cover. */
+.sim-hit {
+  fill: none;
+  stroke: transparent;
+  stroke-width: 7px;
+  pointer-events: stroke;
+}
+
+.sim-hit-area {
+  fill: transparent;
+  stroke: none;
+}
+
+.sim-hole {
+  fill: var(--anatomy-shade-0);
+  stroke: none;
+}
+
+@media (max-width: 700px) {
+  .sim-coordinate-content {
+    grid-template-columns: 1fr;
+  }
+
+  .sim-coordinate-svg {
+    max-width: 420px;
+    margin: 0 auto;
+  }
+}
+
+/* A lit terminal: its pad, trace, leads and block cell. */
+[data-terminal] .iso-line,
+[data-terminal] .iso-edge {
+  transition: stroke 160ms var(--anatomy-ease);
+}
+
+[data-terminal][data-on] .iso-line,
+[data-terminal][data-on] .iso-edge {
+  stroke: var(--anatomy-lit);
+}
+
+[data-terminal][data-on] .iso-dots circle {
+  opacity: 1;
+}
+
+[data-terminal][data-on] .iso-face-text {
+  fill: var(--anatomy-lit);
+}
+
+/* Colour is the subject here: resistor bands encode the value, the LED its colour. */
+.sim-band {
+  fill: none;
+  stroke-width: 2.4px;
+  stroke-linecap: butt;
+}
+
+.sim-band[data-band="black"] { stroke: #1d1d1f; }
+.sim-band[data-band="brown"] { stroke: #8b5a2b; }
+.sim-band[data-band="red"] { stroke: #d93f3f; }
+.sim-band[data-band="orange"] { stroke: #e8812e; }
+.sim-band[data-band="yellow"] { stroke: #e6c23a; }
+.sim-band[data-band="green"] { stroke: #3a9d5d; }
+.sim-band[data-band="blue"] { stroke: #3f6fd8; }
+.sim-band[data-band="violet"] { stroke: #8a55c9; }
+.sim-band[data-band="grey"] { stroke: #8d8d92; }
+.sim-band[data-band="white"] { stroke: #ececec; }
+.sim-band[data-band="gold"] { stroke: #c9a443; }
+.sim-band[data-band="silver"] { stroke: #b9bcc2; }
+.sim-band[data-band="cathode"] { stroke: var(--anatomy-hi); }
+
+.sim-stripe {
+  fill: var(--anatomy-mid);
+  opacity: 0.35;
+  stroke: none;
+}
+
+.sim-tinted[data-color="red"] { --sim-tint: var(--anatomy-red); }
+.sim-tinted[data-color="green"] { --sim-tint: var(--anatomy-green); }
+.sim-tinted[data-color="blue"] { --sim-tint: var(--anatomy-blue); }
+.sim-tinted[data-color="yellow"] { --sim-tint: #e6c23a; }
+.sim-tinted[data-color="white"] { --sim-tint: var(--anatomy-hi); }
+
+.sim-tinted .iso-fill { fill: color-mix(in srgb, var(--sim-tint) 18%, var(--anatomy-paper)); }
+.sim-tinted .iso-top { fill: color-mix(in srgb, var(--sim-tint) 34%, var(--anatomy-top)); stroke: color-mix(in srgb, var(--sim-tint) 34%, var(--anatomy-top)); }
+.sim-tinted .iso-shade[data-shade="0"] { fill: color-mix(in srgb, var(--sim-tint) 22%, var(--anatomy-shade-0)); stroke: color-mix(in srgb, var(--sim-tint) 22%, var(--anatomy-shade-0)); }
+.sim-tinted .iso-shade[data-shade="1"] { fill: color-mix(in srgb, var(--sim-tint) 26%, var(--anatomy-shade-1)); stroke: color-mix(in srgb, var(--sim-tint) 26%, var(--anatomy-shade-1)); }
+.sim-tinted .iso-shade[data-shade="2"] { fill: color-mix(in srgb, var(--sim-tint) 30%, var(--anatomy-shade-2)); stroke: color-mix(in srgb, var(--sim-tint) 30%, var(--anatomy-shade-2)); }
+.sim-tinted .iso-shade[data-shade="3"] { fill: color-mix(in srgb, var(--sim-tint) 34%, var(--anatomy-shade-3)); stroke: color-mix(in srgb, var(--sim-tint) 34%, var(--anatomy-shade-3)); }
+.sim-tinted .iso-edge { stroke: var(--sim-tint); }
+
+@media (prefers-reduced-motion: reduce) {
+  [data-terminal] .iso-line,
+  [data-terminal] .iso-edge {
+    transition: none;
+  }
+}

@@ -23,6 +23,62 @@ This project uses [`next/font`](https://nextjs.org/docs/app/building-your-applic
 ## Coordenadas del simulador
 
 En `/componentes/coordenadas` se puede consultar el mapa de cada componente, con sus cuatro esquinas, centro y terminales. Las coordenadas se derivan de `src/components/simulador/layout.ts`, la geometría compartida por las vistas isométrica y 3D. El origen `(0, 0)` está en el centro del protoboard y las medidas son unidades del modelo, no milímetros calibrados.
+## Experimentos DINOv2
+
+En Windows, crea un entorno con Python 3.12 e instala las dependencias desde la raíz del proyecto:
+
+```powershell
+py -3.12 -m venv .venv
+.\.venv\Scripts\python.exe -m pip install --upgrade pip
+.\.venv\Scripts\python.exe -m pip install -r src\app\experiments\requirements.txt
+```
+
+### Comparar dos imágenes
+
+El script `src\app\experiments\dinov2\compare_pair.py` compara dos imágenes usando DINOv2 ViT-S/14. Imprime la similitud coseno de las representaciones globales y una comparación adicional por parches. Los valores son índices de similitud, no porcentajes ni probabilidades.
+
+```powershell
+.\.venv\Scripts\python.exe src\app\experiments\dinov2\compare_pair.py "C:\ruta\a\imagen1.jpg" "C:\ruta\a\imagen2.jpg"
+```
+
+La primera ejecución descarga el código y los pesos de DINOv2 mediante `torch.hub`. Para comparar componentes, conviene usar fotos o recortes con encuadre similar: la comparación por parches empareja regiones que ocupan la misma posición y ambas medidas pueden verse afectadas por el fondo, la iluminación y la orientación.
+
+### Primer paso: clases del dataset
+
+La primera versión del clasificador usará dos clases:
+
+```text
+src\app\experiments\dinov2\dataset\
+├── train\
+│   ├── led\
+│   └── no_led\
+├── validation\
+│   ├── led\
+│   └── no_led\
+└── test\
+    ├── led\
+    └── no_led\
+```
+
+Coloca en `led` fotografías de LEDs y en `no_led` fotografías de componentes u objetos que no sean LEDs. Mantén separadas las imágenes de entrenamiento, validación y prueba; no copies la misma imagen a más de una partición. Conviene comenzar con imágenes recortadas donde aparezca principalmente un solo componente.
+
+### Entrenar y usar el clasificador
+
+El clasificador usa embeddings congelados de DINOv2 y una regresión logística. Selecciona la regularización con `validation`, vuelve a ajustar con `train` y `validation`, y reporta el resultado final usando `test`.
+
+```powershell
+.\.venv\Scripts\python.exe src\app\experiments\dinov2\train_classifier.py
+```
+
+El modelo queda en `src\app\experiments\dinov2\models\led_classifier.joblib`. Los embeddings de train, validation y test, junto con sus etiquetas, particiones y rutas, quedan en `src\app\experiments\dinov2\models\led_embeddings.npz`. El entrenamiento excluye de validation/test imágenes cuyo contenido sea idéntico al de una partición anterior y muestra cuáles excluyó.
+
+Para clasificar una imagen:
+
+```powershell
+.\.venv\Scripts\python.exe src\app\experiments\dinov2\predict_image.py "C:\ruta\a\componente.jpg"
+```
+
+Usa imágenes diferentes para `train`, `validation` y `test`; no ajustes el modelo basándote en el resultado de `test`.
 
 ## Learn More
 

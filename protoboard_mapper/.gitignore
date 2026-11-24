@@ -1,0 +1,8 @@
+.venv/
+input/*
+!input/.gitkeep
+output/*
+!output/.gitkeep
+models/
+__pycache__/
+*.py[cod]

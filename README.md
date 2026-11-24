@@ -67,7 +67,9 @@ El clasificador usa embeddings congelados de DINOv2 y una regresión logística.
 .\.venv\Scripts\python.exe src\app\experiments\dinov2\train_classifier.py
 ```
 
-El modelo queda en `src\app\experiments\dinov2\models\led_classifier.joblib`. Para clasificar una imagen:
+El modelo queda en `src\app\experiments\dinov2\models\led_classifier.joblib`. Los embeddings de train, validation y test, junto con sus etiquetas, particiones y rutas, quedan en `src\app\experiments\dinov2\models\led_embeddings.npz`. El entrenamiento excluye de validation/test imágenes cuyo contenido sea idéntico al de una partición anterior y muestra cuáles excluyó.
+
+Para clasificar una imagen:
 
 ```powershell
 .\.venv\Scripts\python.exe src\app\experiments\dinov2\predict_image.py "C:\ruta\a\componente.jpg"

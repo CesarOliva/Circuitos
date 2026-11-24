@@ -1,4 +1,5 @@
 import argparse
+import hashlib
 from pathlib import Path
 
 import joblib
@@ -24,7 +25,8 @@ CLASSES = ("led", "no_led")
 REGULARIZATION_VALUES = (0.01, 0.1, 1.0, 10.0, 100.0)
 SCRIPT_DIR = Path(__file__).resolve().parent
 DEFAULT_DATASET = SCRIPT_DIR / "dataset"
-DEFAULT_OUTPUT = SCRIPT_DIR / "models" / "led_classifier.joblib"
+DEFAULT_MODEL_OUTPUT = SCRIPT_DIR / "models" / "led_classifier.joblib"
+DEFAULT_EMBEDDINGS_OUTPUT = SCRIPT_DIR / "models" / "led_embeddings.npz"
 
 
 def collect_split(
@@ -48,6 +50,38 @@ def collect_split(
         print(f"{split}/{label}: {len(files)} imágenes")
 
     return image_paths, np.asarray(labels)
+
+
+def image_digest(image_path: Path) -> str:
+    return hashlib.sha256(image_path.read_bytes()).hexdigest()
+
+
+def remove_overlapping_images(
+    reference_paths: list[Path],
+    candidate_paths: list[Path],
+    candidate_labels: np.ndarray,
+    split_name: str,
+) -> tuple[list[Path], np.ndarray]:
+    reference_digests = {image_digest(path) for path in reference_paths}
+    keep_indices = [
+        index
+        for index, path in enumerate(candidate_paths)
+        if image_digest(path) not in reference_digests
+    ]
+    excluded_paths = [
+        path for index, path in enumerate(candidate_paths) if index not in keep_indices
+    ]
+    if excluded_paths:
+        print(
+            f"Advertencia: se excluyen {len(excluded_paths)} imágenes de "
+            f"{split_name} idénticas a imágenes de otra partición:"
+        )
+        for path in excluded_paths:
+            print(f"  {path}")
+    return (
+        [candidate_paths[index] for index in keep_indices],
+        candidate_labels[keep_indices],
+    )
 
 
 def print_metrics(
@@ -88,8 +122,14 @@ def main() -> None:
     parser.add_argument(
         "--output",
         type=Path,
-        default=DEFAULT_OUTPUT,
+        default=DEFAULT_MODEL_OUTPUT,
         help="Ruta donde guardar el clasificador entrenado",
+    )
+    parser.add_argument(
+        "--embeddings-output",
+        type=Path,
+        default=DEFAULT_EMBEDDINGS_OUTPUT,
+        help="Ruta donde guardar embeddings, etiquetas, particiones y rutas",
     )
     parser.add_argument(
         "--batch-size",
@@ -102,6 +142,18 @@ def main() -> None:
     train_paths, train_labels = collect_split(args.dataset, "train")
     validation_paths, validation_labels = collect_split(args.dataset, "validation")
     test_paths, test_labels = collect_split(args.dataset, "test")
+
+    validation_paths, validation_labels = remove_overlapping_images(
+        train_paths, validation_paths, validation_labels, "validation"
+    )
+    if not validation_paths:
+        raise ValueError("No quedan imágenes únicas para evaluar en validation.")
+
+    test_paths, test_labels = remove_overlapping_images(
+        train_paths + validation_paths, test_paths, test_labels, "test"
+    )
+    if not test_paths:
+        raise ValueError("No quedan imágenes únicas para evaluar en test.")
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"\nDispositivo: {device}")
@@ -118,6 +170,26 @@ def main() -> None:
     test_embeddings = extract_embeddings(
         test_paths, backbone, transform, device, args.batch_size
     )
+
+    args.embeddings_output.parent.mkdir(parents=True, exist_ok=True)
+    np.savez_compressed(
+        args.embeddings_output,
+        embeddings=np.concatenate(
+            (train_embeddings, validation_embeddings, test_embeddings), axis=0
+        ),
+        labels=np.concatenate((train_labels, validation_labels, test_labels)),
+        splits=np.concatenate(
+            (
+                np.full(len(train_paths), "train"),
+                np.full(len(validation_paths), "validation"),
+                np.full(len(test_paths), "test"),
+            )
+        ),
+        paths=np.asarray(
+            [str(path) for path in train_paths + validation_paths + test_paths]
+        ),
+    )
+    print(f"Embeddings guardados en: {args.embeddings_output}")
 
     best_c = REGULARIZATION_VALUES[0]
     best_score = -1.0

@@ -133,6 +133,16 @@ const PICTURES: Record<string, ReactNode> = {
     <path d="M18 15h12m-12 4h12m-12 4h8" stroke="#e8e8e8" strokeOpacity=".55" strokeWidth="1" />
     <rect x="16" y="9" width="2" height="16" rx="1" fill={SHINE} opacity=".35" />
   </>,
+  "arduino-uno-r3": <>
+    <rect x="6" y="6" width="36" height="36" rx="3" fill="#2f62a6" />
+    <rect x="17" y="16" width="14" height="16" rx="1" fill="#26262a" />
+    <path d="M11 39h26" stroke="#e8e8e8" strokeOpacity=".6" strokeWidth="1.5" strokeDasharray="2 2" />
+  </>,
+  "esp32-devkit-v1": <>
+    <rect x="14" y="4" width="20" height="40" rx="3" fill="#2f62a6" />
+    <rect x="17" y="6" width="14" height="10" rx="1" fill="#c9ced6" />
+    <path d="M11 8v36m26-36v36" stroke="#e8e8e8" strokeOpacity=".6" strokeWidth="1.5" strokeDasharray="2 2" />
+  </>,
 };
 
 export function PartPicture({ kind }: { kind: string }) {

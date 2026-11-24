@@ -53,6 +53,8 @@ type Part = {
   polarity?: "NPN" | "PNP";
 };
 type TerminalRef = { componentId: string; terminalId: string };
+type CanvasPoint = { x: number; y: number };
+type SelectionBox = CanvasPoint & { width: number; height: number };
 type Wire = { id: string; from: TerminalRef; to: TerminalRef };
 type TerminalSpec = { id: string; name?: string; x: number; y: number; ax: number; ay: number; labelX: number; labelY: number; anchor: "start" | "middle" | "end" };
 type GroupName = "Montaje" | "Pasivos y controles" | "Sensores y actuadores" | "Semiconductores" | "Microcontroladores";
@@ -115,6 +117,21 @@ const specs: Record<Kind, ComponentSpec> = {
 const groups: GroupName[] = ["Montaje", "Pasivos y controles", "Sensores y actuadores", "Semiconductores", "Microcontroladores"];
 const kinds = Object.keys(specs) as Kind[];
 const initialParts: Part[] = [];
+const photoPartKinds = ["resistor", "led", "diode", "capacitor"] as const;
+
+function makePart(parts: Part[], kind: Kind, x: number, y: number): Part {
+  const spec = specs[kind];
+  let count = 1;
+  while (parts.some(part => part.id === `${spec.prefix}${count}`)) count++;
+  return {
+    id: `${spec.prefix}${count}`, kind,
+    ...clampTo(kind, x, y),
+    value: spec.value,
+    ...(kind === "switch" || kind === "push-button" ? { on: false } : {}),
+    ...(kind === "potentiometer" ? { position: 0.5 } : {}),
+    ...(kind === "transistor" ? { polarity: "NPN" as const } : {}),
+  };
+}
 
 function setValue(part: Part, value: number) {
   if (part.kind === "capacitor") return value * 1e-6;
@@ -306,21 +323,33 @@ function BreadboardHoles({ onHole }: { onHole(id: string): void }) {
 export default function Playground() {
   const [parts, setParts] = useState<Part[]>(initialParts);
   const [wires, setWires] = useState<Wire[]>([]);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [selectionBox, setSelectionBox] = useState<SelectionBox | null>(null);
   const [pendingTerminal, setPendingTerminal] = useState<TerminalRef | null>(null);
   const [result, setResult] = useState<Result | null>(null);
   const [message, setMessage] = useState("Arrastra componentes al área de trabajo y conecta sus terminales para empezar.");
   const [dragging, setDragging] = useState<string | null>(null);
   const [view, setView] = useState<"2d" | "3d">("2d");
   const [mount, setMount] = useState<Mount>("board");
+  const [importing, setImporting] = useState(false);
   const [ghost, setGhost] = useState<{ kind: Kind; x: number; y: number; over: boolean } | null>(null);
   const svgRef = useRef<SVGSVGElement>(null);
+  const canvasRef = useRef<HTMLDivElement>(null);
+  const selectionDrag = useRef<{
+    pointerId: number;
+    start: CanvasPoint;
+    clientX: number;
+    clientY: number;
+    extend: boolean;
+    boardId: string | null;
+  } | null>(null);
+  const photoInput = useRef<HTMLInputElement>(null);
   const dragOffset = useRef<[number, number]>([0, 0]);
   const trayDrag = useRef<{ kind: Kind; x: number; y: number; moved: boolean } | null>(null);
   const skipClick = useRef(false);
   const locate3d = useRef<Locate | null>(null);
-  const selected = parts.find(part => part.id === selectedId) ?? null;
-  const selectedResult = result?.components.find(component => component.componentId === selectedId);
+  const selected = selectedIds.length === 1 ? parts.find(part => part.id === selectedIds[0]) ?? null : null;
+  const selectedResult = selected ? result?.components.find(component => component.componentId === selected.id) : undefined;
   const ledLit = Boolean(result?.success && result.components.some(component => component.type === "led" && component.current > 0.002));
   const placed = useMemo<Placed[]>(() => parts.flatMap(part => {
     if (isBoard(part.kind)) return [{ spec: { ...specOfBoard(BOARDS[part.kind]), id: part.id }, x: part.x, y: part.y, glow: false } as Placed];
@@ -341,26 +370,63 @@ export default function Playground() {
 
   function addPart(kind: Kind, at?: [number, number]) {
     const spec = specs[kind];
-    let count = 1;
-    while (parts.some(part => part.id === `${spec.prefix}${count}`)) count++;
     const index = parts.length % 15;
     const [x, y] = at ?? (kind === "breadboard" ? [480, 280] : [125 + (index % 5) * 178, 115 + Math.floor(index / 5) * 170]);
-    const part: Part = {
-      id: `${spec.prefix}${count}`, kind,
-      ...clampTo(kind, x, y),
-      value: spec.value,
-      ...(kind === "switch" || kind === "push-button" ? { on: false } : {}),
-      ...(kind === "potentiometer" ? { position: 0.5 } : {}),
-      ...(kind === "transistor" ? { polarity: "NPN" as const } : {}),
-    };
+    const part = makePart(parts, kind, x, y);
     setParts(current => [...current, part]);
-    setSelectedId(part.id);
+    setSelectedIds([part.id]);
     setResult(null);
     setMessage(kind === "breadboard" ? "Protoboard añadida. Por dentro, cada columna une sus agujeros a–e y f–j, y cada riel va de punta a punta." : isBoard(kind) ? `${spec.name} añadida. Cablea sus pines; el circuito no la resuelve.` : `${spec.name} añadido. Conecta sus terminales.`);
   }
 
+  async function importPhoto(file: File) {
+    if (file.size > 8 * 1024 * 1024) {
+      setMessage("La foto debe pesar 8 MB o menos.");
+      return;
+    }
+    setImporting(true);
+    setMessage("Analizando la foto del protoboard…");
+    try {
+      const form = new FormData();
+      form.set("photo", file);
+      const response = await fetch("/api/protoboard", { method: "POST", body: form });
+      const analysis: {
+        breadboard: boolean;
+        components: { x: number; y: number }[];
+        error?: string;
+      } = await response.json();
+      if (!response.ok) throw new Error(analysis.error ?? "No se pudo analizar la foto.");
+      if (!analysis.breadboard) {
+        setMessage("No se detectó un protoboard. Prueba con una foto donde se vea completo.");
+        return;
+      }
+
+      const detections = analysis.components.map(point => ({
+        ...point,
+        kind: photoPartKinds[Math.floor(Math.random() * photoPartKinds.length)],
+      }));
+      setParts(current => {
+        const board = makePart(current, "breadboard", 480, 280);
+        const next = [...current, board];
+        for (const { x, y, kind } of detections) {
+          next.push(makePart(next, kind, board.x + x * BB_W, board.y + y * BB_H));
+        }
+        return next;
+      });
+      setSelectedIds([]);
+      setPendingTerminal(null);
+      setResult(null);
+      setView("2d");
+      setMessage(`Protoboard importado. Componentes provisionales añadidos: ${detections.length}.`);
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "No se pudo importar la foto.");
+    } finally {
+      setImporting(false);
+    }
+  }
+
   function connectTerminal(ref: TerminalRef) {
-    setSelectedId(ref.componentId);
+    setSelectedIds([ref.componentId]);
     setResult(null);
     if (!pendingTerminal) {
       setPendingTerminal(ref);
@@ -467,8 +533,77 @@ export default function Playground() {
     setGhost(null);
   }
 
+  function selectPart(id: string, extend = false) {
+    setSelectedIds(current => {
+      if (!extend) return [id];
+      return current.includes(id) ? current.filter(item => item !== id) : [...current, id];
+    });
+  }
+
+  function selectionPoint(event: PointerEvent<SVGSVGElement>): CanvasPoint | null {
+    const matrix = event.currentTarget.getScreenCTM();
+    if (!matrix) return null;
+    const point = new DOMPoint(event.clientX, event.clientY).matrixTransform(matrix.inverse());
+    return { x: Math.max(0, Math.min(960, point.x)), y: Math.max(0, Math.min(560, point.y)) };
+  }
+
+  function getSelectionBox(event: PointerEvent<SVGSVGElement>, drag: NonNullable<typeof selectionDrag.current>): SelectionBox | null {
+    if (Math.hypot(event.clientX - drag.clientX, event.clientY - drag.clientY) < 4) return null;
+    const point = selectionPoint(event);
+    if (!point) return null;
+    const { x, y } = point;
+    const { start } = drag;
+    return { x: Math.min(start.x, x), y: Math.min(start.y, y), width: Math.abs(x - start.x), height: Math.abs(y - start.y) };
+  }
+
+  function startBoxSelection(event: PointerEvent<SVGSVGElement>) {
+    if (event.button !== 0 || !event.isPrimary || selectionDrag.current) return;
+    const target = event.target as Element;
+    const boardId = event.shiftKey ? target.closest("[data-selection-board]")?.getAttribute("data-selection-board") ?? null : null;
+    if (!boardId && target !== event.currentTarget && !target.hasAttribute("data-selection-background")) return;
+    const start = selectionPoint(event);
+    if (!start) return;
+    selectionDrag.current = { pointerId: event.pointerId, start, clientX: event.clientX, clientY: event.clientY, extend: event.shiftKey, boardId };
+    event.currentTarget.setPointerCapture(event.pointerId);
+    canvasRef.current?.focus({ preventScroll: true });
+  }
+
+  function moveBoxSelection(event: PointerEvent<SVGSVGElement>) {
+    const drag = selectionDrag.current;
+    if (!drag || drag.pointerId !== event.pointerId) return;
+    setSelectionBox(getSelectionBox(event, drag));
+  }
+
+  function cancelBoxSelection() {
+    selectionDrag.current = null;
+    setSelectionBox(null);
+  }
+
+  function finishBoxSelection(event: PointerEvent<SVGSVGElement>) {
+    const drag = selectionDrag.current;
+    if (!drag || drag.pointerId !== event.pointerId) return;
+    cancelBoxSelection();
+    const box = getSelectionBox(event, drag);
+    if (!box) {
+      if (drag.boardId) selectPart(drag.boardId, true);
+      else if (!drag.extend) setSelectedIds([]);
+      return;
+    }
+    const inside = parts.filter(part => {
+      // Include the board only when the rectangle encloses it.
+      const [halfWidth, halfHeight] = part.kind === "breadboard" ? [BB_W / 2, BB_H / 2] : [0, 0];
+      return part.x - halfWidth >= box.x && part.x + halfWidth <= box.x + box.width
+        && part.y - halfHeight >= box.y && part.y + halfHeight <= box.y + box.height;
+    }).map(part => part.id);
+    setSelectedIds(current => drag.extend ? [...new Set([...current, ...inside])] : inside);
+  }
+
   function startDrag(event: PointerEvent<SVGGElement>, part: Part) {
-    if ((event.target as Element).closest(".terminal-button")) return;
+    if (event.button !== 0 || (event.target as Element).closest(".terminal-button")) return;
+    if (event.shiftKey && part.kind === "breadboard") return;
+    event.currentTarget.focus();
+    selectPart(part.id, event.shiftKey);
+    if (event.shiftKey) return;
     const svg = svgRef.current;
     if (!svg) return;
     const rect = svg.getBoundingClientRect();
@@ -476,7 +611,6 @@ export default function Playground() {
     const y = ((event.clientY - rect.top) / rect.height) * 560;
     dragOffset.current = [part.x - x, part.y - y];
     setDragging(part.id);
-    setSelectedId(part.id);
     event.currentTarget.setPointerCapture(event.pointerId);
   }
 
@@ -493,25 +627,32 @@ export default function Playground() {
   }
 
   function removeSelected() {
-    if (!selected) return;
-    setParts(current => current.filter(part => part.id !== selected.id));
-    setWires(current => current.filter(wire => wire.from.componentId !== selected.id && wire.to.componentId !== selected.id));
-    setSelectedId(null);
-    setPendingTerminal(null);
+    if (!selectedIds.length) return;
+    const ids = new Set(selectedIds);
+    setParts(current => current.filter(part => !ids.has(part.id)));
+    setWires(current => current.filter(wire => !ids.has(wire.from.componentId) && !ids.has(wire.to.componentId)));
+    setSelectedIds([]);
+    setPendingTerminal(current => current && ids.has(current.componentId) ? null : current);
     setResult(null);
-    setMessage(`${specs[selected.kind].name} ${selected.kind === "breadboard" ? "eliminada" : "eliminado"}.`);
+    setMessage(selectedIds.length === 1 ? "Objeto eliminado." : `${selectedIds.length} objetos eliminados.`);
   }
 
   function renderPart(part: Part) {
     const componentResult = result?.components.find(component => component.componentId === part.id);
     const active = part.kind === "dc-motor" ? Number(componentResult?.measurements?.rpm) > 0 : part.kind === "active-buzzer" ? Boolean(componentResult?.measurements?.active) : false;
-    return <g key={part.id} className={`placed-part${selectedId === part.id ? " part-selected" : ""}${dragging === part.id ? " part-dragging" : ""}`} transform={`translate(${part.x} ${part.y})`} onPointerDown={event => startDrag(event, part)} onPointerMove={event => onDrag(event, part.id)} onPointerUp={() => setDragging(null)} onPointerCancel={() => setDragging(null)} onClick={() => setSelectedId(part.id)} onKeyDown={event => {
+    const isSelected = selectedIds.includes(part.id);
+    return <g key={part.id} data-selection-board={part.kind === "breadboard" ? part.id : undefined} className={`placed-part${isSelected ? " part-selected" : ""}${dragging === part.id ? " part-dragging" : ""}`} transform={`translate(${part.x} ${part.y})`} onPointerDown={event => startDrag(event, part)} onPointerMove={event => onDrag(event, part.id)} onPointerUp={() => setDragging(null)} onPointerCancel={() => setDragging(null)} onKeyDown={event => {
+      if (event.target !== event.currentTarget) return;
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        selectPart(part.id, event.shiftKey);
+      }
       if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(event.key)) {
         event.preventDefault();
         const delta = event.shiftKey ? 20 : 8;
         movePart(part.id, part.x + (event.key === "ArrowRight" ? delta : event.key === "ArrowLeft" ? -delta : 0), part.y + (event.key === "ArrowDown" ? delta : event.key === "ArrowUp" ? -delta : 0));
       }
-    }} tabIndex={0} role="group" aria-label={`${specs[part.kind].name} ${part.id}. Usa flechas para mover`}>
+    }} tabIndex={0} role="group" aria-label={`${specs[part.kind].name} ${part.id}${isSelected ? ", seleccionado" : ""}. Pulsa Enter para seleccionar y usa flechas para mover`}>
       {part.kind === "breadboard"
         ? <BreadboardArt wired={new Set(wires.flatMap(wire => [wire.from, wire.to]).filter(end => end.componentId === part.id).map(end => end.terminalId))} pending={pendingTerminal?.componentId === part.id ? pendingTerminal.terminalId : null} />
         : <ComponentArt part={part} lit={part.kind === "led" && ledLit} active={active} />}
@@ -557,10 +698,35 @@ export default function Playground() {
         <div className="step-hint"><span>Playground</span> Componentes, controles y sensores en un mismo lugar.</div>
       </section>
 
-      <section className="workspace" aria-label="Constructor de circuitos">
+      <section className="workspace" aria-label="Constructor de circuitos" onKeyDown={event => {
+        if (event.defaultPrevented || event.repeat || (event.target as Element).closest("input, textarea, select, [contenteditable]")) return;
+        if (event.key === "Escape") {
+          cancelBoxSelection();
+          setSelectedIds([]);
+        }
+        if (event.key === "Delete" && selectedIds.length) {
+          event.preventDefault();
+          removeSelected();
+          canvasRef.current?.focus();
+        }
+      }}>
         <div className="work-topbar">
           <div className="work-title"><span className="live-dot" /> Área de trabajo <span className="part-count">{parts.length} {parts.length === 1 ? "componente" : "componentes"}</span></div>
           <div className="work-controls">
+            <input ref={photoInput} type="file" accept=".jpg,.jpeg,.png,.bmp,.webp" hidden onChange={event => {
+              const file = event.currentTarget.files?.[0];
+              event.currentTarget.value = "";
+              if (file) void importPhoto(file);
+            }} />
+            <button type="button" className="import-photo-button" disabled={importing} onClick={() => photoInput.current?.click()}>
+              {importing ? "Analizando…" : "Importar foto"}
+            </button>
+            <button type="button" className="remove-button" disabled={!selectedIds.length} onClick={() => {
+              removeSelected();
+              canvasRef.current?.focus();
+            }} title="Mayús + clic para seleccionar varios objetos. Supr para eliminar.">
+              Eliminar{selectedIds.length > 0 ? ` (${selectedIds.length})` : ""}
+            </button>
             {view === "3d" && <div className="view-toggle" role="group" aria-label="Montaje de los componentes">
               {([["board", "En placa"], ["loose", "Sueltos"]] as const).map(([option, text]) => <button key={option} aria-pressed={mount === option} onClick={() => setMount(option)}>{text}</button>)}
             </div>}
@@ -571,11 +737,19 @@ export default function Playground() {
           </div>
         </div>
 
-        <div className={`canvas-wrap${ghost?.over ? " drop-target" : ""}`}>
-          {view === "3d" ? <Circuit3D parts={placed} wires={jumpers} mount={mount} selectedId={selectedId} pending={pendingTerminal} onSelect={setSelectedId} onTerminal={connectTerminal} onRemoveWire={removeWire} onLocator={locate => { locate3d.current = locate; }} /> :
-          <svg ref={svgRef} className="circuit-canvas" viewBox="0 0 960 560" role="group" aria-label="Área para colocar y conectar componentes">
+        <div ref={canvasRef} tabIndex={-1} className={`canvas-wrap${ghost?.over ? " drop-target" : ""}`}>
+          {view === "3d" ? <Circuit3D parts={placed} wires={jumpers} mount={mount} selectedIds={selectedIds} pending={pendingTerminal} onSelect={(id, extend) => {
+            selectPart(id, extend);
+            canvasRef.current?.focus();
+          }} onTerminal={connectTerminal} onRemoveWire={removeWire} onLocator={locate => { locate3d.current = locate; }} /> :
+          <svg ref={svgRef} className="circuit-canvas" viewBox="0 0 960 560" role="group"
+            aria-label="Área para colocar y conectar componentes. Arrastra desde un espacio vacío para seleccionar varios."
+            onPointerDown={startBoxSelection} onPointerMove={moveBoxSelection} onPointerUp={finishBoxSelection}
+            onPointerCancel={event => { if (selectionDrag.current?.pointerId === event.pointerId) cancelBoxSelection(); }}
+            onLostPointerCapture={event => { if (event.target === event.currentTarget && selectionDrag.current?.pointerId === event.pointerId) cancelBoxSelection(); }}
+          >
             <defs><pattern id="dot-grid" width="24" height="24" patternUnits="userSpaceOnUse"><circle className="dot-grid-dot" cx="1.5" cy="1.5" r="1" /></pattern></defs>
-            <rect width="960" height="560" fill="url(#dot-grid)" />
+            <rect width="960" height="560" fill="url(#dot-grid)" data-selection-background="" />
             {/* Protoboards lie under everything; their holes go above the wires, the parts above both. */}
             {parts.filter(part => part.kind === "breadboard").map(renderPart)}
             {wires.map(wire => {
@@ -594,6 +768,7 @@ export default function Playground() {
             </g>)}
             {parts.filter(part => part.kind !== "breadboard").map(renderPart)}
             {!parts.length && <g className="empty-canvas" transform="translate(480 270)"><circle r="27" /><path d="M-9 0h18m-9-9v18" /><text y="58">Arrastra un componente aquí para comenzar</text></g>}
+            {selectionBox && <rect className="selection-box" {...selectionBox} aria-hidden="true" />}
           </svg>}
           <div className={`canvas-message${ledLit ? " message-success" : ""}`} role="status"><span className="message-indicator" />{message}</div>
         </div>
@@ -611,14 +786,13 @@ export default function Playground() {
             </div>)}
           </div>
           <div className="work-actions">
-            {selected && <div className="selection-tools">
+            {selected && (controlLabel(selected) || selected.kind === "switch" || selected.kind === "push-button") && <div className="selection-tools">
               {controlLabel(selected) && <label>{controlLabel(selected)}
                 <span className="value-input"><input type="number" min="0.01" step={selected.kind === "transistor" ? "10" : selected.kind === "capacitor" || selected.kind === "inductor" ? "10" : "0.1"} value={selected.value} onChange={event => { const value = Number(event.target.value); if (Number.isFinite(value) && value > 0) changePart(selected.id, { value }); }} aria-label={`${controlLabel(selected)} del componente`} /><span>{specs[selected.kind].unit}</span></span>
               </label>}
               {(selected.kind === "switch" || selected.kind === "push-button") && <button className="control-button" onClick={() => changePart(selected.id, { on: !selected.on })}>{selected.kind === "switch" ? (selected.on ? "Abrir switch" : "Cerrar switch") : (selected.on ? "Soltar pulsador" : "Pulsar")}</button>}
               {selected.kind === "potentiometer" && <label>Posición <input className="position-slider" type="range" min="0" max="1" step="0.01" value={selected.position ?? 0.5} onChange={event => changePart(selected.id, { position: Number(event.target.value) })} aria-label="Posición del potenciómetro" /><span>{Math.round((selected.position ?? 0.5) * 100)}%</span></label>}
               {selected.kind === "transistor" && <label>Tipo <select value={selected.polarity ?? "NPN"} onChange={event => changePart(selected.id, { polarity: event.target.value as "NPN" | "PNP" })}><option value="NPN">NPN</option><option value="PNP">PNP</option></select></label>}
-              <button className="remove-button" onClick={removeSelected}>Eliminar</button>
             </div>}
             {selectedResult && <div className="readout"><span className={`readout-led${ledLit ? " readout-on" : ""}`} />{selectedResult.voltage.toFixed(2)} V&nbsp; · &nbsp;{(selectedResult.current * 1000).toFixed(1)} mA{typeof selectedResult.measurements?.rpm === "number" ? ` · ${selectedResult.measurements.rpm.toFixed(0)} RPM` : ""}{selectedResult.measurements?.active ? " · Activo" : ""}{selectedResult.measurements?.triggered ? ` · Eco ${Number(selectedResult.measurements.echoPulseWidthMicroseconds).toFixed(0)} µs` : ""}</div>}
           </div>

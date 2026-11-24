@@ -46,7 +46,9 @@
 .run-button:hover:not(:disabled) { filter: brightness(1.12); transform: translateY(-1px); box-shadow: inset 0 1px 0 rgb(255 255 255 / 22%), 0 8px 26px rgb(31 143 255 / 55%); }
 .run-button:disabled { opacity: .4; cursor: not-allowed; box-shadow: none; }
 .run-button:focus-visible,.component-tray button:focus-visible,.remove-button:focus-visible,.wire-group:focus-visible { outline: 3px solid var(--accent-bright); outline-offset: 2px; }
-.work-controls { display: flex; align-items: center; gap: 10px; }
+.work-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.import-photo-button { min-height: 36px; padding: 0 12px; border: 1px solid currentColor; border-radius: 8px; background: transparent; color: inherit; font: inherit; font-size: 12px; cursor: pointer; }
+.import-photo-button:disabled { opacity: .6; cursor: wait; }
 .view-toggle { display: inline-flex; gap: 2px; padding: 3px; border: 1px solid var(--line-strong); border-radius: 9px; background: var(--bg); }
 .view-toggle button { min-width: 38px; min-height: 28px; padding: 0 10px; border: 0; border-radius: 6px; background: transparent; color: var(--muted); font: inherit; font-size: 11px; font-weight: 620; cursor: pointer; transition: background .15s ease, color .15s ease, box-shadow .15s ease; }
 .view-toggle button:hover { color: var(--ink); }
@@ -54,6 +56,8 @@
 
 .canvas-wrap { position: relative; background: radial-gradient(ellipse 80% 70% at 50% 0%, rgb(31 143 255 / 9%), transparent 70%), #070a11; transition: box-shadow .15s ease; }
 .circuit-canvas { display: block; width: 100%; height: auto; min-height: 330px; aspect-ratio: 12 / 7; touch-action: none; user-select: none; }
+.selection-box { fill: rgb(31 143 255 / 16%); stroke: var(--accent-bright); stroke-width: 1; vector-effect: non-scaling-stroke; pointer-events: none; }
+.empty-canvas { pointer-events: none; }
 .circuit-3d { position: relative; width: 100%; min-height: 330px; aspect-ratio: 12 / 7; cursor: grab; touch-action: none; user-select: none; }
 .circuit-3d:active { cursor: grabbing; }
 .circuit-3d canvas { display: block; width: 100%; height: 100%; }
@@ -162,6 +166,8 @@
 .value-input input { width: 54px; border: 0; outline: 0; background: transparent; color: var(--ink); font: inherit; font-size: 11px; }
 .remove-button { border: 0; background: transparent; color: #ff6b75; font: inherit; font-size: 10px; cursor: pointer; }
 .remove-button:hover { color: #ff9aa1; text-decoration: underline; text-underline-offset: 3px; }
+.work-controls .remove-button { min-height: 36px; padding: 0 12px; border: 1px solid currentColor; border-radius: 8px; font-size: 12px; }
+.remove-button:disabled { opacity: .4; cursor: default; text-decoration: none; }
 .readout { display: inline-flex; align-items: center; gap: 7px; padding: 7px 9px; border: 1px solid rgb(31 143 255 / 25%); border-radius: 7px; background: var(--accent-soft); color: #9fd0ff; font-family: var(--font-geist-mono), monospace; font-size: 10px; font-variant-numeric: tabular-nums; }
 .readout-led { width: 7px; height: 7px; border-radius: 50%; background: #34405a; }
 .readout-on { background: #ffc24a; box-shadow: 0 0 8px rgb(255 194 74 / 70%); }

@@ -64,7 +64,14 @@ type EditorState = {
   selectedIds: string[];
   group?: symbol;
 };
-type PhotoWire = { from: CanvasPoint; to: CanvasPoint; via: CanvasPoint[]; color?: string };
+type PhotoWire = {
+  from: CanvasPoint;
+  to: CanvasPoint;
+  fromHole?: string | null;
+  toHole?: string | null;
+  via: CanvasPoint[];
+  color?: string;
+};
 type TerminalSpec = { id: string; name?: string; x: number; y: number; ax: number; ay: number; labelX: number; labelY: number; anchor: "start" | "middle" | "end" };
 type GroupName = "Montaje" | "Pasivos y controles" | "Sensores y actuadores" | "Semiconductores" | "Microcontroladores";
 // `half` is how far the part reaches from its centre, which keeps it inside the canvas.
@@ -508,8 +515,8 @@ export default function Playground() {
       }));
       const connections = new Map<string, { from: string; to: string; via: CanvasPoint[]; color?: string }>();
       for (const wire of analysis.wires ?? []) {
-        const from = photoHole(wire.from);
-        const to = photoHole(wire.to);
+        const from = (wire.fromHole && BB_HOLE.has(wire.fromHole) ? wire.fromHole : photoHole(wire.from));
+        const to = (wire.toHole && BB_HOLE.has(wire.toHole) ? wire.toHole : photoHole(wire.to));
         if (from && to && from !== to) {
           connections.set([from, to].sort().join("/"), { from, to, via: wire.via, color: wire.color });
         }

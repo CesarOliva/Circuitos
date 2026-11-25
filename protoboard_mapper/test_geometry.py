@@ -7,9 +7,12 @@ from PIL import Image
 from analyze import (
     Detection,
     box_keypoints,
+    calibrate_rail_holes,
+    calibrate_terminal_holes,
     detect_board_corners,
     detect_pin_headers,
     detect_wires,
+    separate_touching_wires,
     detail_label,
     is_board_sized,
     is_resistor_group,
@@ -24,6 +27,51 @@ from analyze import (
 
 
 class CoordinateMappingTests(unittest.TestCase):
+    def test_pairs_crossing_wires_from_the_visible_strands(self):
+        mask = np.zeros((70, 200), dtype=np.uint8)
+        cv2.line(mask, (10, 15), (190, 55), 1, 9)
+        cv2.line(mask, (10, 55), (190, 15), 1, 9)
+
+        paths = separate_touching_wires(mask, 24)
+
+        self.assertEqual(len(paths), 2)
+        self.assertLess(paths[0][0][0], paths[0][-1][0])
+        self.assertGreater(paths[1][0][0], paths[1][-1][0])
+
+    def test_terminal_calibration_uses_holes_across_both_banks(self):
+        value = np.full((460, 800), 225, dtype=np.uint8)
+        for y in (108, 130, 152, 174, 196, 260, 281, 302, 323, 344):
+            for column in range(30):
+                x = 52 + 24 * column
+                cy = round(y - 0.02 * (x - 400))
+                cv2.rectangle(value, (x - 3, cy - 3), (x + 3, cy + 3), 35, -1)
+
+        holes = calibrate_terminal_holes(value, {})
+
+        self.assertEqual(len(holes), 300)
+        np.testing.assert_allclose(holes["a1"], [52, 115], atol=1)
+        np.testing.assert_allclose(holes["j30"], [748, 337], atol=1)
+
+    def test_calibrates_reversed_rail_colors_and_grouped_columns(self):
+        image = np.full((460, 800, 3), 225, dtype=np.uint8)
+        for row, color in ((10, (20, 120, 235)), (73, (235, 20, 25)),
+                           (382, (20, 120, 235)), (444, (235, 20, 25))):
+            cv2.line(image, (40, row), (748, row), color, 3)
+        for slot in range(29):
+            if slot in (5, 11, 17, 23):
+                continue
+            x = round(52 + slot * 24.6)
+            for y in (31, 52, 403, 423):
+                cv2.rectangle(image, (x - 3, y - 3), (x + 3, y + 3), (40, 40, 40), -1)
+
+        holes = calibrate_rail_holes(cv2.cvtColor(image, cv2.COLOR_RGB2HSV))
+
+        np.testing.assert_allclose(holes["top+29"], [716, 52], atol=1)
+        np.testing.assert_allclose(holes["bottom+29"], [716, 423], atol=1)
+        np.testing.assert_allclose(holes["top-30"], [741, 31], atol=1)
+        np.testing.assert_allclose(holes["bottom-30"], [741, 403], atol=1)
+        self.assertNotIn("top+7", holes)
+
     def test_uses_rail_marks_when_board_outline_blends_into_background(self):
         image = np.full((240, 400, 3), 225, dtype=np.uint8)
         cv2.line(image, (49, 55), (350, 55), (235, 20, 25), 3)

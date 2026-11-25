@@ -612,12 +612,231 @@ def trace_wire(mask: np.ndarray) -> list[tuple[int, int]]:
     return path
 
 
+def separate_touching_wires(mask: np.ndarray, pitch: float) -> list[list[tuple[int, int]]]:
+    # Read the cross-sections along the longer axis. Two visible strands must
+    # have sustained support before a thick region is treated as two jumpers.
+    vertical = mask.shape[0] > mask.shape[1]
+    slices = mask if vertical else mask.T
+    runs = []
+    for section in slices:
+        pixels = np.flatnonzero(section)
+        runs.append([
+            (float(run.mean()), len(run))
+            for run in np.split(pixels, np.flatnonzero(np.diff(pixels) > 1) + 1)
+            if len(run) >= 4
+        ])
+    supported = [index for index, spans in enumerate(runs) if len(spans) == 2]
+    if len(supported) < pitch * 0.6:
+        return []
+    width = float(np.median([size for index in supported for _, size in runs[index]]))
+    if not 4 <= width <= pitch * 0.8:
+        return []
+    first, last = supported[0], supported[-1]
+    crossing = len(runs)
+    for left, right in zip(supported, supported[1:]):
+        if right - left < pitch * 0.7:
+            continue
+        narrow = [(runs[i][0][1], i) for i in range(left + 1, right) if len(runs[i]) == 1]
+        if narrow and min(narrow)[0] < width * 1.35:
+            crossing = min(narrow)[1]
+            break
+
+    tracks: list[dict[int, float]] = [{}, {}]
+    for index in range(first, last + 1):
+        spans = runs[index]
+        if len(spans) == 2:
+            a, b = (span[0] for span in spans)
+        elif len(spans) == 1:
+            center, size = spans[0]
+            delta = max(0, size - width) / 2
+            a, b = center - delta, center + delta
+        else:
+            continue
+        if index > crossing:
+            a, b = b, a
+        tracks[0][index], tracks[1][index] = a, b
+
+    for edge, direction in ((first, -1), (last, 1)):
+        order = sorted(range(2), key=lambda track: tracks[track][edge])
+        previous = [tracks[track][edge] for track in order]
+        for index in range(edge + direction, -1 if direction < 0 else len(runs), direction):
+            if len(runs[index]) != 1:
+                break
+            center, size = runs[index][0]
+            if size >= width * 1.45:
+                delta = (size - width) / 2
+                previous = [center - delta, center + delta]
+                for track, point in zip(order, previous):
+                    tracks[track][index] = point
+            else:
+                nearest = min(range(2), key=lambda track: abs(previous[track] - center))
+                previous[nearest] = center
+                tracks[order[nearest]][index] = center
+
+    paths = [
+        [(index, round(center)) if vertical else (round(center), index) for index, center in sorted(track.items())]
+        for track in tracks
+    ]
+    return paths if all(len(path) >= pitch for path in paths) else []
+
+
+def hole_centers(value: np.ndarray, pitch: float) -> np.ndarray:
+    _, _, shapes, centers = cv2.connectedComponentsWithStats((value < 120).astype(np.uint8))
+    small = (
+        (shapes[1:, 2] >= 3) & (shapes[1:, 3] >= 3)
+        & (shapes[1:, 2] <= pitch * 0.65) & (shapes[1:, 3] <= pitch * 0.65)
+    )
+    return centers[1:][small]
+
+
+def calibrate_rail_holes(hsv: np.ndarray) -> dict[str, np.ndarray]:
+    hue, saturation, value = cv2.split(hsv)
+    height, width = hue.shape
+    pitch = width * 0.03
+    ink = {
+        "+": ((hue < 11) | (hue >= 165)) & (saturation >= 85),
+        "-": (hue >= 84) & (hue < 137) & (saturation >= 85),
+    }
+    candidates = hole_centers(value, pitch)
+    banks = []
+    group_gaps = (5, 11, 17, 23)
+    for side, start, stop in (("top", 0, height // 5), ("bottom", height * 4 // 5, height)):
+        stripes = {}
+        for sign, mask in ink.items():
+            lines = cv2.HoughLinesP(
+                mask[start:stop].astype(np.uint8), 1, np.pi / 360, width // 5,
+                minLineLength=width // 2, maxLineGap=width // 12,
+            )
+            if lines is None:
+                continue
+            segments = [
+                (abs(x2 - x1), (y2 - y1) / (x2 - x1), (x1 + x2) / 2, start + (y1 + y2) / 2)
+                for x1, y1, x2, y2 in lines.reshape(-1, 4)
+                if abs(x2 - x1) >= width // 2 and abs(y2 - y1) <= abs(x2 - x1) * 0.07
+            ]
+            if segments:
+                _, slope, x, y = max(segments)
+                stripes[sign] = (slope, y - slope * x)
+        if len(stripes) != 2:
+            continue
+        positive, negative = map(np.asarray, (stripes["+"], stripes["-"]))
+        separation = abs(np.polyval(positive - negative, width / 2))
+        if not pitch <= separation <= 3.5 * pitch:
+            continue
+        rows = {}
+        for sign, guide in (("+", (2 * positive + negative) / 3), ("-", (positive + 2 * negative) / 3)):
+            nearby = candidates[np.abs(candidates[:, 1] - np.polyval(guide, candidates[:, 0])) < separation * 0.14]
+            if len(nearby) < 6:
+                break
+            rows[sign] = nearby
+        if len(rows) != 2:
+            continue
+        steps = np.concatenate([np.diff(np.sort(row[:, 0])) for row in rows.values()])
+        steps = steps[(steps >= pitch * 0.75) & (steps <= pitch * 1.25)]
+        if len(steps) < 6:
+            continue
+        spacing = float(np.median(steps))
+        observed_x = np.concatenate([row[:, 0] for row in rows.values()])
+        indices = np.rint((observed_x - width * 0.065) / spacing)
+        spacing, origin = np.polyfit(indices, observed_x, 1)
+        if np.median(np.abs(observed_x - (origin + indices * spacing))) > pitch * 0.15:
+            continue
+        occupied = set(indices.astype(int))
+        grouped = sum(
+            gap not in occupied and gap - 1 in occupied and gap + 1 in occupied
+            for gap in group_gaps
+        ) >= 3
+        banks.append((side, rows, float(spacing), float(origin), grouped))
+    # Five groups of five leave four gaps. Align their right edge to the
+    # simulator's 30-column board so both banks use the same column numbers.
+    count = 29 if any(bank[-1] for bank in banks) else 30
+    holes = {}
+    for side, rows, spacing, origin, _ in banks:
+        for sign, row in rows.items():
+            slope, intercept = np.polyfit(row[:, 0], row[:, 1], 1)
+            for offset in range(count):
+                if count == 29 and offset in group_gaps:
+                    continue
+                x = origin + offset * spacing
+                holes[f"{side}{sign}{31 - count + offset}"] = np.array([x, slope * x + intercept])
+    return holes
+
+
+def calibrate_terminal_holes(value: np.ndarray, rails: dict[str, np.ndarray]) -> dict[str, np.ndarray]:
+    height, width = value.shape
+    pitch = width * 0.03
+    candidates = hole_centers(value, pitch)
+    holes = {}
+    for rows, label, lower, upper in (("abcde", "top", 0.215, 0.28), ("fghij", "bottom", 0.535, 0.59)):
+        rails_on_side = np.array([p for name, p in rails.items() if name.startswith(label + "+")])
+        slopes = (-0.04, -0.02, 0.0, 0.02, 0.04)
+        if len(rails_on_side) > 1:
+            slope = float(np.polyfit(rails_on_side[:, 0], rails_on_side[:, 1], 1)[0])
+            slopes = (slope - 0.012, slope, slope + 0.012)
+        grid = np.rint(
+            np.arange(round(lower * height), round(upper * height))[:, None, None]
+            + np.arange(pitch * 0.73, pitch * 1.15, 0.5)[None, :, None] * np.arange(5)[None, None, :]
+        ).astype(int)
+        best = 0
+        row_points = []
+        for slope in slopes:
+            straight_y = candidates[:, 1] - slope * (candidates[:, 0] - width / 2)
+            counts = np.bincount(np.rint(straight_y).astype(int).clip(0, height - 1), minlength=height)
+            support = np.convolve(counts, np.ones(7, dtype=int), mode="same")[grid]
+            score = np.where(support.min(axis=2) >= 6, support.sum(axis=2), 0)
+            match = np.unravel_index(score.argmax(), score.shape)
+            if score[match] > best:
+                best = score[match]
+                row_points = [candidates[np.abs(straight_y - y) <= 4] for y in grid[match]]
+        for name, points in zip(rows, row_points):
+            xs = np.sort(points[:, 0])
+            steps = np.diff(xs)
+            steps = steps[(steps >= pitch * 0.75) & (steps <= pitch * 1.25)]
+            if len(steps) < 5:
+                continue
+            spacing = float(np.median(steps))
+            columns = np.rint((points[:, 0] - width * 0.935) / spacing) + 30
+            dx, origin = np.polyfit(columns, points[:, 0], 1)
+            aligned = np.abs(points[:, 0] - (origin + columns * dx)) <= pitch * 0.15
+            if np.count_nonzero(aligned) < 6:
+                continue
+            slope, intercept = np.polyfit(points[aligned, 0], points[aligned, 1], 1)
+            for column in range(1, 31):
+                x = origin + dx * column
+                holes[f"{name}{column}"] = np.array([x, slope * x + intercept])
+    return holes
+
+
+def wire_hole_at(
+    tip: np.ndarray, inside: np.ndarray, holes: dict[str, np.ndarray], pitch: float, used: set[str],
+) -> str | None:
+    ranked = sorted(
+        (float(np.linalg.norm(point - tip)), name) for name, point in holes.items() if name not in used
+    )
+    if not ranked or ranked[0][0] > pitch * 0.72:
+        return None
+    distance, name = ranked[0]
+    # When insulation stops between rows, use the direction of the visible tip.
+    crowded = any(np.linalg.norm(holes[occupied] - tip) < distance for occupied in used)
+    if not crowded and len(ranked) > 1 and ranked[1][0] - distance < pitch * 0.13:
+        other = ranked[1][1]
+        if name.rstrip("0123456789") != other.rstrip("0123456789") or not name.startswith(("top", "bottom")):
+            direction = tip - inside
+            norm = float(np.linalg.norm(direction))
+            if norm:
+                extended = tip + direction * (pitch * 0.28 / norm)
+                name = min((name, other), key=lambda key: np.linalg.norm(holes[key] - extended))
+    return name
+
+
 def detect_wires(image: Image.Image, headers: list[Detection]) -> list[dict[str, Any]]:
     rgb = np.asarray(image)
     hsv = cv2.cvtColor(rgb, cv2.COLOR_RGB2HSV)
     hue, saturation, value = cv2.split(hsv)
     height, width = hue.shape
     pitch = width * 0.03
+    holes = calibrate_rail_holes(hsv)
+    holes.update(calibrate_terminal_holes(value, holes))
     colored = (saturation >= 125) & (value >= 75)
     masks = [
         (colored & ((hue < 11) | (hue >= 165)), True),
@@ -629,7 +848,7 @@ def detect_wires(image: Image.Image, headers: list[Detection]) -> list[dict[str,
     ]
     wires = []
     kernel = np.ones((3, 3), np.uint8)
-    for mask, check_rails in masks:
+    for mask_index, (mask, check_rails) in enumerate(masks):
         mask = mask.astype(np.uint8)
         for header in headers:
             x1, y1, x2, y2 = map(int, header.box)
@@ -649,25 +868,43 @@ def detect_wires(image: Image.Image, headers: list[Detection]) -> list[dict[str,
         mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel)
         _, labels, regions, _ = cv2.connectedComponentsWithStats(mask)
         for index, (x, y, w, h, area) in enumerate(regions[1:], 1):
-            if max(w, h) < pitch or area > pitch * max(w, h):
+            if max(w, h) < pitch or area > pitch * max(w, h) * 2:
                 continue
             if x == 0 or y == 0 or x + w == width or y + h == height:
                 continue
             region = labels[y:y + h, x:x + w] == index
             path = trace_wire(region)
             length = len(path) - 1
-            if length < pitch or not 2 <= area / length <= pitch * 0.65:
-                continue
-            if np.linalg.norm(np.subtract(path[0], path[-1])) < pitch * 0.8:
-                continue
-            contour = np.asarray(path, dtype=np.int32).reshape(-1, 1, 2)
-            route = cv2.approxPolyDP(contour, 3, False).reshape(-1, 2)
-            points = [
-                {"x": float((px + x) / (width - 1) - 0.5), "y": float((py + y) / (height - 1) - 0.5)}
-                for py, px in route
-            ]
-            color = "#" + "".join(f"{int(channel):02x}" for channel in np.median(rgb[y:y + h, x:x + w][region], axis=0))
-            wires.append({"from": points[0], "to": points[-1], "via": points[1:-1], "color": color})
+            paths = []
+            if length >= pitch and 2 <= area / length <= pitch * 0.65:
+                paths = [path]
+            elif mask_index == 0 and length >= pitch and area / length > pitch * 0.65:
+                paths = separate_touching_wires(region, pitch)
+            used_holes: set[str] = set()
+            for path in paths:
+                if np.linalg.norm(np.subtract(path[0], path[-1])) < pitch * 0.8:
+                    continue
+                contour = np.asarray(path, dtype=np.int32).reshape(-1, 1, 2)
+                route = cv2.approxPolyDP(contour, 3, False).reshape(-1, 2)
+                points = [
+                    {"x": float((px + x) / (width - 1) - 0.5), "y": float((py + y) / (height - 1) - 0.5)}
+                    for py, px in route
+                ]
+                color = "#" + "".join(f"{int(channel):02x}" for channel in np.median(rgb[y:y + h, x:x + w][region], axis=0))
+                step = min(10, len(path) - 1)
+                ends = []
+                for tip, inner in ((path[0], path[step]), (path[-1], path[-step - 1])):
+                    hole = wire_hole_at(
+                        np.array([tip[1] + x, tip[0] + y]), np.array([inner[1] + x, inner[0] + y]),
+                        holes, pitch, used_holes,
+                    )
+                    ends.append(hole)
+                    if hole:
+                        used_holes.add(hole)
+                wires.append({
+                    "from": points[0], "to": points[-1], "via": points[1:-1], "color": color,
+                    "fromHole": ends[0], "toHole": ends[1],
+                })
     return wires
 
 

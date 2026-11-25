@@ -2,30 +2,26 @@ import type { CSSProperties } from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { content } from "@/content";
+import { content, findCourse } from "@/content";
 import { CourseArt } from "@/components/cursos/course-art";
 import "@/components/cursos/cursos.css";
 
 export async function generateStaticParams() {
-  return content.getCourseParams();
+  return (await content.getCourseParams()).map(({ curso }) => ({ curso }));
 }
 
-export async function generateMetadata({ params }: PageProps<"/cursos/[asignatura]/[curso]">): Promise<Metadata> {
-  const { asignatura, curso } = await params;
-  const course = await content.getCourse(asignatura, curso);
+export async function generateMetadata({ params }: PageProps<"/cursos/[curso]">): Promise<Metadata> {
+  const course = await findCourse((await params).curso);
   return course ? { title: course.title, description: course.description } : { title: "Curso no encontrado" };
 }
 
-export default async function CursoPage({ params }: PageProps<"/cursos/[asignatura]/[curso]">) {
-  const { asignatura, curso } = await params;
-  const course = await content.getCourse(asignatura, curso);
+export default async function CursoPage({ params }: PageProps<"/cursos/[curso]">) {
+  const course = await findCourse((await params).curso);
   if (!course) notFound();
-
-  const subject = await content.getSubject(course.subjectSlug);
 
   return (
     <main className="edu edu-course">
-      <Link className="edu-back" href={`/cursos/${course.subjectSlug}`}>← {subject?.name ?? "Asignatura"}</Link>
+      <Link className="edu-back" href="/cursos">← Cursos</Link>
       <header className="course-hero course-intro">
         <div>
           <h1>{course.title}</h1>
@@ -49,7 +45,7 @@ export default async function CursoPage({ params }: PageProps<"/cursos/[asignatu
         <ol className="lesson-list">
           {course.lessons.map((lesson, index) => (
             <li key={lesson.slug} style={{ "--i": index } as CSSProperties}>
-              <Link className="lesson-link" href={`/cursos/${course.subjectSlug}/${course.slug}/${lesson.slug}`}>
+              <Link className="lesson-link" href={`/cursos/${course.slug}/${lesson.slug}`}>
                 <span className="lesson-num" aria-hidden="true">{String(index + 1).padStart(2, "0")}</span>
                 <span className="lesson-link-copy">
                   <strong>{lesson.title}</strong>

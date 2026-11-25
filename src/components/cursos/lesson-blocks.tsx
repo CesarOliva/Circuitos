@@ -1,5 +1,6 @@
 import type { CSSProperties } from "react";
 import type { LessonBlock } from "@/content";
+import { Playground } from "./playgrounds";
 
 export function LessonBlocks({ blocks }: { blocks: LessonBlock[] }) {
   return (
@@ -39,6 +40,8 @@ export function LessonBlocks({ blocks }: { blocks: LessonBlock[] }) {
                 <span>{block.text}</span>
               </aside>
             );
+          case "playground":
+            return <Playground key={key} kind={block.kind} />;
         }
       })}
     </div>

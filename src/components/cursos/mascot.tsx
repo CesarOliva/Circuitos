@@ -55,7 +55,7 @@ export function Mascot({ courses }: { courses: Course[] }) {
           </ol>
           <div className="mascot-links">
             {courses.map((course) => (
-              <Link key={`${course.subjectSlug}/${course.slug}`} href={`/cursos/${course.subjectSlug}/${course.slug}`}>
+              <Link key={`${course.subjectSlug}/${course.slug}`} href={`/cursos/${course.slug}`}>
                 {course.title}
               </Link>
             ))}

@@ -187,19 +187,19 @@
   min-height: 44px;
   padding: 0 20px;
   border-radius: 10px;
-  background: linear-gradient(#2c9dff, #1672e4);
+  background: var(--accent);
   color: #fff;
   font-size: 14px;
   font-weight: 620;
   text-decoration: none;
-  box-shadow: inset 0 1px 0 rgb(255 255 255 / 22%), 0 8px 24px rgb(31 143 255 / 35%);
+  box-shadow: 0 8px 24px rgb(31 143 255 / 35%);
   transition: filter 0.16s ease, transform 0.16s ease, box-shadow 0.16s ease;
 }
 
 .cta-primary:hover {
   filter: brightness(1.1);
   transform: translateY(-2px);
-  box-shadow: inset 0 1px 0 rgb(255 255 255 / 22%), 0 12px 32px rgb(31 143 255 / 50%);
+  box-shadow: 0 12px 32px rgb(31 143 255 / 50%);
 }
 
 .cta-secondary {
@@ -521,98 +521,6 @@
   animation: draw-in 2.6s ease-in-out infinite alternate;
 }
 
-/* ---------- Pasos ---------- */
-
-.steps {
-  padding: 10px 0 54px;
-}
-
-/* Barra de progreso de los pasos: quitada. Los pasos entran como tarjetas en 3D. */
-@supports (animation-timeline: view()) {
-  .step {
-    animation: card-rise linear both;
-    animation-timeline: view();
-    animation-range: entry 0% cover 40%;
-  }
-}
-
-.steps-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 16px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.step {
-  display: grid;
-  gap: 8px;
-  padding: 22px;
-  border: 1px solid var(--line);
-  border-radius: 16px;
-  background: var(--surface);
-  transition: border-color 0.18s ease, translate 0.18s ease;
-}
-
-.step:hover {
-  border-color: var(--accent);
-  translate: 0 -3px;
-}
-
-.step-number {
-  position: relative;
-  display: grid;
-  place-items: center;
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  background: linear-gradient(140deg, var(--accent-bright), var(--accent));
-  color: #fff;
-  font-family: var(--font-geist-mono), monospace;
-  font-size: 14px;
-  font-weight: 700;
-  box-shadow: var(--glow);
-}
-
-.step h3 {
-  margin: 4px 0 0;
-  font-size: 15.5px;
-  font-weight: 640;
-}
-
-.step p {
-  margin: 0;
-  color: var(--muted);
-  font-size: 13px;
-  line-height: 1.6;
-}
-
-/* ---------- CTA final ---------- */
-
-.cta-final {
-  display: grid;
-  justify-items: center;
-  gap: 8px;
-  padding: 48px 24px;
-  border: 1px solid var(--line);
-  border-radius: 20px;
-  background:
-    radial-gradient(ellipse 70% 90% at 50% 110%, rgb(31 143 255 / 16%), transparent 70%),
-    var(--surface);
-  text-align: center;
-}
-
-.cta-final h2 {
-  margin: 0;
-}
-
-.cta-final p {
-  margin: 0 0 18px;
-  color: var(--muted);
-  font-size: 14px;
-}
-
 /* ---------- Aparición al hacer scroll ---------- */
 
 .reveal {
@@ -668,21 +576,7 @@
   animation: draw-in 0.9s cubic-bezier(0.45, 0, 0.2, 1) both;
 }
 
-/* Los números de los pasos aparecen uno tras otro al entrar la sección. */
-.step:nth-child(2) { --i: 1; }
-.step:nth-child(3) { --i: 2; }
-
-.step-number {
-  opacity: 0;
-  transform: scale(0.4);
-}
-
-.reveal.is-visible .step-number {
-  animation: step-pop 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
-  animation-delay: calc(var(--i, 0) * 0.2s + 0.2s);
-}
-
-/* ---------- Osciloscopio al bajar (escena a pantalla completa) ---------- */
+/* ---------- Escenas a pantalla completa ligadas al scroll ---------- */
 
 /* Contenedor alto para que haya recorrido de scroll; la escena queda fija mientras se recorre. --p vale 0 hasta que corre el JS. */
 .scroll-stage {
@@ -729,129 +623,6 @@
   margin: 0;
   color: var(--muted);
   font-size: 15px;
-}
-
-.scope-scene {
-  display: grid;
-  place-items: center;
-  width: 100%;
-  min-height: 0;
-  perspective: 1400px;
-}
-
-/* El osciloscopio se inclina al entrar y se endereza mientras se recorre. */
-.scope-body {
-  width: min(700px, 100%);
-  padding: 16px 16px 12px;
-  border-radius: 22px;
-  background: linear-gradient(160deg, #1f2838, #0b0f18);
-  box-shadow: 0 40px 60px rgb(0 0 0 / 55%), inset 0 1px 0 rgb(255 255 255 / 8%);
-  transform: rotateX(calc(60deg - clamp(0, var(--p) * 2.4, 1) * 34deg)) rotateZ(-1.5deg);
-  transform-origin: 50% 80%;
-}
-
-.scope-screen {
-  position: relative;
-  overflow: hidden;
-  border-radius: 12px;
-  background: #04100b;
-  box-shadow: inset 0 0 36px rgb(0 0 0 / 80%);
-}
-
-.scope-svg {
-  display: block;
-  width: 100%;
-  height: auto;
-}
-
-.scope-grid {
-  stroke: rgb(124 255 178 / 12%);
-  stroke-width: 1;
-}
-
-.scope-ref {
-  stroke: rgb(124 255 178 / 30%);
-  stroke-dasharray: 4 6;
-}
-
-.scope-axis {
-  fill: rgb(124 255 178 / 70%);
-  font-family: var(--font-geist-mono), monospace;
-  font-size: 13px;
-}
-
-/* La curva se dibuja con el scroll; con pathLength="1" el trazo mide 1. */
-.scope-curve {
-  fill: none;
-  stroke: #7cffb2;
-  stroke-width: 3;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  stroke-dasharray: 1 1;
-  stroke-dashoffset: calc(1 - clamp(0, var(--p) * 1.05, 1));
-  filter: drop-shadow(0 0 6px rgb(124 255 178 / 70%));
-}
-
-/* El punto recorre la curva: t = 0.6 s · p y V = 9 V · (1 − e^(−t/τ)), con τ = 0.1 s. Las coordenadas son las del viewBox 620 × 360. */
-.scope-dot {
-  position: absolute;
-  left: calc((60 + 520 * var(--p)) / 620 * 100%);
-  top: calc((300 - 260 * (1 - exp(-6 * var(--p)))) / 360 * 100%);
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  background: #d9ffe9;
-  box-shadow: 0 0 0 4px rgb(124 255 178 / 25%), 0 0 16px #7cffb2;
-  transform: translate(-50%, -50%);
-  opacity: clamp(0, calc((var(--p) - 0.02) * 20), 1);
-}
-
-.scope-caption {
-  margin: 10px 4px 0;
-  color: rgb(124 255 178 / 65%);
-  font-family: var(--font-geist-mono), monospace;
-  font-size: 12px;
-  letter-spacing: 0.04em;
-}
-
-.scope-readouts {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 12px;
-  width: min(700px, 100%);
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.scope-readout {
-  --k: clamp(0, calc((var(--p) - var(--s, 0)) * 8), 1);
-  display: grid;
-  gap: 2px;
-  padding: 12px 14px;
-  border: 1px solid rgb(124 255 178 / 18%);
-  border-radius: 12px;
-  background: #04100b;
-  opacity: var(--k);
-  transform: translateY(calc((1 - var(--k)) * 16px));
-}
-
-.scope-readout span {
-  color: rgb(124 255 178 / 65%);
-  font-size: 11px;
-  letter-spacing: 0.08em;
-}
-
-.scope-readout strong {
-  color: #7cffb2;
-  font-family: var(--font-geist-mono), monospace;
-  font-size: 22px;
-  font-weight: 700;
-}
-
-.scope-readout small {
-  color: rgb(124 255 178 / 60%);
-  font-size: 11.5px;
 }
 
 /* ---------- Keyframes ---------- */
@@ -937,11 +708,6 @@
   to { background-position: 26px 26px; }
 }
 
-@keyframes step-pop {
-  from { opacity: 0; transform: scale(0.4); }
-  to { opacity: 1; transform: scale(1); }
-}
-
 /* ---------- Responsivo ---------- */
 
 @media (max-width: 980px) {
@@ -949,13 +715,6 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .steps-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .scope-readouts {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
 }
 
 @media (max-width: 900px) {
@@ -973,9 +732,6 @@
     display: none;
   }
 
-  .scope-body {
-    transform: none;
-  }
 }
 
 @media (max-width: 760px) {
@@ -1018,9 +774,7 @@
 
   .hero-copy > *,
   .hw,
-  .feature-card,
-  .step,
-  .step-number {
+  .feature-card {
     animation: none;
     opacity: 1;
     transform: none;
@@ -1050,5 +804,687 @@
   .sim-led-on,
   .sim-led-glow {
     opacity: 1;
+  }
+}
+
+/* ---------- Como funciona (escena ligada al scroll) ---------- */
+
+/* Fases segun --p: 0 a .30 arrastrar piezas, .32 a .66 conectar cables, .68 a 1 simular. */
+.how-stage {
+  height: 400vh;
+  --a1: clamp(0, calc((var(--p) - 0.02) * 12), 1);
+  --a2: clamp(0, calc((var(--p) - 0.11) * 12), 1);
+  --a3: clamp(0, calc((var(--p) - 0.2) * 12), 1);
+  --w1: clamp(0, calc((var(--p) - 0.34) * 10), 1);
+  --w2: clamp(0, calc((var(--p) - 0.44) * 10), 1);
+  --w3: clamp(0, calc((var(--p) - 0.54) * 8), 1);
+  --sim: clamp(0, calc((var(--p) - 0.7) * 25), 1);
+  --lit: clamp(0, calc((var(--p) - 0.74) * 12), 1);
+  --press: clamp(0, calc(1 - abs(var(--p) - 0.7) * 40), 1);
+  --on1: clamp(0, calc((0.34 - var(--p)) * 30), 1);
+  --on2: clamp(0, min(calc((var(--p) - 0.3) * 30), calc((0.68 - var(--p)) * 30)), 1);
+  --on3: clamp(0, calc((var(--p) - 0.64) * 30), 1);
+}
+
+.how-sticky {
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 14px;
+  padding: 88px 5vw 32px;
+}
+
+/* Espacio entre el final de la escena y el bloque siguiente. */
+.how-stage {
+  margin-bottom: clamp(48px, 8vh, 110px);
+}
+
+.how-body {
+  display: grid;
+  grid-template-columns: minmax(260px, 340px) minmax(0, 1fr);
+  align-items: center;
+  gap: clamp(24px, 4vw, 64px);
+  width: min(1120px, 100%);
+  min-height: 0;
+}
+
+.how-steps {
+  display: grid;
+  gap: 14px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.how-step {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  column-gap: 14px;
+  row-gap: 4px;
+  align-items: center;
+  padding: 16px 18px;
+  border: 1px solid color-mix(in srgb, var(--accent) calc(var(--on) * 100%), var(--line));
+  border-radius: 14px;
+  background: var(--surface);
+  opacity: calc(0.4 + var(--on) * 0.6);
+  translate: calc(var(--on) * 10px) 0;
+}
+
+.how-step:nth-child(1) { --on: var(--on1); }
+.how-step:nth-child(2) { --on: var(--on2); }
+.how-step:nth-child(3) { --on: var(--on3); }
+
+.how-num {
+  grid-row: span 2;
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--accent) calc(var(--on) * 100%), var(--surface-3));
+  color: #fff;
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.how-step h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 650;
+}
+
+.how-step p {
+  grid-column: 2;
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.how-scene {
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+  min-height: 0;
+}
+
+.how-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: calc(100vh - 340px);
+  max-height: calc(100svh - 340px);
+  overflow: hidden;
+}
+
+.how-board {
+  fill: #0f1626;
+  stroke: #26334e;
+  stroke-width: 2;
+}
+
+.how-label {
+  fill: #8ea0c2;
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 13px;
+}
+
+/* Cada pieza entra desde un borde, con un pequeno giro, mientras el cursor la arrastra. */
+.how-part {
+  --e: calc(1 - pow(1 - var(--a), 3));
+  opacity: clamp(0, calc(var(--a) * 10), 1);
+  transform-box: fill-box;
+  transform-origin: center;
+  transform:
+    translate(calc((1 - var(--e)) * var(--dx)), calc((1 - var(--e)) * var(--dy)))
+    rotate(calc((1 - var(--e)) * var(--rot)));
+}
+
+.how-part-1 { --a: var(--a1); --dx: -170px; --dy: 60px; --rot: -12deg; }
+.how-part-2 { --a: var(--a2); --dx: 0px; --dy: -130px; --rot: 8deg; }
+.how-part-3 { --a: var(--a3); --dx: 170px; --dy: 70px; --rot: 12deg; }
+
+.how-cursor,
+.how-sim-cursor .how-cursor {
+  fill: #fff;
+  stroke: #0a0f1a;
+  stroke-width: 1.5;
+  stroke-linejoin: round;
+  filter: drop-shadow(0 2px 3px rgb(0 0 0 / 55%));
+}
+
+.how-part .how-cursor {
+  opacity: clamp(0, min(calc(var(--a) * 10), calc((1 - var(--a)) * 10)), 1);
+}
+
+.how-sim-cursor {
+  opacity: clamp(0, min(calc((var(--p) - 0.62) * 30), calc((0.76 - var(--p)) * 30)), 1);
+}
+
+/* Los cables se dibujan con el scroll; con pathLength="1" el trazo mide 1. */
+.how-wire {
+  fill: none;
+  stroke-width: 5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 1 1;
+}
+
+.how-wire-1 { stroke: #ff5f6d; stroke-dashoffset: calc(1 - var(--w1)); opacity: clamp(0, calc(var(--w1) * 50), 1); }
+.how-wire-2 { stroke: #5cb8ff; stroke-dashoffset: calc(1 - var(--w2)); opacity: clamp(0, calc(var(--w2) * 50), 1); }
+.how-wire-3 { stroke: #c9d4ea; stroke-dashoffset: calc(1 - var(--w3)); opacity: clamp(0, calc(var(--w3) * 50), 1); }
+
+.how-pad-1 { --w: var(--w1); }
+.how-pad-2 { --w: var(--w2); }
+.how-pad-3 { --w: var(--w3); }
+
+.how-pad-base {
+  fill: #223048;
+  stroke: #3a4d70;
+  stroke-width: 2;
+}
+
+.how-pad-on {
+  fill: rgb(255 211 92 / 35%);
+  stroke: #ffd35c;
+  stroke-width: 2;
+  opacity: clamp(0, calc(var(--w) * 30), 1);
+}
+
+.how-pad-end .how-pad-on {
+  opacity: clamp(0, calc((var(--w) - 0.9) * 20), 1);
+}
+
+/* Al simular: puntos de corriente recorriendo el circuito y el LED encendiendose. */
+.how-flow {
+  fill: none;
+  stroke: #ffe08a;
+  stroke-width: 4;
+  stroke-linecap: round;
+  stroke-dasharray: 1 20;
+  opacity: var(--sim);
+  animation: how-flow 1.1s linear infinite;
+}
+
+.how-glow {
+  opacity: var(--lit);
+}
+
+.how-glow-pulse {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: how-pulse 1.6s ease-in-out infinite;
+}
+
+.how-ray {
+  stroke: #ffd0d4;
+  stroke-width: 3;
+  stroke-linecap: round;
+}
+
+.how-led-lit {
+  opacity: var(--lit);
+}
+
+.how-sim {
+  transform: translateY(calc(var(--press) * 2px));
+}
+
+.how-sim-base {
+  fill: var(--accent);
+}
+
+.how-sim-on {
+  fill: #2bb673;
+  opacity: var(--sim);
+}
+
+.how-sim-text {
+  fill: #fff;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.how-sim-off-text {
+  opacity: calc(1 - var(--sim));
+}
+
+.how-sim-on-text {
+  opacity: var(--sim);
+}
+
+.how-readouts {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.how-readout {
+  --k: clamp(0, calc((var(--p) - var(--s, 0)) * 10), 1);
+  display: grid;
+  gap: 2px;
+  padding: 12px 14px;
+  border: 1px solid var(--line-strong);
+  border-radius: 12px;
+  background: var(--surface);
+  opacity: var(--k);
+  transform: translateY(calc((1 - var(--k)) * 14px));
+}
+
+.how-readout span {
+  color: var(--muted);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+}
+
+.how-readout strong {
+  color: var(--accent-ink);
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.how-readout small {
+  color: var(--faint);
+  font-size: 11.5px;
+}
+
+@keyframes how-flow {
+  to { stroke-dashoffset: -42; }
+}
+
+@keyframes how-pulse {
+  50% { transform: scale(1.06); opacity: 0.8; }
+}
+
+@media (max-width: 980px) {
+  .how-body {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  /* En una columna, los pasos van en fila y sin descripción para que la escena quepa en pantalla. */
+  .how-steps {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .how-step {
+    padding: 10px 12px;
+    translate: 0 calc(var(--on) * -4px);
+  }
+
+  .how-step p {
+    display: none;
+  }
+
+  .how-num {
+    grid-row: auto;
+    width: 28px;
+    height: 28px;
+  }
+
+  .how-svg {
+    max-height: calc(100vh - 400px);
+    max-height: calc(100svh - 400px);
+  }
+}
+
+/* Pantallas bajas (laptops): se compacta todo para que nada quede recortado. */
+@media (max-height: 820px) and (min-width: 901px) {
+  .how-sticky {
+    padding-top: 76px;
+    padding-bottom: 24px;
+  }
+
+  .how-sticky .stage-head h2 {
+    font-size: clamp(24px, 3vw, 34px);
+  }
+
+  .how-sticky .stage-head p {
+    display: none;
+  }
+
+  .how-step {
+    padding: 12px 14px;
+  }
+
+  .how-step p {
+    font-size: 12px;
+  }
+
+  .how-readout {
+    padding: 8px 12px;
+  }
+
+  .how-readout strong {
+    font-size: 18px;
+  }
+
+  .how-readout small {
+    display: none;
+  }
+
+  .how-svg {
+    max-height: calc(100vh - 250px);
+    max-height: calc(100svh - 250px);
+  }
+}
+
+@media (max-height: 820px) and (min-width: 901px) and (max-width: 980px) {
+  .how-svg {
+    max-height: calc(100vh - 300px);
+    max-height: calc(100svh - 300px);
+  }
+}
+
+@media (max-width: 900px) {
+  .how-stage {
+    height: auto;
+  }
+
+  .how-step:nth-child(n) {
+    --on: 1;
+    opacity: 1;
+    translate: none;
+  }
+
+  .how-steps {
+    grid-template-columns: 1fr;
+  }
+
+  .how-step p {
+    display: block;
+  }
+
+  .how-svg {
+    max-height: none;
+  }
+}
+
+@media (max-width: 560px) {
+  .how-readouts {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .how-stage {
+    height: auto;
+  }
+
+  .how-sticky {
+    position: static;
+    height: auto;
+    padding: 56px 18px;
+  }
+
+  .how-step:nth-child(n) {
+    --on: 1;
+    opacity: 1;
+    translate: none;
+  }
+
+  .how-flow,
+  .how-glow-pulse {
+    animation: none;
+  }
+}
+
+/* ---------- Cierre con zoom (escena ligada al scroll) ---------- */
+
+/* Fases segun --p: 0 a .70 la camara se acerca al LED, .72 a 1 aparece la invitacion. */
+.cta-stage {
+  height: 280vh;
+  --z: clamp(0, calc(var(--p) / 0.7), 1);
+  --ze: calc(1 - pow(1 - var(--z), 2));
+  --fin: clamp(0, calc((var(--p) - 0.72) * 5), 1);
+  --ttl: clamp(0, calc(1 - var(--p) * 4), 1);
+}
+
+.cta-sticky {
+  position: sticky;
+  top: 0;
+  display: grid;
+  place-items: center;
+  height: 100vh;
+  height: 100svh;
+  overflow: hidden;
+  background: radial-gradient(ellipse 70% 60% at 50% 50%, rgb(31 143 255 / 10%), transparent 70%);
+}
+
+/* Rejilla de puntos que se agranda al acercarse: da sensacion de profundidad. */
+.cta-grid {
+  position: absolute;
+  inset: -25%;
+  background-image: radial-gradient(var(--line-strong) 1px, transparent 1px);
+  background-size: 28px 28px;
+  -webkit-mask-image: radial-gradient(ellipse 55% 50% at 50% 50%, #000 20%, transparent 75%);
+  mask-image: radial-gradient(ellipse 55% 50% at 50% 50%, #000 20%, transparent 75%);
+  opacity: 0.55;
+  transform: scale(calc(1 + var(--ze) * 1.6));
+}
+
+/* El mundo entero escala alrededor del LED, que esta justo en el centro. */
+.cta-world {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  opacity: calc(1 - var(--fin) * 0.8);
+  transform: scale(calc(0.75 + var(--ze) * 2.4));
+}
+
+.cta-svg {
+  width: min(1000px, 98vw);
+  height: auto;
+  overflow: visible;
+}
+
+/* Pistas de la placa: una por pin, con un pulso de senal que viaja por cada una. */
+.cta-trace {
+  fill: none;
+  stroke: var(--line-strong);
+  stroke-width: 2.5;
+  stroke-linejoin: round;
+}
+
+.cta-via {
+  fill: var(--background);
+  stroke: var(--line-strong);
+  stroke-width: 2.5;
+}
+
+.cta-pulse {
+  fill: none;
+  stroke: var(--accent-bright);
+  stroke-width: 3.5;
+  stroke-linecap: round;
+  stroke-dasharray: 0.07 1;
+  animation: cta-pulse 3.2s linear infinite;
+}
+
+.cta-pin rect {
+  fill: #aab7d0;
+}
+
+.cta-chip-ring {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 6;
+  opacity: 0.35;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: cta-ring 2.4s ease-in-out infinite;
+}
+
+.cta-chip-body {
+  fill: #0f1626;
+  stroke: var(--accent);
+  stroke-width: 2.5;
+}
+
+.cta-chip-die {
+  fill: #0a1020;
+  stroke: var(--accent-bright);
+  stroke-width: 1.5;
+  opacity: 0.8;
+}
+
+.cta-wave {
+  fill: none;
+  stroke: var(--accent-bright);
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-dasharray: 14 10;
+  animation: cta-wave 1.2s linear infinite;
+}
+
+.cta-chip-label {
+  fill: #8ea0c2;
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 11px;
+  letter-spacing: 0.22em;
+}
+
+.cta-chip-dot {
+  fill: var(--accent-bright);
+}
+
+@keyframes cta-pulse {
+  from { stroke-dashoffset: 0.07; }
+  to { stroke-dashoffset: -1; }
+}
+
+@keyframes cta-ring {
+  50% { opacity: 0.1; transform: scale(1.1); }
+}
+
+@keyframes cta-wave {
+  to { stroke-dashoffset: -48; }
+}
+
+/* Resplandor que va cubriendo la pantalla justo antes de la invitacion. */
+.cta-flash {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 50% 50%, rgb(31 143 255 / 38%), rgb(31 143 255 / 0%) 62%);
+  opacity: clamp(0, calc((var(--p) - 0.5) * 2.4), 1);
+  pointer-events: none;
+}
+
+.cta-title {
+  position: absolute;
+  top: clamp(72px, 14vh, 150px);
+  left: 0;
+  right: 0;
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  padding: 0 24px;
+  text-align: center;
+  opacity: var(--ttl);
+  transform: translateY(calc(var(--p) * -80px)) scale(calc(1 + var(--p) * 0.5));
+}
+
+.cta-title h2 {
+  margin: 0;
+  font-size: clamp(26px, 3.6vw, 44px);
+}
+
+.cta-title p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 15px;
+}
+
+.cta-final-copy {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 14px;
+  padding: 0 24px;
+  text-align: center;
+  background: radial-gradient(closest-side, color-mix(in srgb, var(--background) 82%, transparent), transparent);
+  opacity: var(--fin);
+  transform: scale(calc(0.9 + var(--fin) * 0.1));
+  translate: 0 calc((1 - round(up, var(--fin), 1)) * 200vh);
+}
+
+.cta-big {
+  margin: 0;
+  font-size: clamp(36px, 6.4vw, 76px);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.05;
+}
+
+.cta-sub {
+  max-width: 46ch;
+  margin: 0 0 8px;
+  color: var(--muted);
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+.cta-final-copy .cta-primary {
+  min-height: 54px;
+  padding: 0 30px;
+  font-size: 17px;
+}
+
+/* Sin scroll animado (movil o movimiento reducido): se muestra el cierre ya terminado, sin acercamiento. */
+@media (max-width: 900px) {
+  .cta-stage {
+    height: auto;
+  }
+
+  .cta-sticky {
+    position: relative;
+    height: auto;
+    min-height: 80svh;
+  }
+
+  .cta-world {
+    transform: scale(1.5);
+  }
+
+  .cta-title {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cta-stage {
+    height: auto;
+  }
+
+  .cta-sticky {
+    position: relative;
+    height: auto;
+    min-height: 80svh;
+  }
+
+  .cta-world {
+    transform: scale(1.5);
+  }
+
+  .cta-title {
+    display: none;
+  }
+
+  .cta-grid {
+    transform: none;
+  }
+
+  .cta-pulse,
+  .cta-chip-ring,
+  .cta-wave {
+    animation: none;
   }
 }

@@ -1,11 +1,59 @@
-export type CourseArt = "circuit" | "sensors" | "digital" | "generic";
+export type CourseArt = "circuit" | "analysis" | "passive" | "control" | "sensors" | "digital" | "generic";
+
+// Animación que acompaña a cada lección.
+export type LessonScene =
+  | "magnitudes"
+  | "ohm"
+  | "led"
+  | "series-parallel"
+  | "capacitor"
+  | "power"
+  | "divider"
+  | "kirchhoff"
+  | "mixed"
+  | "breadboard"
+  | ComponentScene;
+
+// Escenas de las lecciones de cada componente del simulador.
+export type ComponentScene =
+  | "source"
+  | "resistor"
+  | "inductor"
+  | "switch"
+  | "button"
+  | "potentiometer"
+  | "diode"
+  | "ldr"
+  | "ultrasonic"
+  | "motor"
+  | "buzzer"
+  | "transistor"
+  | "mcu"
+  | "uno"
+  | "esp32"
+  | "gpio-out"
+  | "adc";
+
+// Simulador interactivo que se inserta dentro de una lección.
+export type PlaygroundKind =
+  | "pipe"
+  | "ohm"
+  | "led"
+  | "series-parallel"
+  | "capacitor"
+  | "power"
+  | "divider"
+  | "kirchhoff"
+  | "mixed"
+  | "breadboard";
 
 export type LessonBlock =
   | { type: "paragraph"; text: string }
   | { type: "list"; items: string[]; ordered?: boolean }
   | { type: "code"; language: string; code: string }
   | { type: "formula"; expression: string; caption?: string }
-  | { type: "callout"; tone?: "info" | "warning"; title?: string; text: string };
+  | { type: "callout"; tone?: "info" | "warning"; title?: string; text: string }
+  | { type: "playground"; kind: PlaygroundKind };
 
 export interface Quiz {
   question: string;
@@ -55,6 +103,7 @@ export interface Lesson extends LessonSummary {
   course: Course;
   index: number;
   total: number;
+  scene: LessonScene;
   blocks: LessonBlock[];
   quiz: Quiz;
   previous?: LessonLink;
@@ -97,6 +146,7 @@ export interface LessonSource {
   slug: string;
   title: string;
   summary: string;
+  scene: LessonScene;
   blocks: LessonBlock[];
   quiz: Quiz;
 }

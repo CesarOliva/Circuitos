@@ -3,7 +3,7 @@
 import { useEffect, useRef, type ReactNode } from "react";
 
 // Escribe en --p el avance (de 0 a 1) del recorrido del contenedor; el CSS de landing.css arma la escena con ese valor.
-export function ScrollStage({ children }: { children: ReactNode }) {
+export function ScrollStage({ children, className = "" }: { children: ReactNode; className?: string }) {
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -37,7 +37,7 @@ export function ScrollStage({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <div ref={ref} className="scroll-stage">
+    <div ref={ref} className={`scroll-stage ${className}`.trim()}>
       {children}
     </div>
   );

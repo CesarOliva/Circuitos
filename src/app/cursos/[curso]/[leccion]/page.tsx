@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { content } from "@/content";
+import { content, findLesson } from "@/content";
 import { LessonBlocks } from "@/components/cursos/lesson-blocks";
 import { Quiz } from "@/components/cursos/quiz";
 import { ReadingProgress } from "@/components/cursos/reading-progress";
@@ -9,21 +9,21 @@ import { CircuitScene } from "@/components/cursos/circuit-scene";
 import "@/components/cursos/cursos.css";
 
 export async function generateStaticParams() {
-  return content.getLessonParams();
+  return (await content.getLessonParams()).map(({ curso, leccion }) => ({ curso, leccion }));
 }
 
-export async function generateMetadata({ params }: PageProps<"/cursos/[asignatura]/[curso]/[leccion]">): Promise<Metadata> {
-  const { asignatura, curso, leccion } = await params;
-  const lesson = await content.getLesson(asignatura, curso, leccion);
+export async function generateMetadata({ params }: PageProps<"/cursos/[curso]/[leccion]">): Promise<Metadata> {
+  const { curso, leccion } = await params;
+  const lesson = await findLesson(curso, leccion);
   return lesson ? { title: lesson.title, description: lesson.summary } : { title: "Lección no encontrada" };
 }
 
-export default async function LeccionPage({ params }: PageProps<"/cursos/[asignatura]/[curso]/[leccion]">) {
-  const { asignatura, curso, leccion } = await params;
-  const lesson = await content.getLesson(asignatura, curso, leccion);
+export default async function LeccionPage({ params }: PageProps<"/cursos/[curso]/[leccion]">) {
+  const { curso, leccion } = await params;
+  const lesson = await findLesson(curso, leccion);
   if (!lesson) notFound();
 
-  const basePath = `/cursos/${lesson.subject.slug}/${lesson.course.slug}`;
+  const basePath = `/cursos/${lesson.course.slug}`;
 
   return (
     <main className="edu edu-lesson">
@@ -37,7 +37,7 @@ export default async function LeccionPage({ params }: PageProps<"/cursos/[asigna
           <h1>{lesson.title}</h1>
           <p className="edu-lead">{lesson.summary}</p>
         </header>
-        <CircuitScene />
+        <CircuitScene scene={lesson.scene} />
         <div className="lesson-reading">
           <LessonBlocks blocks={lesson.blocks} />
           <Quiz key={lesson.slug} quiz={lesson.quiz} />

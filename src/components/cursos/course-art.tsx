@@ -45,6 +45,130 @@ function CircuitArt() {
   );
 }
 
+// Esquema del curso de análisis: una fuente, un resistor en serie y dos ramas en paralelo.
+function AnalysisArt() {
+  const wire = "M44 80 H66 M140 80 H168 M168 80 V52 H196 M270 52 H290 M168 80 V108 H196 M270 108 H290 M290 52 V150 H162 M150 150 H44 V80";
+  return (
+    <svg className="course-art" viewBox="0 0 320 200" aria-hidden="true">
+      <rect x="16" y="16" width="288" height="168" rx="10" fill="var(--surface-2)" stroke="var(--line-strong)" />
+      {Array.from({ length: 6 }, (_, row) =>
+        Array.from({ length: 12 }, (_, col) => <circle key={`${row}-${col}`} cx={34 + col * 23} cy={32 + row * 28} r="1.2" fill="var(--line-strong)" />),
+      )}
+      <path d={wire} fill="none" stroke="var(--line-strong)" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+      <path d={wire} fill="none" stroke="var(--accent)" strokeWidth="3" strokeLinecap="round" strokeDasharray="1 11" />
+      <g fill="none" stroke="var(--foreground)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M150 134 V166 M162 141 V159" />
+        <path d="M66 80 l9 -12 14 24 14 -24 14 24 14 -24 9 12" />
+        <path d="M196 52 l9 -12 14 24 14 -24 14 24 14 -24 9 12" />
+        <path d="M196 108 l9 -12 14 24 14 -24 14 24 14 -24 9 12" />
+      </g>
+      <circle cx="168" cy="80" r="4.5" fill="var(--accent-bright)" />
+      <circle cx="290" cy="80" r="4.5" fill="var(--accent-bright)" />
+      <g fill="var(--muted)" fontFamily="monospace" fontSize="11">
+        <text x="103" y="62" textAnchor="middle">R1</text>
+        <text x="233" y="32" textAnchor="middle">R2</text>
+        <text x="233" y="130" textAnchor="middle">R3</text>
+        <text x="156" y="128" textAnchor="middle" fill="var(--accent-ink)">9 V</text>
+      </g>
+      <text x="160" y="177" textAnchor="middle" fill="var(--faint)" fontFamily="monospace" fontSize="10">ΣI = 0 · ΣV = 0</text>
+    </svg>
+  );
+}
+
+// Fondo común de los dibujos de curso.
+function ArtFrame({ children, caption }: { children: React.ReactNode; caption: string }) {
+  return (
+    <svg className="course-art" viewBox="0 0 320 200" aria-hidden="true">
+      <rect x="16" y="16" width="288" height="168" rx="10" fill="var(--surface-2)" stroke="var(--line-strong)" />
+      {Array.from({ length: 6 }, (_, row) =>
+        Array.from({ length: 12 }, (_, col) => <circle key={`${row}-${col}`} cx={34 + col * 23} cy={32 + row * 28} r="1.2" fill="var(--line-strong)" />),
+      )}
+      {children}
+      <text x="160" y="177" textAnchor="middle" fill="var(--faint)" fontFamily="monospace" fontSize="10">{caption}</text>
+    </svg>
+  );
+}
+
+const ART_STROKE = { fill: "none", stroke: "var(--foreground)", strokeWidth: 2.5, strokeLinecap: "round", strokeLinejoin: "round" } as const;
+
+function Current({ d }: { d: string }) {
+  return (
+    <>
+      <path d={d} fill="none" stroke="var(--line-strong)" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+      <path d={d} fill="none" stroke="var(--accent)" strokeWidth="3" strokeLinecap="round" strokeDasharray="1 11" />
+    </>
+  );
+}
+
+// Fuente, protoboard y pasivos: resistor, capacitor e inductor en serie.
+function PassiveArt() {
+  return (
+    <ArtFrame caption="R · C · L">
+      <Current d="M36 90 H56 M130 90 H156 M168 90 H196 M276 90 H292 V140 H36 V90" />
+      <g {...ART_STROKE}>
+        <path d="M56 90 l9 -12 14 24 14 -24 14 24 14 -24 9 12" />
+        <path d="M156 68 V112 M168 68 V112" />
+        <path d="M196 90 a10 10 0 0 1 20 0 a10 10 0 0 1 20 0 a10 10 0 0 1 20 0 a10 10 0 0 1 20 0" />
+      </g>
+      <circle cx="36" cy="90" r="4.5" fill="var(--accent-bright)" />
+    </ArtFrame>
+  );
+}
+
+// Control y semiconductores: interruptor, diodo y LED.
+function ControlArt() {
+  return (
+    <ArtFrame caption="SW · D · LED">
+      <Current d="M36 100 H60 M110 100 H150 M190 100 H220 M264 100 H292 V146 H36 V100" />
+      <g {...ART_STROKE}>
+        <path d="M60 100 L104 76" />
+        <path d="M150 82 V118 L176 100 Z M176 82 V118" />
+        <path d="M220 75 V125 L264 100 Z M264 75 V125" />
+      </g>
+      <path d="M244 68 l16 -16 M254 80 l16 -16" stroke="var(--accent-bright)" strokeWidth="2.5" strokeLinecap="round" />
+      <circle cx="60" cy="100" r="4.5" fill="var(--accent-bright)" />
+      <circle cx="110" cy="100" r="4.5" fill="var(--accent-bright)" />
+    </ArtFrame>
+  );
+}
+
+// Sensores y actuadores: un sensor ultrasónico que mide la distancia a un objeto.
+function SensorsArt() {
+  return (
+    <ArtFrame caption="d = v · t / 2">
+      <rect x="36" y="64" width="64" height="56" rx="8" fill="var(--surface)" stroke="var(--foreground)" strokeWidth="2.5" />
+      <circle cx="54" cy="92" r="11" fill="none" stroke="var(--line-strong)" strokeWidth="2" />
+      <circle cx="82" cy="92" r="11" fill="none" stroke="var(--line-strong)" strokeWidth="2" />
+      <g fill="none" stroke="var(--accent)" strokeWidth="2.5" strokeLinecap="round">
+        <path d="M120 78 q10 14 0 28" />
+        <path d="M136 70 q14 22 0 44" opacity="0.7" />
+        <path d="M152 62 q18 30 0 60" opacity="0.45" />
+      </g>
+      <rect x="248" y="52" width="14" height="80" rx="3" fill="var(--surface)" stroke="var(--foreground)" strokeWidth="2.5" />
+      <path d="M36 146 H262 M36 140 V152 M262 140 V152" stroke="var(--faint)" strokeWidth="1.5" strokeLinecap="round" />
+    </ArtFrame>
+  );
+}
+
+// Microcontroladores: un chip con sus pines.
+function DigitalArt() {
+  const pins = Array.from({ length: 6 }, (_, index) => 112 + index * 20);
+  return (
+    <ArtFrame caption="D0–D13 · A0–A5">
+      <rect x="100" y="52" width="120" height="82" rx="6" fill="var(--surface)" stroke="var(--foreground)" strokeWidth="2.5" />
+      {pins.map((x) => (
+        <g key={x}>
+          <path d={`M${x} 52 V40`} stroke="var(--accent)" strokeWidth="3" strokeLinecap="round" />
+          <path d={`M${x} 134 V146`} stroke="var(--accent)" strokeWidth="3" strokeLinecap="round" />
+        </g>
+      ))}
+      <circle cx="116" cy="68" r="4" fill="var(--accent-bright)" />
+      <text x="160" y="100" textAnchor="middle" fill="var(--foreground)" fontFamily="monospace" fontSize="14" fontWeight="700">MCU</text>
+      <text x="160" y="118" textAnchor="middle" fill="var(--muted)" fontFamily="monospace" fontSize="9">UNO · ESP32</text>
+    </ArtFrame>
+  );
+}
+
 function GenericArt({ label }: { label: string }) {
   return (
     <svg className="course-art" viewBox="0 0 320 200" aria-hidden="true">
@@ -58,5 +182,10 @@ function GenericArt({ label }: { label: string }) {
 
 export function CourseArt({ kind = "generic", label = "Curso" }: { kind?: CourseArtKind; label?: string }) {
   if (kind === "circuit") return <CircuitArt />;
+  if (kind === "analysis") return <AnalysisArt />;
+  if (kind === "passive") return <PassiveArt />;
+  if (kind === "control") return <ControlArt />;
+  if (kind === "sensors") return <SensorsArt />;
+  if (kind === "digital") return <DigitalArt />;
   return <GenericArt label={label} />;
 }

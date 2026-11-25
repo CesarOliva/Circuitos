@@ -1,4 +1,9 @@
 import type { SubjectSource } from "../types";
+import { ANALISIS_DE_CIRCUITOS } from "./analisis-de-circuitos";
+import { CONTROL_Y_SEMICONDUCTORES } from "./control-y-semiconductores";
+import { FUENTE_PROTOBOARD_Y_PASIVOS } from "./fuente-protoboard-y-pasivos";
+import { MICROCONTROLADORES } from "./microcontroladores";
+import { SENSORES_Y_ACTUADORES } from "./sensores-y-actuadores";
 
 // Cifras del curso: R = 1 kΩ, V = 9 V, LED rojo con caída de 2 V, C = 100 µF.
 export const CIRCUITOS: SubjectSource = {
@@ -21,22 +26,25 @@ export const CIRCUITOS: SubjectSource = {
           slug: "voltaje-corriente-resistencia",
           title: "Voltaje, corriente y resistencia",
           summary: "Las tres magnitudes que describen cualquier circuito.",
+          scene: "magnitudes",
           blocks: [
             {
               type: "paragraph",
-              text: "El voltaje (V) es la diferencia de potencial que empuja a las cargas por el circuito. Se mide en voltios (V).",
+              text: "Imagina una manguera conectada a una bomba de agua. Con eso ya entiendes casi todo lo que pasa dentro de un circuito.",
             },
             {
-              type: "paragraph",
-              text: "La corriente (I) es la cantidad de carga que pasa por un punto cada segundo. Se mide en amperios (A).",
+              type: "list",
+              items: [
+                "Voltaje (V): la presión de la bomba. Es lo que empuja las cargas. Se mide en voltios (V).",
+                "Corriente (I): el caudal, cuánta carga pasa por segundo. Se mide en amperios (A).",
+                "Resistencia (R): qué tan angosta es la tubería. Mientras más angosta, menos pasa. Se mide en ohmios (Ω).",
+              ],
             },
+            { type: "playground", kind: "pipe" },
             {
-              type: "paragraph",
-              text: "La resistencia (R) se opone al paso de la corriente. Se mide en ohmios (Ω).",
-            },
-            {
-              type: "paragraph",
-              text: "Una analogía útil: el voltaje es la presión de una bomba de agua, la corriente es el caudal y la resistencia es el diámetro de la tubería.",
+              type: "callout",
+              title: "¿SABÍAS QUE?",
+              text: "Una pila AA da 1.5 V y no sientes nada al tocarla. Un enchufe de casa da más de 100 V y sí puede hacerte daño. Por eso con los enchufes no se juega.",
             },
           ],
           quiz: {
@@ -50,18 +58,26 @@ export const CIRCUITOS: SubjectSource = {
           slug: "ley-de-ohm",
           title: "La ley de Ohm",
           summary: "Cómo calcular la corriente de un circuito sencillo.",
+          scene: "ohm",
           blocks: [
             {
               type: "paragraph",
-              text: "La ley de Ohm relaciona las tres magnitudes: V = I · R. Despejando, I = V / R y R = V / I.",
+              text: "Hay una ecuación que vas a usar toda tu vida en electrónica, y cabe en una línea:",
+            },
+            { type: "formula", expression: "V = I · R", caption: "Voltaje = corriente × resistencia" },
+            {
+              type: "paragraph",
+              text: "Si la despejas, te sirve para sacar lo que te falte: I = V / R y R = V / I.",
             },
             {
               type: "paragraph",
-              text: "Ejemplo: una fuente de 9 V conectada a un resistor de 1 kΩ (1000 Ω). La corriente es I = 9 V / 1000 Ω = 0.009 A = 9 mA.",
+              text: "Ejemplo: una fuente de 9 V con un resistor de 1 kΩ (1000 Ω). La corriente es I = 9 V / 1000 Ω = 0.009 A = 9 mA.",
             },
+            { type: "playground", kind: "ohm" },
             {
-              type: "paragraph",
-              text: "Si mantienes el voltaje y duplicas la resistencia, la corriente se reduce a la mitad.",
+              type: "callout",
+              title: "TRUCO MENTAL",
+              text: "Mismo voltaje y el doble de resistencia, la mitad de corriente. Es una proporción inversa: puedes comprobarlo con los controles de arriba.",
             },
           ],
           quiz: {
@@ -75,18 +91,27 @@ export const CIRCUITOS: SubjectSource = {
           slug: "led-y-resistor",
           title: "El LED y su resistor",
           summary: "Por qué un LED nunca se conecta sin resistencia.",
+          scene: "led",
           blocks: [
             {
               type: "paragraph",
-              text: "Un LED es un diodo: deja pasar la corriente en un solo sentido, del ánodo (+) al cátodo (−), y emite luz al hacerlo. La pata larga es el ánodo.",
+              text: "Un LED es como un portero muy estricto: deja pasar la corriente en un solo sentido, del ánodo (+) al cátodo (−), y de paso se ilumina. La pata larga es el ánodo.",
             },
             {
               type: "paragraph",
-              text: "Un LED rojo típico tiene una caída de voltaje de unos 2 V: mientras conduce, mantiene cerca de 2 V entre sus terminales.",
+              text: "Su problema: mientras conduce, mantiene casi fijos unos 2 V entre sus terminales (en uno rojo). Casi no se opone a la corriente, así que si lo conectas directo a 9 V, pasa tanta que se quema.",
             },
             {
               type: "paragraph",
-              text: "Como esa caída casi no cambia, sin resistencia la corriente crecería hasta dañar el LED. Por eso se conecta en serie con un resistor: (9 V − 2 V) / 1 kΩ = 7 mA.",
+              text: "La solución es un resistor en serie: se queda con los voltios que le sobran al LED.",
+            },
+            { type: "formula", expression: "I = (9 V − 2 V) / 1 kΩ = 7 mA", caption: "El resistor absorbe los 7 V restantes" },
+            { type: "playground", kind: "led" },
+            {
+              type: "callout",
+              tone: "warning",
+              title: "OJO",
+              text: "Un LED normal aguanta unos 20 mA. Con 9 V y 2 V de caída, necesitas más de 350 Ω para no pasarte.",
             },
           ],
           quiz: {
@@ -105,18 +130,28 @@ export const CIRCUITOS: SubjectSource = {
           slug: "serie-y-paralelo",
           title: "Serie y paralelo",
           summary: "Cómo se combinan las resistencias.",
+          scene: "series-parallel",
           blocks: [
             {
               type: "paragraph",
-              text: "En serie, las resistencias se suman: R = R1 + R2, y la misma corriente pasa por todas.",
+              text: "Dos resistores se pueden conectar de dos formas, y cada una cambia por completo lo que pasa.",
+            },
+            {
+              type: "list",
+              items: [
+                "En serie: uno detrás de otro, con un solo camino. La misma corriente pasa por todos y las resistencias se suman: R = R1 + R2.",
+                "En paralelo: varios caminos a la vez. La corriente se reparte y el equivalente cumple 1 / R = 1 / R1 + 1 / R2.",
+              ],
             },
             {
               type: "paragraph",
-              text: "En paralelo, la corriente se reparte y el equivalente cumple 1 / R = 1 / R1 + 1 / R2.",
+              text: "Con dos resistores de 1 kΩ: en serie valen 2 kΩ y en paralelo, 500 Ω.",
             },
+            { type: "playground", kind: "series-parallel" },
             {
-              type: "paragraph",
-              text: "Dos resistores de 1 kΩ en serie valen 2 kΩ. Los mismos dos en paralelo valen 500 Ω.",
+              type: "callout",
+              title: "PARA RECORDAR",
+              text: "En paralelo la resistencia equivalente siempre sale menor que la más pequeña: más caminos, más fácil pasar. Las luces de tu casa están en paralelo, por eso si una se funde las demás siguen prendidas.",
             },
           ],
           quiz: {
@@ -130,18 +165,31 @@ export const CIRCUITOS: SubjectSource = {
           slug: "capacitor-y-carga",
           title: "El capacitor y la carga",
           summary: "Por qué el voltaje de un capacitor sube poco a poco.",
+          scene: "capacitor",
           blocks: [
             {
               type: "paragraph",
-              text: "Un capacitor almacena carga. Con un resistor en serie, su voltaje sube siguiendo V(t) = V0 · (1 − e^(−t/τ)), con τ = R · C.",
+              text: "Un capacitor es como un depósito de carga: al principio se llena rápido, pero cada vez le cuesta más porque ya hay carga dentro empujando de vuelta.",
             },
             {
               type: "paragraph",
-              text: "Con R = 1 kΩ y C = 100 µF, τ = 1000 Ω × 100 µF = 0.1 s.",
+              text: "Con un resistor en serie, su voltaje sube siguiendo esta fórmula, donde τ = R · C se llama constante de tiempo:",
             },
+            { type: "formula", expression: "V(t) = V0 · (1 − e^(−t/τ))", caption: "τ = R · C" },
             {
               type: "paragraph",
+              text: "Con R = 1 kΩ y C = 100 µF: τ = 1000 Ω × 100 µF = 0.1 s.",
+            },
+            { type: "playground", kind: "capacitor" },
+            {
+              type: "callout",
+              title: "REGLA RÁPIDA",
               text: "Tras τ el voltaje llega al 63 % de 9 V, unos 5.7 V. Tras 5τ, al 99 %: ya está prácticamente cargado.",
+            },
+            {
+              type: "callout",
+              title: "¿SABÍAS QUE?",
+              text: "El flash de una cámara usa un capacitor: tarda unos segundos en cargarse y luego suelta toda la energía de golpe.",
             },
           ],
           quiz: {
@@ -153,5 +201,10 @@ export const CIRCUITOS: SubjectSource = {
         },
       ],
     },
+    ANALISIS_DE_CIRCUITOS,
+    FUENTE_PROTOBOARD_Y_PASIVOS,
+    CONTROL_Y_SEMICONDUCTORES,
+    SENSORES_Y_ACTUADORES,
+    MICROCONTROLADORES,
   ],
 };

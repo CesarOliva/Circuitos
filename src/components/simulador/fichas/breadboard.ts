@@ -15,15 +15,14 @@ export const ficha: Ficha = {
     { parametro: "Columnas numeradas", simulador: "30", real: "Media placa (400 puntos): 30; completa (830 puntos): 63" },
     { parametro: "Tiras por columna", simulador: "2 (a–e, f–j)", real: "2" },
     { parametro: "Rieles de alimentación", simulador: "4 (top+, top−, bottom+, bottom−), continuos", real: "4; en algunas placas largas el riel está cortado a la mitad" },
-    { parametro: "Puntos de conexión", simulador: "420 (300 de tiras + 120 de rieles)", real: "400 o 830 típicos" },
-    { parametro: "Límite eléctrico", simulador: "No se modela", real: "Solo baja tensión; el límite de corriente lo fija cada fabricante (orientativo: ~1 A). Nunca tensión de red" },
+    { parametro: "Puntos de conexión", simulador: "420 (300 de tiras + 120 de rieles, 30 por riel)", real: "400 (300 + 100 de rieles, 25 por riel) u 830 (630 + 200)" },    { parametro: "Límite eléctrico", simulador: "No se modela", real: "Solo baja tensión; el límite de corriente lo fija cada fabricante (orientativo: ~1 A). Nunca tensión de red" },
   ],
   pines: [
     { id: "a1 … e30", nombre: "Tira superior de cada columna", funcion: "Los cinco agujeros a–e de una misma columna están unidos." },
     { id: "f1 … j30", nombre: "Tira inferior de cada columna", funcion: "f–j de una misma columna están unidos, pero no con a–e." },
     { id: "top+1 … top+30", nombre: "Riel superior +", funcion: "Todo el riel es un solo nodo." },
     { id: "top-1 … top-30", nombre: "Riel superior −", funcion: "Todo el riel es un solo nodo." },
-    { id: "bottom+ / bottom-", nombre: "Rieles inferiores", funcion: "Igual que los superiores; no están unidos con ellos." },
+    { id: "bottom+1 … bottom+30 / bottom-1 … bottom-30", nombre: "Rieles inferiores", funcion: "Igual que los superiores; no están unidos con ellos." },
   ],
   simulador: {
     modelo: [
@@ -49,9 +48,9 @@ export const ficha: Ficha = {
     },
     {
       titulo: "Riel de alimentación",
-      montaje: "+ de la batería en top+1 y un componente tomando energía de top+30.",
-      pasos: ["Simula."],
-      esperado: "Conduce: el riel es continuo de 1 a 30.",
+      montaje: "Batería 9 V: + en top+1 y − en top-1. Resistencia de 470 Ω de top+30 a a20; LED con el ánodo en e20 y el cátodo en top-30.",
+      pasos: ["Coloca las piezas en esos agujeros.", "Simula."],
+      esperado: "El LED enciende con ≈ 14.7 mA: los dos rieles conducen de la columna 1 a la 30.",
     },
   ],
   fallos: [

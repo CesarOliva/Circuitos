@@ -20,7 +20,7 @@ export const ficha: Ficha = {
     { parametro: "Entradas analógicas", simulador: "Canales 0–5, de 0 a 5 V; ADC de 10 bits (0–1023)", real: "A0–A5, ADC de 10 bits" },
     { parametro: "Corriente por pin", simulador: "No se limita", real: "20 mA recomendado; 40 mA máximo absoluto" },
     { parametro: "Corriente total del chip", simulador: "No se limita", real: "200 mA entre todos los pines (VCC/GND del ATmega328P)" },
-    { parametro: "Memoria", simulador: "Flash de 16 K palabras (32 KB)", real: "Flash 32 KB (0.5 KB de bootloader), SRAM 2 KB, EEPROM 1 KB" },
+    { parametro: "Memoria", simulador: "Flash de 16 K palabras (32 KB); SRAM de 8 KB (valor por defecto de avr8js, 4 veces la real)", real: "Flash 32 KB (0.5 KB de bootloader), SRAM 2 KB, EEPROM 1 KB" },
     { parametro: "Puerto serie", simulador: "USART0 capturado como texto", real: "UART por USB (pines 0 y 1)" },
   ],
   pines: [
@@ -49,10 +49,11 @@ export const ficha: Ficha = {
       { clave: "diagnostics", significado: "Errores y avisos de compilación con su línea." },
     ],
     limitaciones: [
-      "Todavía no se puede arrastrar al playground: se usa desde la API runSketch() de simulacion/.",
+      "En el playground la placa se puede colocar y cablear, pero sus pines (incluidos 5V y GND) no conducen corriente: un LED conectado a ella no enciende. Para probar un LED con la placa se usa runSketch() con outputSources.",
       "Necesita Arduino CLI con el core arduino:avr instalado (ARDUINO_CLI_PATH).",
       "Solo bibliotecas del core; sin I²C/SPI con periféricos simulados. Como máximo 2 ejecuciones simultáneas.",
-    ],
+      "La CPU emulada tiene 8 KB de SRAM en lugar de 2 KB: un sketch que agota la memoria y se reinicia en una placa real puede funcionar en el simulador.",
+      "Un pin enlazado con outputSources es una fuente ideal de 0 o 5 V: no cae su voltaje con la carga ni limita la corriente, así que un LED sin resistencia no se marca como daño del pin.",    ],
   },
   pruebas: [
     {

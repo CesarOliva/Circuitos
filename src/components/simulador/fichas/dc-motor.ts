@@ -51,7 +51,7 @@ export const ficha: Ficha = {
       titulo: "Control de velocidad por voltaje",
       montaje: "El mismo circuito.",
       pasos: ["Simula con 3 V y luego con 9 V."],
-      esperado: "3 V: 1500 rpm. 9 V: 3000 rpm (el modelo limita al valor de vacío) e I = 0.15 A. Ojo: 9 V supera los 3–6 V de un motor tipo 130; uno real se calentaría y se desgastaría antes. El playground no lo marca; el validador de la ficha sí (150 % del nominal).",
+      esperado: "3 V: 1500 rpm. 9 V: 3000 rpm (el modelo limita al valor de vacío) e I = 0.15 A. Ojo: 9 V supera los 3–6 V de un motor tipo 130; uno real se calentaría y se desgastaría antes. El playground no lo marca; el validador de la ficha sí: 9 V son el 150 % del nominal y avisa desde el 125 % (7.5 V).",
     },
     {
       titulo: "Motor controlado por transistor",

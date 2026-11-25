@@ -19,13 +19,13 @@ export const ficha: Ficha = {
     { parametro: "Entradas analógicas", simulador: "GPIO 32, 33, 34, 35, 36 y 39; de 0 a 3.3 V; ADC de 12 bits (0–4095)", real: "ADC1 de 12 bits. Con la atenuación de 11 dB el rango útil y lineal es menor que 0–3.3 V (≈0.15–2.45 V según Espressif). ADC2 no se puede usar con Wi-Fi activo" },
     { parametro: "Memoria", simulador: "—", real: "520 KB de SRAM; 4 MB de flash" },
     { parametro: "Conectividad", simulador: "No se simula", real: "Wi-Fi 802.11 b/g/n y Bluetooth 4.2 / BLE" },
-    { parametro: "Corriente por GPIO", simulador: "No se limita", real: "~20 mA recomendado (40 mA máximo)" },
-  ],
+    { parametro: "Corriente por GPIO", simulador: "No se limita", real: "~20 mA recomendado (40 mA máximo)" },  ],
   pines: [
     { id: "GPIO 2", nombre: "LED integrado", funcion: "LED azul de la placa; buena salida para pruebas. También es pin de arranque: con cargas fuertes puede impedir la programación." },
     { id: "GPIO 0", nombre: "BOOT", funcion: "Pin de arranque unido al botón BOOT: en bajo al reiniciar, la placa entra en modo de programación." },
     { id: "GPIO 4, 5, 12–19, 23, 25–27", nombre: "E/S digital", funcion: "Todas admiten PWM (ledcWrite). GPIO 25 y 26 tienen DAC. GPIO 5, 12 y 15 son pines de arranque: GPIO 12 en alto al arrancar fija la flash a 1.8 V y la placa no arranca. GPIO 4, 12–15 y 25–27 son del ADC2." },
     { id: "GPIO 21 / 22", nombre: "SDA / SCL", funcion: "Bus I²C por defecto." },
+    { id: "GPIO 6–11", nombre: "Flash SPI", funcion: "Conectados a la memoria flash del módulo: no se usan como E/S." },
     { id: "GPIO 32, 33", nombre: "ADC1 (canales 4, 5)", funcion: "Entrada analógica o E/S digital." },
     { id: "GPIO 34, 35, 36 (VP), 39 (VN)", nombre: "Solo entrada", funcion: "ADC1; sin salida ni pull-up interno." },
     { id: "TX0 (1) / RX0 (3)", nombre: "UART0", funcion: "Serial por USB." },
@@ -47,10 +47,10 @@ export const ficha: Ficha = {
       { clave: "circuitSamples", significado: "Respuesta del circuito enlazado." },
     ],
     limitaciones: [
-      "Todavía no se puede arrastrar al playground: se usa desde runSketch().",
+      "En el playground la placa se puede colocar y cablear, pero sus pines (incluidos 3V3 y GND) no conducen corriente: un LED conectado a ella no enciende. Para probar un LED con la placa se usa runSketch() con outputSources.",
       "Necesita esp32sim con sus archivos ROM (ESP32SIM_PATH, ESP32SIM_ROM_DIR) y el core esp32:esp32 de Arduino CLI.",
       "Wi-Fi, Bluetooth y bibliotecas adicionales no están disponibles. Una entrada analógica fuera de 0–3.3 V o en un GPIO sin ADC se rechaza.",
-    ],
+      "Las entradas digitales se aceptan en cualquier número de 0 a 39, incluidos GPIO 6–11 (flash) y números que el ESP32 no tiene (20, 24, 28–31): revisa el pin aunque el simulador no avise.",    ],
   },
   pruebas: [
     {

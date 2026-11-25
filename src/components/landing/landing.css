@@ -1,0 +1,1054 @@
+/* Landing. Usa los tokens de tema de globals.css, así funciona igual en claro y en oscuro. */
+
+.landing {
+  width: min(1200px, 100%);
+  margin: 0 auto;
+  padding: 0 48px 90px;
+  color: var(--foreground);
+}
+
+.landing h2 {
+  margin: 0 0 22px;
+  font-size: clamp(22px, 3vw, 30px);
+  font-weight: 650;
+  letter-spacing: -0.02em;
+}
+
+/* ---------- Bienvenida a pantalla completa ---------- */
+
+/* Tres anillos en 3D girando alrededor de un LED que pulsa; después aparece el nombre de la marca. */
+.intro-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  display: grid;
+  place-items: center;
+  background: var(--background);
+  pointer-events: none;
+  animation: intro-out 0.7s 2.6s ease forwards;
+}
+
+.intro-scene {
+  display: grid;
+  justify-items: center;
+  gap: 30px;
+  perspective: 600px;
+}
+
+.intro-orbits {
+  position: relative;
+  width: 200px;
+  height: 200px;
+  transform-style: preserve-3d;
+  animation: intro-in 0.8s cubic-bezier(0.22, 0.8, 0.3, 1) both;
+}
+
+.orbit {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 1px solid rgb(124 200 255 / 35%);
+  transform: var(--tilt);
+  animation: orbit-spin var(--dur) linear infinite;
+}
+
+/* El punto de corriente viaja por el borde de cada anillo. */
+.orbit::before {
+  content: "";
+  position: absolute;
+  top: -5px;
+  left: 50%;
+  width: 10px;
+  height: 10px;
+  margin-left: -5px;
+  border-radius: 50%;
+  background: #7cc8ff;
+  box-shadow: 0 0 14px #5cb8ff;
+}
+
+.orbit-1 { --tilt: rotateX(70deg); --dur: 3.6s; }
+.orbit-2 { --tilt: rotateY(70deg); --dur: 4.8s; }
+.orbit-3 { --tilt: rotateX(70deg) rotateY(45deg); --dur: 6s; }
+
+.intro-core {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 26px;
+  height: 26px;
+  margin: -13px 0 0 -13px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 40% 35%, #fffbe0, #ffd66c 45%, #c27a12);
+  box-shadow: 0 0 24px rgb(255 190 60 / 80%);
+  animation: core-pulse 1.6s ease-in-out infinite;
+}
+
+.intro-brand {
+  margin: 0;
+  color: var(--foreground);
+  font-size: 13px;
+  font-weight: 650;
+  text-transform: uppercase;
+  letter-spacing: 0.24em;
+  animation: brand-in 1.1s 0.5s cubic-bezier(0.22, 0.8, 0.3, 1) both;
+}
+
+/* ---------- Hero ---------- */
+
+.hero {
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  justify-items: center;
+  padding: 104px 0 64px;
+  text-align: center;
+}
+
+.hero-copy {
+  display: grid;
+  justify-items: center;
+}
+
+.hero-copy > * {
+  opacity: 0;
+  animation: rise-in 0.7s cubic-bezier(0.22, 0.8, 0.3, 1) forwards;
+}
+
+.hero-copy > :nth-child(3) { animation-delay: 0.2s; }
+.hero-copy > :nth-child(4) { animation-delay: 0.3s; }
+
+.hero-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 22px;
+  padding: 6px 12px;
+  border: 1px solid rgb(31 143 255 / 35%);
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent-ink);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.hero-badge-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--accent-bright);
+  box-shadow: 0 0 8px var(--accent);
+  animation: pulse-dot 2.4s ease-in-out infinite;
+}
+
+/* El titular entra palabra por palabra, cada una girando en 3D desde detrás de la pantalla. */
+.hero h1 {
+  perspective: 800px;
+  max-width: 16ch;
+  margin: 0 auto 22px;
+  font-size: clamp(40px, 6.4vw, 78px);
+  font-weight: 700;
+  line-height: 1.04;
+  letter-spacing: -0.035em;
+  opacity: 1;
+  animation: none;
+}
+
+.hw {
+  display: inline-block;
+  transform-origin: 50% 100%;
+  opacity: 0;
+  animation: word-flip 0.9s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+  animation-delay: calc(var(--i, 0) * 0.12s + 0.15s);
+}
+
+.hero-accent {
+  color: var(--accent-ink);
+}
+
+.hero-lead {
+  max-width: 60ch;
+  margin: 0 auto 30px;
+  color: var(--muted);
+  font-size: 16px;
+  line-height: 1.65;
+}
+
+.hero-ctas {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+}
+
+.cta-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 44px;
+  padding: 0 20px;
+  border-radius: 10px;
+  background: linear-gradient(#2c9dff, #1672e4);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 620;
+  text-decoration: none;
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 22%), 0 8px 24px rgb(31 143 255 / 35%);
+  transition: filter 0.16s ease, transform 0.16s ease, box-shadow 0.16s ease;
+}
+
+.cta-primary:hover {
+  filter: brightness(1.1);
+  transform: translateY(-2px);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 22%), 0 12px 32px rgb(31 143 255 / 50%);
+}
+
+.cta-secondary {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 20px;
+  border: 1px solid var(--line-strong);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--foreground);
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: border-color 0.16s ease, transform 0.16s ease, box-shadow 0.16s ease;
+}
+
+.cta-secondary:hover {
+  border-color: var(--accent);
+  transform: translateY(-2px);
+  box-shadow: 0 0 16px rgb(31 143 255 / 20%);
+}
+
+.cta-primary:focus-visible,
+.cta-secondary:focus-visible,
+.feature-card:focus-visible {
+  outline: 3px solid var(--accent-bright);
+  outline-offset: 2px;
+}
+
+/* ---------- Cifras ---------- */
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+  padding: 10px 0 54px;
+}
+
+.stat {
+  display: grid;
+  gap: 4px;
+  padding: 18px 20px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface);
+  text-align: left;
+}
+
+.stat-number {
+  color: var(--accent-ink);
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 30px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.stat-label {
+  color: var(--muted);
+  font-size: 12.5px;
+  line-height: 1.45;
+}
+
+/* ---------- Ventanas del sitio ---------- */
+
+.features {
+  padding: 10px 0 54px;
+}
+
+.features-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+
+/* Cada tarjeta sube en 3D mientras entra en pantalla. Sin soporte de scroll-driven animations se muestra normal. */
+.feature-card {
+  position: relative;
+  overflow: hidden;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 200px;
+  align-content: center;
+  column-gap: 20px;
+  row-gap: 12px;
+  padding: 22px 24px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: linear-gradient(160deg, var(--surface), var(--surface-2));
+  color: inherit;
+  text-decoration: none;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease, translate 0.18s ease;
+}
+
+@supports (animation-timeline: view()) {
+  .feature-card {
+    animation: card-rise linear both;
+    animation-timeline: view();
+    animation-range: entry 0% cover 40%;
+  }
+}
+
+.feature-card:hover {
+  border-color: var(--accent);
+  translate: 0 -4px;
+  box-shadow: 0 0 0 1px rgb(31 143 255 / 18%), 0 16px 36px rgb(0 0 0 / 22%), 0 0 30px rgb(31 143 255 / 10%);
+}
+
+.feature-head {
+  grid-column: 1;
+  grid-row: 1;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.feature-icon {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  flex: none;
+  border: 1px solid rgb(31 143 255 / 35%);
+  border-radius: 11px;
+  background: var(--accent-soft);
+  color: var(--accent-ink);
+}
+
+.feature-card h3 {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 640;
+}
+
+.feature-card p {
+  grid-column: 1;
+  grid-row: 2;
+  margin: 0;
+  color: var(--muted);
+  font-size: 13.5px;
+  line-height: 1.6;
+}
+
+.feature-go {
+  grid-column: 1;
+  grid-row: 3;
+  justify-self: start;
+  margin-top: 2px;
+  color: var(--accent-ink);
+  font-size: 13px;
+  font-weight: 600;
+  transition: translate 0.18s ease;
+}
+
+.feature-card:hover .feature-go {
+  translate: 4px 0;
+}
+
+/* Visual de cada ventana: una pequeña escena animada arriba de la tarjeta. */
+.fv {
+  grid-column: 2;
+  grid-row: 1 / span 3;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  align-self: center;
+  width: 200px;
+  height: 150px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: radial-gradient(ellipse 70% 80% at 50% 0%, rgb(31 143 255 / 14%), transparent 70%), var(--background);
+  perspective: 500px;
+  overflow: hidden;
+}
+
+/* Simulador: una batería y un LED unidos por cables; al cerrarse el lazo, los cables se dibujan y el LED enciende. */
+.fv-sim svg {
+  width: 170px;
+  height: auto;
+  overflow: visible;
+}
+
+.sim-wire {
+  fill: none;
+  stroke: var(--accent-bright);
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 1 1;
+  animation: sim-draw 3s ease-in-out infinite;
+}
+
+.sim-battery {
+  fill: var(--surface);
+  stroke: var(--foreground);
+  stroke-width: 1.6;
+}
+
+.sim-battery-cap {
+  fill: var(--muted);
+}
+
+.sim-label {
+  fill: var(--foreground);
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 11px;
+}
+
+.sim-led-glow {
+  fill: rgb(255 194 74 / 30%);
+  opacity: 0;
+  animation: sim-led-on 3s ease-in-out infinite;
+}
+
+.sim-led-body {
+  fill: var(--line-strong);
+  stroke: var(--muted);
+  stroke-width: 1.6;
+}
+
+.sim-led-on {
+  fill: #ffd66c;
+  stroke: #ffb02e;
+  stroke-width: 1.6;
+  opacity: 0;
+  animation: sim-led-on 3s ease-in-out infinite;
+}
+
+.sim-led-symbol {
+  fill: none;
+  stroke: #7a4a10;
+  stroke-width: 1.4;
+  stroke-linejoin: round;
+}
+
+/* Componentes: un carrusel de fichas (R, C, L, LED) que gira en 3D alrededor de un eje. */
+.fv-comp {
+  perspective: 500px;
+}
+
+.carousel {
+  position: relative;
+  width: 44px;
+  height: 44px;
+  transform-style: preserve-3d;
+  animation: carousel-spin 12s linear infinite;
+}
+
+.carousel span {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgb(124 200 255 / 60%);
+  border-radius: 6px;
+  background: rgb(31 143 255 / 16%);
+  color: #cfe9ff;
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 11px;
+  font-weight: 700;
+  transform: rotateY(calc(var(--i) * 90deg)) translateZ(40px);
+}
+
+/* 3D: un cubo que gira en el espacio. */
+.fv-3d {
+  perspective: 420px;
+}
+
+.cube {
+  position: relative;
+  width: 46px;
+  height: 46px;
+  transform-style: preserve-3d;
+  animation: cube-spin 8s linear infinite;
+}
+
+.cube span {
+  position: absolute;
+  inset: 0;
+  border: 1px solid rgb(124 200 255 / 60%);
+  background: rgb(31 143 255 / 14%);
+}
+
+.cube span:nth-child(1) { transform: translateZ(23px); }
+.cube span:nth-child(2) { transform: rotateY(90deg) translateZ(23px); }
+.cube span:nth-child(3) { transform: rotateY(180deg) translateZ(23px); }
+.cube span:nth-child(4) { transform: rotateY(-90deg) translateZ(23px); }
+.cube span:nth-child(5) { transform: rotateX(90deg) translateZ(23px); }
+.cube span:nth-child(6) { transform: rotateX(-90deg) translateZ(23px); }
+
+/* Fallos: un triángulo de alerta que se balancea en 3D y una grieta que se dibuja. */
+.fv-fault {
+  perspective: 420px;
+}
+
+.fv-fault svg {
+  width: 84px;
+  height: auto;
+  overflow: visible;
+  transform-style: preserve-3d;
+  animation: plate-tilt 4s ease-in-out infinite;
+}
+
+.fault-tri {
+  fill: rgb(255 107 117 / 12%);
+  stroke: #ff6b75;
+  stroke-width: 2.5;
+  stroke-linejoin: round;
+  animation: fault-pulse 2s ease-in-out infinite;
+}
+
+.fault-crack {
+  fill: none;
+  stroke: #ff9aa1;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 1 1;
+  animation: draw-in 2.6s ease-in-out infinite alternate;
+}
+
+/* ---------- Pasos ---------- */
+
+.steps {
+  padding: 10px 0 54px;
+}
+
+/* Barra de progreso de los pasos: quitada. Los pasos entran como tarjetas en 3D. */
+@supports (animation-timeline: view()) {
+  .step {
+    animation: card-rise linear both;
+    animation-timeline: view();
+    animation-range: entry 0% cover 40%;
+  }
+}
+
+.steps-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.step {
+  display: grid;
+  gap: 8px;
+  padding: 22px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--surface);
+  transition: border-color 0.18s ease, translate 0.18s ease;
+}
+
+.step:hover {
+  border-color: var(--accent);
+  translate: 0 -3px;
+}
+
+.step-number {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: linear-gradient(140deg, var(--accent-bright), var(--accent));
+  color: #fff;
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 14px;
+  font-weight: 700;
+  box-shadow: var(--glow);
+}
+
+.step h3 {
+  margin: 4px 0 0;
+  font-size: 15.5px;
+  font-weight: 640;
+}
+
+.step p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+/* ---------- CTA final ---------- */
+
+.cta-final {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  padding: 48px 24px;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  background:
+    radial-gradient(ellipse 70% 90% at 50% 110%, rgb(31 143 255 / 16%), transparent 70%),
+    var(--surface);
+  text-align: center;
+}
+
+.cta-final h2 {
+  margin: 0;
+}
+
+.cta-final p {
+  margin: 0 0 18px;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+/* ---------- Aparición al hacer scroll ---------- */
+
+.reveal {
+  opacity: 0;
+  translate: 0 26px;
+  transition: opacity 0.7s ease, translate 0.7s cubic-bezier(0.22, 0.8, 0.3, 1);
+}
+
+.reveal.is-visible {
+  opacity: 1;
+  translate: 0 0;
+}
+
+/* ---------- Movimiento extra ---------- */
+
+/* Rejilla de puntos que se desplaza despacio detrás del hero. */
+.hero::before {
+  content: "";
+  position: absolute;
+  inset: -60px -80px;
+  z-index: -1;
+  background-image: radial-gradient(var(--line-strong) 1px, transparent 1px);
+  background-size: 26px 26px;
+  -webkit-mask-image: radial-gradient(ellipse 55% 50% at 50% 40%, #000 20%, transparent 75%);
+  mask-image: radial-gradient(ellipse 55% 50% at 50% 40%, #000 20%, transparent 75%);
+  opacity: 0.6;
+  pointer-events: none;
+  animation: grid-drift 26s linear infinite;
+}
+
+/* Halo que sigue al cursor sobre las tarjetas de ventanas. */
+.spotlight::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: radial-gradient(260px circle at var(--mx, 50%) var(--my, 50%), rgb(31 143 255 / 16%), transparent 70%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+
+.spotlight:hover::before {
+  opacity: 1;
+}
+
+/* Al pasar el cursor, el icono de cada ventana se vuelve a dibujar. */
+.feature-icon :is(path, rect) {
+  stroke-dasharray: 1 1;
+}
+
+.feature-card:hover .feature-icon :is(path, rect) {
+  animation: draw-in 0.9s cubic-bezier(0.45, 0, 0.2, 1) both;
+}
+
+/* Los números de los pasos aparecen uno tras otro al entrar la sección. */
+.step:nth-child(2) { --i: 1; }
+.step:nth-child(3) { --i: 2; }
+
+.step-number {
+  opacity: 0;
+  transform: scale(0.4);
+}
+
+.reveal.is-visible .step-number {
+  animation: step-pop 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  animation-delay: calc(var(--i, 0) * 0.2s + 0.2s);
+}
+
+/* ---------- Osciloscopio al bajar (escena a pantalla completa) ---------- */
+
+/* Contenedor alto para que haya recorrido de scroll; la escena queda fija mientras se recorre. --p vale 0 hasta que corre el JS. */
+.scroll-stage {
+  --p: 0;
+  position: relative;
+  height: 300vh;
+}
+
+.stage-sticky {
+  position: sticky;
+  top: 0;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  justify-items: center;
+  align-content: center;
+  gap: 20px;
+  height: 100vh;
+  padding: 104px 5vw 36px;
+  overflow: hidden;
+  background: radial-gradient(ellipse 60% 50% at 50% 45%, rgb(31 143 255 / 9%), transparent 70%);
+}
+
+/* Barra de avance pegada arriba: crece con el scroll. */
+.stage-progress {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 3px;
+  width: calc(var(--p) * 100%);
+  background: linear-gradient(90deg, var(--accent-bright), var(--accent));
+  box-shadow: 0 0 12px var(--accent);
+}
+
+.stage-head {
+  text-align: center;
+}
+
+.stage-head h2 {
+  margin: 0 0 8px;
+  font-size: clamp(26px, 3.6vw, 44px);
+}
+
+.stage-head p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 15px;
+}
+
+.scope-scene {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  min-height: 0;
+  perspective: 1400px;
+}
+
+/* El osciloscopio se inclina al entrar y se endereza mientras se recorre. */
+.scope-body {
+  width: min(700px, 100%);
+  padding: 16px 16px 12px;
+  border-radius: 22px;
+  background: linear-gradient(160deg, #1f2838, #0b0f18);
+  box-shadow: 0 40px 60px rgb(0 0 0 / 55%), inset 0 1px 0 rgb(255 255 255 / 8%);
+  transform: rotateX(calc(60deg - clamp(0, var(--p) * 2.4, 1) * 34deg)) rotateZ(-1.5deg);
+  transform-origin: 50% 80%;
+}
+
+.scope-screen {
+  position: relative;
+  overflow: hidden;
+  border-radius: 12px;
+  background: #04100b;
+  box-shadow: inset 0 0 36px rgb(0 0 0 / 80%);
+}
+
+.scope-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.scope-grid {
+  stroke: rgb(124 255 178 / 12%);
+  stroke-width: 1;
+}
+
+.scope-ref {
+  stroke: rgb(124 255 178 / 30%);
+  stroke-dasharray: 4 6;
+}
+
+.scope-axis {
+  fill: rgb(124 255 178 / 70%);
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 13px;
+}
+
+/* La curva se dibuja con el scroll; con pathLength="1" el trazo mide 1. */
+.scope-curve {
+  fill: none;
+  stroke: #7cffb2;
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 1 1;
+  stroke-dashoffset: calc(1 - clamp(0, var(--p) * 1.05, 1));
+  filter: drop-shadow(0 0 6px rgb(124 255 178 / 70%));
+}
+
+/* El punto recorre la curva: t = 0.6 s · p y V = 9 V · (1 − e^(−t/τ)), con τ = 0.1 s. Las coordenadas son las del viewBox 620 × 360. */
+.scope-dot {
+  position: absolute;
+  left: calc((60 + 520 * var(--p)) / 620 * 100%);
+  top: calc((300 - 260 * (1 - exp(-6 * var(--p)))) / 360 * 100%);
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #d9ffe9;
+  box-shadow: 0 0 0 4px rgb(124 255 178 / 25%), 0 0 16px #7cffb2;
+  transform: translate(-50%, -50%);
+  opacity: clamp(0, calc((var(--p) - 0.02) * 20), 1);
+}
+
+.scope-caption {
+  margin: 10px 4px 0;
+  color: rgb(124 255 178 / 65%);
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 12px;
+  letter-spacing: 0.04em;
+}
+
+.scope-readouts {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  width: min(700px, 100%);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.scope-readout {
+  --k: clamp(0, calc((var(--p) - var(--s, 0)) * 8), 1);
+  display: grid;
+  gap: 2px;
+  padding: 12px 14px;
+  border: 1px solid rgb(124 255 178 / 18%);
+  border-radius: 12px;
+  background: #04100b;
+  opacity: var(--k);
+  transform: translateY(calc((1 - var(--k)) * 16px));
+}
+
+.scope-readout span {
+  color: rgb(124 255 178 / 65%);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+}
+
+.scope-readout strong {
+  color: #7cffb2;
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.scope-readout small {
+  color: rgb(124 255 178 / 60%);
+  font-size: 11.5px;
+}
+
+/* ---------- Keyframes ---------- */
+
+@keyframes intro-out {
+  to { opacity: 0; visibility: hidden; }
+}
+
+@keyframes intro-in {
+  from { opacity: 0; transform: scale(0.7) rotateX(60deg); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes orbit-spin {
+  from { transform: var(--tilt) rotateZ(0deg); }
+  to { transform: var(--tilt) rotateZ(360deg); }
+}
+
+@keyframes core-pulse {
+  50% { transform: scale(1.12); box-shadow: 0 0 40px rgb(255 190 60 / 95%); }
+}
+
+@keyframes brand-in {
+  from { opacity: 0; letter-spacing: 0.6em; filter: blur(4px); }
+  to { opacity: 1; letter-spacing: 0.24em; filter: blur(0); }
+}
+
+@keyframes rise-in {
+  from { opacity: 0; translate: 0 22px; }
+  to { opacity: 1; translate: 0 0; }
+}
+
+@keyframes word-flip {
+  from { opacity: 0; transform: rotateX(-90deg) translateY(0.3em); filter: blur(6px); }
+  to { opacity: 1; transform: none; filter: blur(0); }
+}
+
+@keyframes card-rise {
+  from { opacity: 0; transform: perspective(900px) rotateX(24deg) translateY(70px) scale(0.96); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes sim-draw {
+  0% { stroke-dashoffset: 1; }
+  40%, 100% { stroke-dashoffset: 0; }
+}
+
+@keyframes sim-led-on {
+  0%, 40% { opacity: 0; }
+  50%, 92% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+@keyframes carousel-spin {
+  from { transform: rotateX(-14deg) rotateY(0deg); }
+  to { transform: rotateX(-14deg) rotateY(360deg); }
+}
+
+@keyframes cube-spin {
+  from { transform: rotateX(-22deg) rotateY(0deg); }
+  to { transform: rotateX(-22deg) rotateY(360deg); }
+}
+
+@keyframes fault-pulse {
+  50% { fill: rgb(255 107 117 / 28%); }
+}
+
+@keyframes plate-tilt {
+  0%, 100% { transform: rotateY(-28deg) rotateX(8deg); }
+  50% { transform: rotateY(28deg) rotateX(-6deg); }
+}
+
+@keyframes draw-in {
+  from { stroke-dashoffset: 1; }
+  to { stroke-dashoffset: 0; }
+}
+
+@keyframes pulse-dot {
+  50% { opacity: 0.45; box-shadow: 0 0 2px var(--accent); }
+}
+
+@keyframes grid-drift {
+  to { background-position: 26px 26px; }
+}
+
+@keyframes step-pop {
+  from { opacity: 0; transform: scale(0.4); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+/* ---------- Responsivo ---------- */
+
+@media (max-width: 980px) {
+  .stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .steps-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .scope-readouts {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 900px) {
+  .scroll-stage {
+    height: auto;
+  }
+
+  .stage-sticky {
+    position: static;
+    height: auto;
+    padding: 56px 18px;
+  }
+
+  .stage-progress {
+    display: none;
+  }
+
+  .scope-body {
+    transform: none;
+  }
+}
+
+@media (max-width: 760px) {
+  .landing { padding: 0 18px 70px; }
+
+  .hero {
+    overflow: hidden;
+  }
+  .features-grid { grid-template-columns: 1fr; }
+  .feature-card { grid-template-columns: 1fr; }
+  .feature-head,
+  .feature-card p,
+  .feature-go,
+  .fv { grid-column: 1; grid-row: auto; }
+  .feature-head { order: 1; }
+  .fv { order: 2; width: 100%; height: 130px; }
+  .feature-card p { order: 3; }
+  .feature-go { order: 4; }
+}
+
+@media (max-width: 480px) {
+  .stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .stat {
+    padding: 14px;
+  }
+
+  .stat-number {
+    font-size: 24px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .intro-screen {
+    display: none;
+  }
+
+  .hero-copy > *,
+  .hw,
+  .feature-card,
+  .step,
+  .step-number {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+
+  .reveal {
+    opacity: 1;
+    translate: 0 0;
+    transition: none;
+  }
+
+  .orbit,
+  .intro-core,
+  .sim-wire,
+  .sim-led-on,
+  .sim-led-glow,
+  .carousel,
+  .cube,
+  .fv-fault svg,
+  .fault-crack,
+  .feature-card:hover .feature-icon :is(path, rect),
+  .hero-badge-dot,
+  .hero::before {
+    animation: none;
+  }
+
+  .sim-led-on,
+  .sim-led-glow {
+    opacity: 1;
+  }
+}

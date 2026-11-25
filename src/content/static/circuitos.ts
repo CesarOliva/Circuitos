@@ -1,5 +1,9 @@
 import type { SubjectSource } from "../types";
 import { ANALISIS_DE_CIRCUITOS } from "./analisis-de-circuitos";
+import { CONTROL_Y_SEMICONDUCTORES } from "./control-y-semiconductores";
+import { FUENTE_PROTOBOARD_Y_PASIVOS } from "./fuente-protoboard-y-pasivos";
+import { MICROCONTROLADORES } from "./microcontroladores";
+import { SENSORES_Y_ACTUADORES } from "./sensores-y-actuadores";
 
 // Cifras del curso: R = 1 kΩ, V = 9 V, LED rojo con caída de 2 V, C = 100 µF.
 export const CIRCUITOS: SubjectSource = {
@@ -198,5 +202,9 @@ export const CIRCUITOS: SubjectSource = {
       ],
     },
     ANALISIS_DE_CIRCUITOS,
+    FUENTE_PROTOBOARD_Y_PASIVOS,
+    CONTROL_Y_SEMICONDUCTORES,
+    SENSORES_Y_ACTUADORES,
+    MICROCONTROLADORES,
   ],
 };

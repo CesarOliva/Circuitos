@@ -1,4 +1,4 @@
-export type CourseArt = "circuit" | "analysis" | "sensors" | "digital" | "generic";
+export type CourseArt = "circuit" | "analysis" | "passive" | "control" | "sensors" | "digital" | "generic";
 
 // Animación que acompaña a cada lección.
 export type LessonScene =
@@ -11,7 +11,28 @@ export type LessonScene =
   | "divider"
   | "kirchhoff"
   | "mixed"
-  | "breadboard";
+  | "breadboard"
+  | ComponentScene;
+
+// Escenas de las lecciones de cada componente del simulador.
+export type ComponentScene =
+  | "source"
+  | "resistor"
+  | "inductor"
+  | "switch"
+  | "button"
+  | "potentiometer"
+  | "diode"
+  | "ldr"
+  | "ultrasonic"
+  | "motor"
+  | "buzzer"
+  | "transistor"
+  | "mcu"
+  | "uno"
+  | "esp32"
+  | "gpio-out"
+  | "adc";
 
 // Simulador interactivo que se inserta dentro de una lección.
 export type PlaygroundKind =

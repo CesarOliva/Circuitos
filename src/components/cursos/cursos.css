@@ -2230,3 +2230,235 @@
     animation: none;
   }
 }
+
+/* ---------- Escenas de las lecciones de componentes ---------- */
+
+.lesson-scene .scene-body,
+.lesson-scene .scene-ring,
+.lesson-scene .scene-line,
+.lesson-scene .scene-dim {
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.lesson-scene .scene-body {
+  fill: var(--surface-2);
+  stroke: var(--foreground);
+  stroke-width: 2;
+}
+
+.lesson-scene .scene-ring {
+  fill: none;
+  stroke: var(--line-strong);
+  stroke-width: 2;
+}
+
+.lesson-scene .scene-line {
+  fill: none;
+  stroke: var(--foreground);
+  stroke-width: 3;
+}
+
+.lesson-scene .scene-dim {
+  fill: none;
+  stroke: var(--faint);
+  stroke-width: 1.5;
+}
+
+.lesson-scene .scene-part .scene-arrowhead {
+  fill: var(--foreground);
+  stroke-width: 1;
+}
+
+.lesson-scene .scene-pin {
+  fill: var(--accent-soft);
+  stroke: var(--accent);
+  stroke-width: 1;
+}
+
+.lesson-scene .scene-pin-hot {
+  fill: var(--accent);
+}
+
+.lesson-scene .scene-pinname {
+  fill: var(--muted);
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 9px;
+}
+
+.lesson-scene .scene-light {
+  animation: scene-pulse 1.8s ease-in-out infinite;
+}
+
+.lesson-scene .scene-field {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 1.5;
+  stroke-dasharray: 5 5;
+  opacity: 0.6;
+  animation: scene-pulse 2.4s ease-in-out infinite;
+}
+
+.lesson-scene .scene-field-late {
+  animation-delay: -1.2s;
+}
+
+.lesson-scene .scene-wave {
+  fill: none;
+  stroke: var(--accent-bright);
+  stroke-width: 3;
+  stroke-linecap: round;
+  animation: scene-pulse 0.8s ease-in-out infinite;
+}
+
+.lesson-scene .scene-wave-2 {
+  animation-delay: 0.15s;
+}
+
+.lesson-scene .scene-wave-3 {
+  animation-delay: 0.3s;
+}
+
+.lesson-scene .scene-ping,
+.lesson-scene .scene-pong {
+  fill: none;
+  stroke-width: 3;
+  stroke-linecap: round;
+  opacity: 0;
+  animation-duration: 4s;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+
+.lesson-scene .scene-ping {
+  stroke: var(--accent);
+  animation-name: scene-ping;
+}
+
+.lesson-scene .scene-pong {
+  stroke: var(--ok);
+  animation-name: scene-pong;
+}
+
+.lesson-scene .scene-spin {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: scene-spin 0.9s linear infinite;
+}
+
+.lesson-scene .scene-wiper {
+  animation: scene-wiper 6s ease-in-out infinite alternate;
+}
+
+.lesson-scene .scene-press {
+  animation: scene-press 4s ease-in-out infinite;
+}
+
+.lesson-scene .scene-press-flow {
+  animation: circuit-flow 1.8s linear infinite, scene-press-flow 4s ease-in-out infinite;
+}
+
+.lesson-scene .scene-press-glow {
+  opacity: 0;
+  animation: scene-press-glow 4s ease-in-out infinite;
+}
+
+.lesson-scene .scene-blink {
+  animation: circuit-flow 1.8s linear infinite, scene-blink 2s steps(1) infinite;
+}
+
+.lesson-scene .scene-blink-glow {
+  opacity: 0;
+  animation: scene-blink-glow 2s steps(1) infinite;
+}
+
+.lesson-scene .scene-sweep {
+  fill: var(--accent);
+  opacity: 0.55;
+  transform-box: fill-box;
+  transform-origin: left;
+  animation: scene-sweep 5s ease-in-out infinite alternate;
+}
+
+@keyframes scene-pulse {
+  50% { opacity: 0.25; }
+}
+
+@keyframes scene-ping {
+  0% { transform: translateX(0); opacity: 0; }
+  5% { opacity: 1; }
+  45% { transform: translateX(360px); opacity: 1; }
+  50%, 100% { transform: translateX(360px); opacity: 0; }
+}
+
+@keyframes scene-pong {
+  0%, 50% { transform: translateX(360px); opacity: 0; }
+  55% { opacity: 1; }
+  95% { transform: translateX(0); opacity: 1; }
+  100% { transform: translateX(0); opacity: 0; }
+}
+
+@keyframes scene-spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes scene-wiper {
+  from { transform: translateX(20px); }
+  to { transform: translateX(240px); }
+}
+
+@keyframes scene-press {
+  0%, 35%, 75%, 100% { transform: translateY(0); }
+  45%, 65% { transform: translateY(22px); }
+}
+
+@keyframes scene-press-flow {
+  0%, 40%, 70%, 100% { opacity: 0; }
+  45%, 65% { opacity: 1; }
+}
+
+@keyframes scene-press-glow {
+  0%, 40%, 70%, 100% { opacity: 0; }
+  45%, 65% { opacity: 0.35; }
+}
+
+@keyframes scene-blink {
+  0% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+@keyframes scene-blink-glow {
+  0% { opacity: 0.35; }
+  50% { opacity: 0; }
+}
+
+@keyframes scene-sweep {
+  from { transform: scaleX(0.05); }
+  to { transform: scaleX(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lesson-scene .scene-light,
+  .lesson-scene .scene-field,
+  .lesson-scene .scene-wave,
+  .lesson-scene .scene-ping,
+  .lesson-scene .scene-pong,
+  .lesson-scene .scene-spin,
+  .lesson-scene .scene-wiper,
+  .lesson-scene .scene-press,
+  .lesson-scene .scene-press-flow,
+  .lesson-scene .scene-press-glow,
+  .lesson-scene .scene-blink,
+  .lesson-scene .scene-blink-glow,
+  .lesson-scene .scene-sweep {
+    animation: none;
+  }
+
+  .lesson-scene .scene-ping,
+  .lesson-scene .scene-pong,
+  .lesson-scene .scene-press-flow,
+  .lesson-scene .scene-press-glow,
+  .lesson-scene .scene-blink-glow {
+    opacity: 0.6;
+  }
+}

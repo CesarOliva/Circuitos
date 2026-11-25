@@ -22,6 +22,7 @@ export type {
   CourseArt,
   CourseDetail,
   CourseSource,
+  ComponentScene,
   Lesson,
   LessonBlock,
   LessonLink,

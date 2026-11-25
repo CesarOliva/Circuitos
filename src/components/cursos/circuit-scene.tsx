@@ -1,28 +1,8 @@
-import type { CSSProperties } from "react";
 import type { LessonScene } from "@/content";
+import { COMPONENT_SCENES } from "./circuit-scene-componentes";
+import { Battery, Resistor, flow } from "./scene-parts";
 
 // Todas las escenas comparten lienzo (760 × 230) y estilos; cambia el esquema y la velocidad de la corriente.
-const flow = (seconds: number): CSSProperties => ({ animationDuration: `${seconds}s` });
-
-const ZIGZAG = "l9 -14 14 28 14 -28 14 28 14 -28 9 14";
-
-function Battery({ x, label }: { x: number; label: string }) {
-  return (
-    <g className="scene-part">
-      <path d={`M${x} 72 V152 M${x + 16} 86 V138`} />
-      <text x={x + 8} y="56" textAnchor="middle">{label}</text>
-    </g>
-  );
-}
-
-function Resistor({ x, y = 112, label, labelY }: { x: number; y?: number; label: string; labelY: number }) {
-  return (
-    <g className="scene-part">
-      <path d={`M${x} ${y} ${ZIGZAG}`} />
-      <text x={x + 37} y={labelY} textAnchor="middle">{label}</text>
-    </g>
-  );
-}
 
 function Magnitudes() {
   const wire = "M116 112 H420 M494 112 H650 V190 H72 V112 H100";
@@ -292,6 +272,7 @@ const SCENES: Record<LessonScene, { Drawing: () => React.JSX.Element; caption: s
   kirchhoff: { Drawing: Kirchhoff, caption: "La corriente se reparte entre las ramas y vuelve a sumarse al otro lado del nodo." },
   mixed: { Drawing: Mixed, caption: "Primero reduce lo que está en paralelo; después suma lo que queda en serie." },
   breadboard: { Drawing: Breadboard, caption: "Los agujeros de cada tira están unidos por dentro; los componentes cierran el circuito entre tiras." },
+  ...COMPONENT_SCENES,
 };
 
 export function CircuitScene({ scene = "led" }: { scene?: LessonScene }) {

@@ -16,6 +16,18 @@ bun dev
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
+## Importar fotos de protoboard
+
+Instala Python 3.12 o posterior. Para preparar la importación de fotos, ejecuta estos comandos desde la raíz del repositorio:
+
+```sh
+npm install
+npm run setup:protoboard
+npm run dev
+```
+
+El comando `setup:protoboard` crea o reutiliza `protoboard_mapper/.venv`, instala las dependencias de `protoboard_mapper/requirements.txt` y carga Grounding DINO para descargar sus pesos antes de importar una foto. La primera preparación requiere internet y puede tardar varios minutos. Puedes volver a ejecutar el comando si se interrumpe o si cambian las dependencias. El entorno y los pesos se guardan localmente. Para usar el simulador sin importar fotos, basta con `npm install` y `npm run dev`.
+
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.

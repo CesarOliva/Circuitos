@@ -8,13 +8,13 @@ La inferencia ocurre localmente: la primera ejecución descarga el modelo a `mod
 
 Requiere Python 3.12 o posterior y conexión a internet solo para instalar dependencias y descargar el modelo en la primera ejecución.
 
-Desde esta carpeta, en PowerShell:
+Desde la raíz del repositorio:
 
-```powershell
-py -m venv .venv
-.\.venv\Scripts\python.exe -m pip install --upgrade pip
-.\.venv\Scripts\python.exe -m pip install -r requirements.txt
+```sh
+npm run setup:protoboard
 ```
+
+El comando prepara el entorno e instala el modelo antes del primer análisis. Para los pasos de uso independiente, entra a `protoboard_mapper`.
 
 ## Uso
 

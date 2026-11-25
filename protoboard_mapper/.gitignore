@@ -4,5 +4,6 @@ input/*
 output/*
 !output/.gitkeep
 models/
+.cache/
 __pycache__/
 *.py[cod]

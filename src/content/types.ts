@@ -1,11 +1,18 @@
 export type CourseArt = "circuit" | "sensors" | "digital" | "generic";
 
+// Animación que acompaña a cada lección.
+export type LessonScene = "magnitudes" | "ohm" | "led" | "series-parallel" | "capacitor";
+
+// Simulador interactivo que se inserta dentro de una lección.
+export type PlaygroundKind = "pipe" | "ohm" | "led" | "series-parallel" | "capacitor";
+
 export type LessonBlock =
   | { type: "paragraph"; text: string }
   | { type: "list"; items: string[]; ordered?: boolean }
   | { type: "code"; language: string; code: string }
   | { type: "formula"; expression: string; caption?: string }
-  | { type: "callout"; tone?: "info" | "warning"; title?: string; text: string };
+  | { type: "callout"; tone?: "info" | "warning"; title?: string; text: string }
+  | { type: "playground"; kind: PlaygroundKind };
 
 export interface Quiz {
   question: string;
@@ -55,6 +62,7 @@ export interface Lesson extends LessonSummary {
   course: Course;
   index: number;
   total: number;
+  scene: LessonScene;
   blocks: LessonBlock[];
   quiz: Quiz;
   previous?: LessonLink;
@@ -97,6 +105,7 @@ export interface LessonSource {
   slug: string;
   title: string;
   summary: string;
+  scene: LessonScene;
   blocks: LessonBlock[];
   quiz: Quiz;
 }

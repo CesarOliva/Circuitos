@@ -86,6 +86,7 @@ class StaticContentRepository implements ContentRepository {
       course: courseOf(subject, course),
       index,
       total: course.lessons.length,
+      scene: source.scene,
       blocks: source.blocks,
       quiz: source.quiz,
       previous: previous ? { slug: previous.slug, title: previous.title } : undefined,

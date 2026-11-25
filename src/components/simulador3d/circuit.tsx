@@ -37,15 +37,16 @@ export interface Jumper {
   from: TerminalRef;
   to: TerminalRef;
   live: boolean;
+  color?: string;
 }
 
 export interface Circuit3DProps {
   parts: Placed[];
   wires: Jumper[];
   mount: Mount;
-  selectedId: string | null;
+  selectedIds: readonly string[];
   pending: TerminalRef | null;
-  onSelect(id: string): void;
+  onSelect(id: string, extend: boolean): void;
   onTerminal(ref: TerminalRef): void;
   onRemoveWire(id: string): void;
   // hands over a way to turn a screen point into playground canvas units, or null when the view goes
@@ -170,7 +171,7 @@ class Table {
     this.fit();
   }
 
-  update({ parts, wires, mount, selectedId, pending }: Circuit3DProps) {
+  update({ parts, wires, mount, selectedIds, pending }: Circuit3DProps) {
     this.restore();
     const seen = new Set<string>();
     for (const part of parts) {
@@ -184,7 +185,7 @@ class Table {
       }
       slot ??= this.place(part.spec, mount, key);
       slot.group.position.copy(toTable(part.x, part.y)).setY(slot.lift);
-      slot.mark.visible = id === selectedId;
+      slot.mark.visible = selectedIds.includes(id);
       for (const material of slot.epoxy) material.emissiveIntensity = part.glow ? 2.6 : 0.35;
       // Dimmed, never hidden: toggling a light's visibility would recompile every material.
       if (slot.light) slot.light.intensity = part.glow ? 70 : 0;
@@ -289,7 +290,7 @@ class Table {
       path.add(new THREE.LineCurve3(a, a1));
       path.add(new THREE.CubicBezierCurve3(a1, a1.clone().add(lift), b1.clone().add(lift), b1));
       path.add(new THREE.LineCurve3(b1, b));
-      const colour = WIRE_COLOURS[(Number(wire.id.replace(/\D/g, "")) || 0) % WIRE_COLOURS.length];
+      const colour = wire.color ?? WIRE_COLOURS[(Number(wire.id.replace(/\D/g, "")) || 0) % WIRE_COLOURS.length];
       const material = new THREE.MeshStandardMaterial({ color: colour, roughness: 0.5, emissive: colour, emissiveIntensity: wire.live ? 0.55 : 0 });
       const mesh = new THREE.Mesh(new THREE.TubeGeometry(path, 32, 1.05, 6, false), material);
       mesh.castShadow = true;
@@ -405,7 +406,7 @@ class Table {
     const props = this.props();
     if ("wire" in hit) props.onRemoveWire(hit.wire);
     else if (hit.terminal) props.onTerminal({ componentId: hit.part, terminalId: hit.terminal });
-    else props.onSelect(hit.part);
+    else props.onSelect(hit.part, event.shiftKey);
   };
 
   private hover = (event: PointerEvent) => {
@@ -478,7 +479,7 @@ export default function Circuit3D(props: Circuit3DProps) {
   const note = React.useRef<HTMLParagraphElement>(null);
   const table = React.useRef<Table | null>(null);
   const latest = React.useRef(props);
-  const { parts, wires, mount, selectedId, pending } = props;
+  const { parts, wires, mount, selectedIds, pending } = props;
 
   // The table calls back through the latest props, so its handlers never see stale state.
   React.useEffect(() => {
@@ -509,8 +510,8 @@ export default function Circuit3D(props: Circuit3DProps) {
   }, []);
 
   React.useEffect(() => {
-    table.current?.update({ ...latest.current, parts, wires, mount, selectedId, pending });
-  }, [parts, wires, mount, selectedId, pending]);
+    table.current?.update({ ...latest.current, parts, wires, mount, selectedIds, pending });
+  }, [parts, wires, mount, selectedIds, pending]);
 
   return (
     <div

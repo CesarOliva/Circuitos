@@ -15,7 +15,7 @@ export const ficha: Ficha = {
     { parametro: "Resistencia total (A–B)", simulador: "10 kΩ (editable en kΩ)", real: "B10K lineal: 10 kΩ ±20 %" },
     { parametro: "Posición del cursor", simulador: "0 a 1; inicia en 0.5", real: "Giro de ~270°" },
     { parametro: "R(A–W) / R(W–B)", simulador: "R·posición / R·(1 − posición)", real: "Igual en pista lineal (B); logarítmica en pista A" },
-    { parametro: "Potencia", simulador: "—", real: "0.1–0.5 W según el tamaño" },
+    { parametro: "Potencia", simulador: "Playground: no se vigila; validador de la ficha: aviso por encima de 0.2 W", real: "0.1–0.5 W según el tamaño" },
   ],
   pines: [
     { id: "A", nombre: "Extremo A", funcion: "Un extremo de la pista." },
@@ -32,7 +32,7 @@ export const ficha: Ficha = {
       { clave: "position / resistanceAW / resistanceWB", significado: "Posición y resistencia de cada tramo (en la galería)." },
       { clave: "voltage (W)", significado: "Voltaje del cursor, para usarlo como divisor." },
     ],
-    limitaciones: ["No modela ruido del cursor ni la potencia máxima.", "Solo pista lineal."],
+    limitaciones: ["No modela ruido del cursor. La potencia máxima solo la vigila el validador de la ficha, y sobre la pista completa, no sobre un tramo.", "Solo pista lineal."],
   },
   pruebas: [
     {

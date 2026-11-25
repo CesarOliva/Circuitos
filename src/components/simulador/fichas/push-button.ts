@@ -14,7 +14,7 @@ export const ficha: Ficha = {
   especificaciones: [
     { parametro: "Tipo de contacto", simulador: "NO (normalmente abierto)", real: "NO en pulsadores táctiles" },
     { parametro: "Resistencia de contacto", simulador: "0 Ω (ideal)", real: "< 100 mΩ" },
-    { parametro: "Capacidad de corriente", simulador: "Sin límite", real: "Táctil 6×6 genérico: 50 mA a 12 V DC; Omron B3F: 1–50 mA a 5–24 V DC" },
+    { parametro: "Capacidad de corriente", simulador: "Playground: sin límite; validador de la ficha: aviso por encima de 50 mA o 12 V", real: "Táctil 6×6 genérico: 50 mA a 12 V DC; Omron B3F: 1–50 mA a 5–24 V DC" },
     { parametro: "Rebote", simulador: "No se modela", real: "Unos pocos ms de rebote al conmutar" },
   ],
   pines: [

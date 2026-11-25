@@ -13,7 +13,7 @@ export const ficha: Ficha = {
   especificaciones: [
     { parametro: "Estado inicial", simulador: "Abierto", real: "—" },
     { parametro: "Resistencia de contacto", simulador: "0 Ω cerrado; infinita abierto", real: "Decenas de mΩ cerrado" },
-    { parametro: "Capacidad", simulador: "Sin límite", real: "Deslizable SS12D00: 50 V DC, 0.5 A (varía por modelo)" },
+    { parametro: "Capacidad", simulador: "Playground: sin límite; validador de la ficha: aviso por encima de 0.5 A o 50 V", real: "Deslizable SS12D00: 50 V DC, 0.5 A (varía por modelo)" },
   ],
   pines: [
     { id: "1", nombre: "Terminal 1", funcion: "Sin polaridad." },

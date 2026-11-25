@@ -13,8 +13,8 @@ export const ficha: Ficha = {
   ],
   especificaciones: [
     { parametro: "Inductancia", simulador: "100 mH en el playground (editable en mH); 10 mH en la galería", real: "Inductores axiales: µH a decenas de mH" },
-    { parametro: "Resistencia serie (DCR)", simulador: "0 Ω en el playground; 2 Ω en la galería", real: "De mΩ a decenas de Ω según el calibre del alambre" },
-    { parametro: "Corriente máxima", simulador: "1 A en el playground; sin especificar en la galería", real: "Limitada por saturación del núcleo y calentamiento del alambre" },
+    { parametro: "Resistencia serie (DCR)", simulador: "0 Ω en el playground; 2 Ω en la galería", real: "De mΩ (µH de potencia) a cientos de Ω: Bourns RL622-104K (100 mH): ≤ 235 Ω" },
+    { parametro: "Corriente máxima", simulador: "1 A en el playground, sea cual sea la inductancia; sin especificar en la galería", real: "Limitada por saturación del núcleo y calentamiento del alambre. Bourns RL622-104K (100 mH): 20 mA; del orden de 1 A solo en inductores de µH" },
   ],
   pines: [
     { id: "1", nombre: "Terminal 1", funcion: "Sin polaridad." },
@@ -34,6 +34,7 @@ export const ficha: Ficha = {
     limitaciones: [
       "En el playground no se ven transitorios (picos de voltaje al abrir el circuito).",
       "No modela saturación del núcleo.",
+      "El límite de 1 A es el mismo para cualquier inductancia: con el valor por defecto (100 mH) un inductor real se dañaría con unas decenas de mA, mucho antes de que se active maxCurrentExceeded.",
       "Error conocido: el DCSolver rechaza un inductor ideal (DCR = 0) con «Unsupported component», y el playground los crea así, por lo que un circuito con inductor no se puede simular allí. El validador de esta ficha usa una DCR de 1 mΩ.",
     ],
   },
@@ -56,5 +57,5 @@ export const ficha: Ficha = {
     { fallo: "Espiras en corto", efecto: "Baja la inductancia y aumenta el calentamiento." },
     { fallo: "Saturación del núcleo", efecto: "La inductancia efectiva cae y la corriente crece bruscamente." },
   ],
-  referencias: [],
+  referencias: [{ texto: "Bourns RL622-104K-RC — inductor radial 100 mH, 20 mA, 235 Ω", url: "https://www.digikey.com/en/products/detail/bourns-inc/RL622-104K-RC/946913" }],
 };

@@ -17,7 +17,7 @@ export const ficha: Ficha = {
     { parametro: "Corriente máxima de colector", simulador: "0.6 A en el playground; 0.2 A en la galería", real: "2N2222A: 600 mA (los 0.2 A de la galería corresponden a otro transistor, como el 2N3904)" },
     { parametro: "VCE máxima", simulador: "40 V", real: "2N2222A: VCEO = 40 V (varía por fabricante)" },
     { parametro: "VBE de encendido", simulador: "0.7 V", real: "0.6–0.7 V; hasta ~1.2 V en saturación fuerte" },
-    { parametro: "VCE de saturación", simulador: "No se modela", real: "2N2222A: ≤ 0.3 V a 150 mA; ≤ 1 V a 500 mA" },
+    { parametro: "VCE de saturación", simulador: "No se modela: VCE queda alto aunque sobre corriente de base", real: "2N2222A: ≤ 0.3 V a 150 mA; ≤ 1 V a 500 mA" },
     { parametro: "VEB máxima (inversa)", simulador: "—", real: "2N2222A: 6 V" },
     { parametro: "Potencia", simulador: "No se vigila", real: "TO-92: ~625 mW" },
   ],
@@ -40,6 +40,7 @@ export const ficha: Ficha = {
     ],
     limitaciones: [
       "Es un modelo simplificado de conmutación: la corriente de colector no reproduce exactamente las curvas reales de saturación ni la región activa.",
+      "Como la conductancia C–E es Ic/VCEmax, la corriente que circula es Ic·VCE/40 V: con la batería de 9 V queda bastante por debajo de β·Ib y el transistor nunca se satura. Un transistor real, con la misma corriente de base, dejaría VCE en unas décimas de voltio.",
       "No hay efectos térmicos ni de frecuencia.",
     ],
   },
@@ -48,7 +49,7 @@ export const ficha: Ficha = {
       titulo: "Transistor como interruptor",
       montaje: "Batería 9 V. Colector → LED → 470 Ω → +9 V. Base → 10 kΩ → +9 V. Emisor → −.",
       pasos: ["Arma el circuito y simula.", "Desconecta la resistencia de base y simula otra vez."],
-      esperado: "Con la base alimentada: conducting = sí y el LED enciende. Sin corriente de base: conducting = no y el LED se apaga.",
+      esperado: "Con la base alimentada: conducting = sí y el LED enciende con ≈ 7.2 mA (VCE ≈ 3.5 V; un 2N2222A real se saturaría y daría ≈ 14.5 mA). Sin corriente de base: conducting = no y el LED se apaga.",
     },
     {
       titulo: "Control con pulsador",

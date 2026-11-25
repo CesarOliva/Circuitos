@@ -37,7 +37,7 @@ export const ficha: Ficha = {
       "Sin carga mecánica, inercia ni fuerza contraelectromotriz.",
       "Ignora el sentido de giro: usa |V|.",
       "Como R sale de la corriente en vacío (60 Ω), la corriente de bloqueo de 1.2 A solo se alcanzaría con ≈72 V, así que stalled prácticamente no se activa. Un motor real arranca consumiendo la corriente de bloqueo (≈6 V / 1.2 A = 5 Ω de bobinado).",
-      "No avisa de sobretensión respecto del voltaje nominal.",
+      "El playground no avisa de sobretensión respecto del voltaje nominal; el validador de la ficha avisa por encima del 125 %.",
     ],
   },
   pruebas: [
@@ -51,13 +51,13 @@ export const ficha: Ficha = {
       titulo: "Control de velocidad por voltaje",
       montaje: "El mismo circuito.",
       pasos: ["Simula con 3 V y luego con 9 V."],
-      esperado: "3 V: 1500 rpm. 9 V: 3000 rpm (el modelo limita al valor de vacío) e I = 0.15 A. Ojo: 9 V supera los 3–6 V de un motor tipo 130; uno real se calentaría y se desgastaría antes. El simulador no lo marca.",
+      esperado: "3 V: 1500 rpm. 9 V: 3000 rpm (el modelo limita al valor de vacío) e I = 0.15 A. Ojo: 9 V supera los 3–6 V de un motor tipo 130; uno real se calentaría y se desgastaría antes. El playground no lo marca; el validador de la ficha sí (150 % del nominal).",
     },
     {
       titulo: "Motor controlado por transistor",
       montaje: "Batería 9 V → motor → colector; diodo 1N4001 en paralelo con el motor (cátodo hacia +); emisor → −; base → 1 kΩ → pulsador → +.",
       pasos: ["Simula con el pulsador suelto y luego presionado."],
-      esperado: "Solo gira con el pulsador presionado. Con 1 kΩ en la base (Ib ≈ 8.3 mA) el transistor puede dar los 0.15 A del motor; con 10 kΩ quedaría limitado a β·Ib ≈ 83 mA. El diodo no conduce en DC: protege al transistor del pico de voltaje al apagar el motor.",
+      esperado: "Solo gira con el pulsador presionado. Con 1 kΩ en la base (Ib ≈ 8.3 mA) el simulador da ≈ 71 mA, 4.3 V en el motor y ≈ 2100 rpm; con 10 kΩ (Ib ≈ 0.83 mA), ≈ 17 mA y ≈ 500 rpm. El modelo del transistor no se satura (ver su ficha): un 2N2222A real con 8.3 mA de base sí se saturaría y dejaría casi los 9 V en el motor, por encima de sus 6 V nominales. El diodo no conduce en DC: protege al transistor del pico de voltaje al apagar el motor.",
     },
   ],
   fallos: [

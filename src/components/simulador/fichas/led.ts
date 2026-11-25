@@ -16,7 +16,7 @@ export const ficha: Ficha = {
     { parametro: "Caída directa (VF)", simulador: "2.1 V en el playground (editable); 2 V en la galería", real: "Rojo: 1.8–2.2 V a 20 mA" },
     { parametro: "Corriente directa", simulador: "20 mA (límite de maxForwardCurrentExceeded)", real: "20 mA recomendados en operación continua; el máximo absoluto suele ser 25–30 mA según el fabricante. 5–10 mA ya dan buen brillo" },
     { parametro: "Umbral de «encendido»", simulador: "> 2 mA (lo usa el playground para iluminarlo)", real: "Visible desde ~1 mA" },
-    { parametro: "Voltaje inverso máximo", simulador: "—", real: "≈ 5 V" },
+    { parametro: "Voltaje inverso máximo", simulador: "Playground: no se vigila; validador de la ficha: aviso por encima de 5 V", real: "≈ 5 V" },
   ],
   pines: [
     { id: "A", nombre: "Ánodo", funcion: "Pata larga; va hacia el positivo a través de la resistencia." },
@@ -32,7 +32,7 @@ export const ficha: Ficha = {
       { clave: "current", significado: "Corriente por el LED." },
       { clave: "maxForwardCurrentExceeded", significado: "Corriente mayor que 20 mA: supera la corriente recomendada; muy por encima de ella, un LED real se daña." },
     ],
-    limitaciones: ["El brillo no es proporcional a la corriente: solo hay encendido o apagado.", "No detecta voltaje inverso excesivo: en inversa el LED solo queda abierto, aunque supere los ~5 V que soporta uno real."],
+    limitaciones: ["El brillo no es proporcional a la corriente: solo hay encendido o apagado.", "El playground no detecta voltaje inverso excesivo: en inversa el LED solo queda abierto, aunque supere los ~5 V que soporta uno real."],
   },
   pruebas: [
     {
@@ -51,7 +51,7 @@ export const ficha: Ficha = {
       titulo: "LED invertido",
       montaje: "El primer circuito con el LED girado.",
       pasos: ["Invierte el LED y simula."],
-      esperado: "0 mA: el LED no enciende. Ojo: queda con 9 V en inversa, más que los ~5 V que soporta un LED real; el simulador no lo marca.",
+      esperado: "0 mA: el LED no enciende. Ojo: queda con 9 V en inversa, más que los ~5 V que soporta un LED real; el playground no lo marca.",
     },
   ],
   fallos: [

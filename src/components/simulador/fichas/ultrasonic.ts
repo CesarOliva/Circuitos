@@ -12,12 +12,13 @@ export const ficha: Ficha = {
     "Se usa en robots que evitan obstáculos, medidores de nivel y sensores de estacionamiento.",
   ],
   especificaciones: [
-    { parametro: "Alimentación", simulador: "La que reciba VCC: no comprueba ningún mínimo", real: "5 V DC; ~15 mA. El HC-SR04 clásico no funciona de forma fiable a 3.3 V" },
+    { parametro: "Alimentación", simulador: "La que reciba VCC. El playground no la comprueba; el validador de la ficha avisa fuera de 4.5–5.5 V cuando hay eco", real: "5 V DC; ~15 mA. El HC-SR04 clásico no funciona de forma fiable a 3.3 V" },
     { parametro: "Rango de medición", simulador: "2 a 400 cm", real: "2 a 400 cm" },
     { parametro: "Distancia simulada", simulador: "100 cm en el playground (editable); 50 cm en la galería", real: "—" },
     { parametro: "Disparo (TRIG)", simulador: "Activo si V(TRIG) ≥ 2.5 V", real: "Pulso TTL de 10 µs" },
     { parametro: "Pulso de eco", simulador: "distancia × 58 µs", real: "≈ 58 µs/cm (a ~343 m/s)" },
     { parametro: "Frecuencia ultrasónica", simulador: "—", real: "40 kHz" },
+    { parametro: "Ángulo de medición", simulador: "No se modela", real: "≈ 15°" },
   ],
   pines: [
     { id: "VCC", nombre: "Alimentación", funcion: "+5 V." },
@@ -39,7 +40,7 @@ export const ficha: Ficha = {
     limitaciones: [
       "Es estático: TRIG en alto equivale a una medición continua.",
       "Sin ángulo de detección, ruido ni ecos falsos.",
-      "No exige 5 V en VCC ni limita la corriente de ECHO: en el simulador ECHO es una fuente ideal, mientras que la salida real solo entrega unos pocos mA.",
+      "El playground no exige 5 V en VCC y ninguno de los dos limita la corriente de ECHO: en el simulador ECHO es una fuente ideal, mientras que la salida real solo entrega unos pocos mA.",
     ],
   },
   pruebas: [

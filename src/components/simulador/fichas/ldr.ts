@@ -13,10 +13,10 @@ export const ficha: Ficha = {
   ],
   especificaciones: [
     { parametro: "Resistencia de referencia", simulador: "10 kΩ a 10 lx", real: "GL5528: 10–20 kΩ a 10 lx" },
-    { parametro: "Gamma (pendiente)", simulador: "0.7", real: "GL5528: ≈ 0.7" },
+    { parametro: "Gamma (pendiente)", simulador: "0.7", real: "GL5528: 0.6 (Senba); otros fabricantes dan 0.6–0.7" },
     { parametro: "Iluminación", simulador: "10 lx (editable)", real: "Interior: 100–500 lx; sol directo: > 10 000 lx" },
-    { parametro: "Resistencia en oscuridad", simulador: "Calculada con un mínimo de 0.01 lx", real: "≥ 1 MΩ" },
-    { parametro: "Voltaje / potencia máxima", simulador: "—", real: "GL5528: 150 V DC, 100 mW" },
+    { parametro: "Resistencia en oscuridad", simulador: "Calculada con un mínimo de 0.01 lx: ≈ 1.26 MΩ", real: "≥ 1 MΩ" },
+    { parametro: "Voltaje / potencia máxima", simulador: "Playground: no se vigila; validador de la ficha: aviso por encima de 150 V o 100 mW", real: "GL5528: 150 V DC, 100 mW" },
   ],
   pines: [
     { id: "1", nombre: "Terminal 1", funcion: "Sin polaridad." },
@@ -32,7 +32,7 @@ export const ficha: Ficha = {
     limitaciones: [
       "Respuesta instantánea: una LDR real tarda decenas de ms en reaccionar.",
       "No depende del color de la luz.",
-      "No avisa si se supera su potencia máxima (100 mW en el GL5528).",
+      "El playground no avisa si se supera su potencia máxima (100 mW en el GL5528); el validador de la ficha sí.",
     ],
   },
   pruebas: [
@@ -53,5 +53,5 @@ export const ficha: Ficha = {
     { fallo: "Abierta", efecto: "Lectura fija como si estuviera a oscuras total." },
     { fallo: "Superficie sucia o envejecida", efecto: "Menor sensibilidad; los umbrales del programa dejan de funcionar." },
   ],
-  referencias: [],
+  referencias: [{ texto: "Senba GL5528 (LCSC C125627)", url: "https://www.lcsc.com/product-detail/C125627.html" }],
 };

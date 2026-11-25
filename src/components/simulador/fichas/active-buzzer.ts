@@ -12,9 +12,9 @@ export const ficha: Ficha = {
     "Tiene polaridad; la pata larga o la marca + va al positivo. Se usa en alarmas, avisos y temporizadores.",
   ],
   especificaciones: [
-    { parametro: "Voltaje nominal", simulador: "5 V (editable)", real: "Módulos de 5 V: funcionan de ~3.5 a 5.5 V" },
+    { parametro: "Voltaje nominal", simulador: "5 V (editable)", real: "TMB12A05: 5 V nominal, opera de 4 a 8 V" },
     { parametro: "Corriente nominal", simulador: "30 mA", real: "≤ 30 mA" },
-    { parametro: "Frecuencia", simulador: "—", real: "~2.3 kHz" },
+    { parametro: "Frecuencia", simulador: "—", real: "2.3–2.7 kHz según el fabricante" },
     { parametro: "Nivel sonoro", simulador: "—", real: "~85 dB a 10 cm" },
   ],
   pines: [
@@ -62,5 +62,5 @@ export const ficha: Ficha = {
     { fallo: "Oscilador dañado", efecto: "Sonido débil, distorsionado o ausente." },
     { fallo: "Conectado a un pin sin transistor", efecto: "Consume ~30 mA: supera los 20 mA recomendados por pin del Arduino y se acerca al máximo absoluto de 40 mA. Mejor manejarlo con un transistor." },
   ],
-  referencias: [],
+  referencias: [{ texto: "Jiangsu Huaneng TMB12A05 (LCSC C96093)", url: "https://www.lcsc.com/product-detail/C96093.html" }],
 };

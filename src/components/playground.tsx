@@ -53,6 +53,7 @@ type Part = {
 };
 type TerminalRef = { componentId: string; terminalId: string };
 type Wire = { id: string; from: TerminalRef; to: TerminalRef };
+type DirectContact = Pick<Wire, "from" | "to">;
 type TerminalSpec = { id: string; name?: string; x: number; y: number; ax: number; ay: number; labelX: number; labelY: number; anchor: "start" | "middle" | "end" };
 type GroupName = "Montaje" | "Pasivos y controles" | "Sensores y actuadores" | "Semiconductores" | "Microcontroladores";
 // `half` is how far the part reaches from its centre, which keeps it inside the canvas.
@@ -66,6 +67,9 @@ const terminal = (id: string, side: -1 | 1, anchor = 40): TerminalSpec => ({
 // Boards are schematic blocks, not to scale: their pins sit on rows along the long edges (UNO) or in columns down the sides (ESP32),
 // spaced to fit each terminal's hit area.
 const PIN_GAP = 26;
+const COMPONENT_SCALE = 0.325;
+const SNAP_DISTANCE = BB_PITCH * (2 / 3);
+const CONTACT_DISTANCE = BB_PITCH * 0.25;
 const isBoard = (kind: Kind) => kind === "arduino-uno-r3" || kind === "esp32-devkit-v1";
 function boardSpec(design: BoardDesign): ComponentSpec {
   const pins = terminalPins(design);
@@ -124,7 +128,49 @@ function setValue(part: Part, value: number) {
 
 function terminalPoint(part: Part, id: string): [number, number] {
   const { x, y } = part.kind === "breadboard" ? BB_HOLE.get(id)! : specs[part.kind].terminals.find(item => item.id === id)!;
-  return [part.x + x, part.y + y];
+  const scale = part.kind === "breadboard" ? 1 : COMPONENT_SCALE;
+  return [part.x + x * scale, part.y + y * scale];
+}
+
+function closestBoardHole(x: number, y: number, boards: Part[]) {
+  let closest: { board: Part; hole: (typeof BB_HOLES)[number]; x: number; y: number; distance: number } | null = null;
+  for (const board of boards) for (const hole of BB_HOLES) {
+    const holeX = board.x + hole.x;
+    const holeY = board.y + hole.y;
+    const distance = Math.hypot(x - holeX, y - holeY);
+    if (!closest || distance < closest.distance) closest = { board, hole, x: holeX, y: holeY, distance };
+  }
+  return closest;
+}
+
+function snapToBoard(part: Part, x: number, y: number, parts: Part[]) {
+  const position = clampTo(part.kind, x, y);
+  if (part.kind === "breadboard" || isBoard(part.kind)) return position;
+  const boards = parts.filter(item => item.kind === "breadboard");
+  let snap: { x: number; y: number; distance: number } | null = null;
+  for (const terminal of specs[part.kind].terminals) {
+    const [terminalX, terminalY] = terminalPoint({ ...part, ...position }, terminal.id);
+    const closest = closestBoardHole(terminalX, terminalY, boards);
+    if (closest && closest.distance <= SNAP_DISTANCE && (!snap || closest.distance < snap.distance)) {
+      snap = { x: closest.x - (terminalX - position.x), y: closest.y - (terminalY - position.y), distance: closest.distance };
+    }
+  }
+  if (!snap) return position;
+  const snapped = clampTo(part.kind, snap.x, snap.y);
+  return snapped.x === snap.x && snapped.y === snap.y ? snapped : position;
+}
+
+function contactsOnBoard(parts: Part[]): DirectContact[] {
+  const boards = parts.filter(part => part.kind === "breadboard");
+  return parts.filter(part => part.kind !== "breadboard" && !isBoard(part.kind)).flatMap(part =>
+    specs[part.kind].terminals.flatMap(terminal => {
+      const [x, y] = terminalPoint(part, terminal.id);
+      const closest = closestBoardHole(x, y, boards);
+      return closest && closest.distance <= CONTACT_DISTANCE
+        ? [{ from: { componentId: part.id, terminalId: terminal.id }, to: { componentId: closest.board.id, terminalId: closest.hole.id } }]
+        : [];
+    }),
+  );
 }
 
 // Keeps a part's centre where the whole part stays on the 960 × 560 canvas.
@@ -135,7 +181,7 @@ function clampTo(kind: Kind, x: number, y: number) {
 
 // The protoboard isn't simulated as a part: every terminal wired into the same strip, or straight to another, is one node,
 // and the circuit gets the connections that join each node's terminals.
-function netlist(parts: Part[], wires: Wire[]) {
+function netlist(parts: Part[], wires: Wire[], directContacts: DirectContact[]) {
   const boards = new Set(parts.filter(part => part.kind === "breadboard").map(part => part.id));
   const key = ({ componentId, terminalId }: TerminalRef) => JSON.stringify(boards.has(componentId) ? [componentId, "strip", BB_HOLE.get(terminalId)!.strip] : [componentId, terminalId]);
   const parent = new Map<string, string>();
@@ -149,7 +195,7 @@ function netlist(parts: Part[], wires: Wire[]) {
   const terminals = new Map<string, TerminalRef>();
   // A microcontroller isn't solved here: wires to its pins are drawn, but they carry no current.
   const microcontrollers = new Set(parts.filter(part => isBoard(part.kind)).map(part => part.id));
-  for (const wire of wires) {
+  for (const wire of [...wires, ...directContacts]) {
     if (microcontrollers.has(wire.from.componentId) || microcontrollers.has(wire.to.componentId)) continue;
     for (const end of [wire.from, wire.to]) if (!boards.has(end.componentId)) terminals.set(key(end), end);
     parent.set(find(key(wire.from)), find(key(wire.to)));
@@ -308,7 +354,7 @@ export default function Playground() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [pendingTerminal, setPendingTerminal] = useState<TerminalRef | null>(null);
   const [result, setResult] = useState<Result | null>(null);
-  const [message, setMessage] = useState("Arrastra componentes al área de trabajo y conecta sus terminales para empezar.");
+  const [message, setMessage] = useState("Arrastra componentes al área de trabajo. Acerca sus patas a los agujeros de la protoboard para conectarlas sin cable.");
   const [dragging, setDragging] = useState<string | null>(null);
   const [view, setView] = useState<"2d" | "3d">("2d");
   const [mount, setMount] = useState<Mount>("board");
@@ -321,6 +367,7 @@ export default function Playground() {
   const selected = parts.find(part => part.id === selectedId) ?? null;
   const selectedResult = result?.components.find(component => component.componentId === selectedId);
   const ledLit = Boolean(result?.success && result.components.some(component => component.type === "led" && component.current > 0.002));
+  const directContacts = useMemo(() => contactsOnBoard(parts), [parts]);
   const placed = useMemo<Placed[]>(() => parts.flatMap(part => {
     if (isBoard(part.kind)) return [{ spec: { ...specOfBoard(BOARDS[part.kind]), id: part.id }, x: part.x, y: part.y, glow: false } as Placed];
     try {
@@ -391,7 +438,7 @@ export default function Playground() {
     const circuit = new Circuit("playground", "Mi circuito");
     try {
       for (const part of parts) if (part.kind !== "breadboard" && !isBoard(part.kind)) circuit.addComponent(createComponent(part));
-      netlist(parts, wires).forEach((link, index) => circuit.addConnection(new Connection(`N${index + 1}`, link.from, link.to)));
+      netlist(parts, wires, directContacts).forEach((link, index) => circuit.addConnection(new Connection(`N${index + 1}`, link.from, link.to)));
       const nextResult = new DCSolver().simulate(circuit);
       setResult(nextResult);
       if (!nextResult.success) {
@@ -422,7 +469,9 @@ export default function Playground() {
   }
 
   function movePart(partId: string, x: number, y: number) {
-    setParts(current => current.map(part => part.id === partId ? { ...part, ...clampTo(part.kind, x, y) } : part));
+    setParts(current => current.map(part => part.id === partId ? { ...part, ...snapToBoard(part, x, y, current) } : part));
+    setResult(null);
+    setMessage("Circuito modificado. Simula de nuevo para ver las lecturas.");
   }
 
   // A screen point in canvas units, through whichever view is showing; null outside it.
@@ -504,7 +553,12 @@ export default function Playground() {
   function renderPart(part: Part) {
     const componentResult = result?.components.find(component => component.componentId === part.id);
     const active = part.kind === "dc-motor" ? Number(componentResult?.measurements?.rpm) > 0 : part.kind === "active-buzzer" ? Boolean(componentResult?.measurements?.active) : false;
-    return <g key={part.id} className={`placed-part${selectedId === part.id ? " part-selected" : ""}${dragging === part.id ? " part-dragging" : ""}`} transform={`translate(${part.x} ${part.y})`} onPointerDown={event => startDrag(event, part)} onPointerMove={event => onDrag(event, part.id)} onPointerUp={() => setDragging(null)} onPointerCancel={() => setDragging(null)} onClick={() => setSelectedId(part.id)} onKeyDown={event => {
+    const scale = part.kind === "breadboard" ? 1 : COMPONENT_SCALE;
+    const wiredHoles = new Set([
+      ...wires.flatMap(wire => [wire.from, wire.to]).filter(end => end.componentId === part.id).map(end => end.terminalId),
+      ...directContacts.filter(contact => contact.to.componentId === part.id).map(contact => contact.to.terminalId),
+    ]);
+    return <g key={part.id} className={`placed-part${selectedId === part.id ? " part-selected" : ""}${dragging === part.id ? " part-dragging" : ""}`} transform={`translate(${part.x} ${part.y}) scale(${scale})`} onPointerDown={event => startDrag(event, part)} onPointerMove={event => onDrag(event, part.id)} onPointerUp={() => setDragging(null)} onPointerCancel={() => setDragging(null)} onClick={() => setSelectedId(part.id)} onKeyDown={event => {
       if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(event.key)) {
         event.preventDefault();
         const delta = event.shiftKey ? 20 : 8;
@@ -512,13 +566,14 @@ export default function Playground() {
       }
     }} tabIndex={0} role="group" aria-label={`${specs[part.kind].name} ${part.id}. Usa flechas para mover`}>
       {part.kind === "breadboard"
-        ? <BreadboardArt wired={new Set(wires.flatMap(wire => [wire.from, wire.to]).filter(end => end.componentId === part.id).map(end => end.terminalId))} pending={pendingTerminal?.componentId === part.id ? pendingTerminal.terminalId : null} />
+        ? <BreadboardArt wired={wiredHoles} pending={pendingTerminal?.componentId === part.id ? pendingTerminal.terminalId : null} />
         : <ComponentArt part={part} lit={part.kind === "led" && ledLit} active={active} />}
       {specs[part.kind].terminals.map(item => <line key={`lead-${item.id}`} className="component-lead" x1={item.ax} y1={item.ay} x2={item.x} y2={item.y} />)}
       {specs[part.kind].terminals.map(item => {
         const pending = pendingTerminal?.componentId === part.id && pendingTerminal.terminalId === item.id;
-        return <g key={item.id} className={`terminal-button${pending ? " terminal-pending" : ""}`} transform={`translate(${item.x} ${item.y})`} onPointerDown={event => event.stopPropagation()} onClick={event => { event.stopPropagation(); connectTerminal({ componentId: part.id, terminalId: item.id }); }} onKeyDown={event => { if (event.key === "Enter" || event.key === " ") { event.stopPropagation(); connectTerminal({ componentId: part.id, terminalId: item.id }); } }} tabIndex={0} role="button" aria-label={`Conectar terminal ${item.id} de ${specs[part.kind].name} ${part.id}`}>
-          <circle r="13" className="terminal-hit" /><circle r="5" className="terminal-dot" /><text className="terminal-label" x={item.labelX} y={item.labelY} textAnchor={item.anchor}>{item.name ?? item.id}</text>
+        const connected = directContacts.some(contact => contact.from.componentId === part.id && contact.from.terminalId === item.id);
+        return <g key={item.id} className={`terminal-button${pending ? " terminal-pending" : ""}${connected ? " terminal-connected" : ""}`} transform={`translate(${item.x} ${item.y})`} onPointerDown={event => event.stopPropagation()} onClick={event => { event.stopPropagation(); connectTerminal({ componentId: part.id, terminalId: item.id }); }} onKeyDown={event => { if (event.key === "Enter" || event.key === " ") { event.stopPropagation(); connectTerminal({ componentId: part.id, terminalId: item.id }); } }} tabIndex={0} role="button" aria-label={`Conectar terminal ${item.id} de ${specs[part.kind].name} ${part.id}`}>
+          <circle r={isBoard(part.kind) ? 13 : 40} className="terminal-hit" /><circle r="5" className="terminal-dot" /><text className="terminal-label" x={item.labelX} y={item.labelY} textAnchor={item.anchor}>{item.name ?? item.id}</text>
         </g>;
       })}
       {componentResult && <text className="component-readout" x="0" y="90">{(componentResult.voltage).toFixed(2)} V · {(componentResult.current * 1000).toFixed(1)} mA</text>}

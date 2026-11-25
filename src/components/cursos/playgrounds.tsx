@@ -1,71 +1,21 @@
 "use client";
 
-import { useEffect, useId, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import type { PlaygroundKind } from "@/content";
-
-// Simuladores de las lecciones: todos usan las cifras del curso (fuente de 9 V, LED rojo de 2 V).
-const SUPPLY = 9;
-const LED_DROP = 2;
-const LED_MAX_MA = 20;
-
-const trim = (value: number, digits = 2) => String(Number(value.toFixed(digits)));
-const fmtOhms = (ohms: number) => (ohms >= 1000 ? `${trim(ohms / 1000)} kΩ` : `${trim(ohms, 0)} Ω`);
-const fmtMa = (ma: number) => (ma >= 1000 ? `${trim(ma / 1000)} A` : `${trim(ma, ma < 10 ? 2 : 1)} mA`);
-const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
-
-// Velocidad de la corriente animada: 9 mA equivale a 1.8 s por vuelta.
-const flowSeconds = (ma: number) => clamp(16.2 / ma, 0.3, 6);
-
-function Shell({ title, hint, children }: { title: string; hint: string; children: ReactNode }) {
-  return (
-    <section className="playground" aria-label={title}>
-      <header>
-        <p className="quiz-kicker">Pruébalo tú</p>
-        <h3>{title}</h3>
-        <p className="pg-hint">{hint}</p>
-      </header>
-      {children}
-    </section>
-  );
-}
-
-function Slider({
-  label,
-  display,
-  value,
-  min,
-  max,
-  step,
-  onChange,
-}: {
-  label: string;
-  display: string;
-  value: number;
-  min: number;
-  max: number;
-  step: number;
-  onChange: (value: number) => void;
-}) {
-  const id = useId();
-  return (
-    <div className="pg-slider">
-      <label htmlFor={id}>
-        <span>{label}</span>
-        <output>{display}</output>
-      </label>
-      <input id={id} type="range" min={min} max={max} step={step} value={value} onChange={(event) => onChange(Number(event.target.value))} />
-    </div>
-  );
-}
-
-function Resistor({ x, y, label }: { x: number; y: number; label: string }) {
-  return (
-    <g className="pg-part">
-      <path d={`M${x} ${y} l9 -14 14 28 14 -28 14 28 14 -28 9 14`} />
-      <text x={x + 37} y={y - 20} textAnchor="middle">{label}</text>
-    </g>
-  );
-}
+import {
+  LED_DROP,
+  LED_MAX_MA,
+  Resistor,
+  SUPPLY,
+  Shell,
+  Slider,
+  clamp,
+  flowSeconds,
+  fmtMa,
+  fmtOhms,
+  trim,
+} from "./playground-kit";
+import { BreadboardPlayground, DividerPlayground, KirchhoffPlayground, MixedPlayground, PowerPlayground } from "./playgrounds-analisis";
 
 // ---------- Voltaje, corriente y resistencia: la tubería de agua ----------
 
@@ -344,5 +294,15 @@ export function Playground({ kind }: { kind: PlaygroundKind }) {
       return <SeriesParallelPlayground />;
     case "capacitor":
       return <CapacitorPlayground />;
+    case "power":
+      return <PowerPlayground />;
+    case "divider":
+      return <DividerPlayground />;
+    case "kirchhoff":
+      return <KirchhoffPlayground />;
+    case "mixed":
+      return <MixedPlayground />;
+    case "breadboard":
+      return <BreadboardPlayground />;
   }
 }

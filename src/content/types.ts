@@ -1,10 +1,30 @@
-export type CourseArt = "circuit" | "sensors" | "digital" | "generic";
+export type CourseArt = "circuit" | "analysis" | "sensors" | "digital" | "generic";
 
 // Animación que acompaña a cada lección.
-export type LessonScene = "magnitudes" | "ohm" | "led" | "series-parallel" | "capacitor";
+export type LessonScene =
+  | "magnitudes"
+  | "ohm"
+  | "led"
+  | "series-parallel"
+  | "capacitor"
+  | "power"
+  | "divider"
+  | "kirchhoff"
+  | "mixed"
+  | "breadboard";
 
 // Simulador interactivo que se inserta dentro de una lección.
-export type PlaygroundKind = "pipe" | "ohm" | "led" | "series-parallel" | "capacitor";
+export type PlaygroundKind =
+  | "pipe"
+  | "ohm"
+  | "led"
+  | "series-parallel"
+  | "capacitor"
+  | "power"
+  | "divider"
+  | "kirchhoff"
+  | "mixed"
+  | "breadboard";
 
 export type LessonBlock =
   | { type: "paragraph"; text: string }

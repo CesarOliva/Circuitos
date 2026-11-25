@@ -2031,3 +2031,202 @@
     animation: none;
   }
 }
+
+/* ---------- Curso de analisis de circuitos: simuladores y escenas ---------- */
+
+.pg-split {
+  display: flex;
+  height: 46px;
+  overflow: hidden;
+  border: 1px solid var(--line-strong);
+  border-radius: 10px;
+}
+
+.pg-split span {
+  display: grid;
+  flex-basis: 0;
+  min-width: 0;
+  padding: 0 10px;
+  place-items: center;
+  overflow: hidden;
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 13px;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  transition: flex-grow 0.15s ease;
+}
+
+.pg-split span[data-part="0"] {
+  background: var(--accent-soft);
+  color: var(--accent-ink);
+}
+
+.pg-split span[data-part="1"] {
+  background: rgb(79 216 160 / 16%);
+  color: var(--ok);
+}
+
+.pg-meter-fill[data-state="hot"] {
+  background: #f0a030;
+}
+
+.pg-meter-fill[data-state="over"] {
+  background: var(--bad);
+}
+
+.pg-meter-limit {
+  background: var(--bad);
+}
+
+.pg-part[data-state="over"] path {
+  stroke: var(--bad);
+}
+
+.pg-heat-waves {
+  transition: opacity 0.2s ease;
+}
+
+.pg-heat {
+  fill: none;
+  stroke: var(--bad);
+  stroke-width: 3;
+  stroke-linecap: round;
+  animation: pg-heat 1.6s ease-in-out infinite;
+}
+
+.pg-box {
+  fill: var(--surface-2);
+  stroke: var(--line-strong);
+  stroke-width: 2;
+}
+
+.edu-lesson .playground .pg-steps {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding-left: 22px;
+  color: var(--foreground);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.pg-steps strong {
+  color: var(--accent-ink);
+}
+
+.pg-board {
+  fill: var(--surface-2);
+  stroke: var(--line-strong);
+  stroke-width: 2;
+}
+
+.pg-channel {
+  fill: var(--surface-3);
+}
+
+.pg-hole {
+  fill: var(--line-strong);
+  cursor: pointer;
+  transition: fill 0.12s ease;
+}
+
+.pg-hole:hover {
+  fill: var(--faint);
+}
+
+.pg-hole[data-state="a"] {
+  fill: var(--accent-bright);
+}
+
+.pg-hole[data-state="b"] {
+  fill: var(--ok);
+}
+
+.pg-hole[data-picked] {
+  stroke: var(--foreground);
+  stroke-width: 2;
+}
+
+.pg-actions button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.pg-actions button:disabled:hover {
+  border-color: var(--line-strong);
+  background: var(--surface);
+}
+
+.lesson-scene .scene-heat {
+  fill: none;
+  stroke: var(--bad);
+  stroke-width: 3;
+  stroke-linecap: round;
+  animation: pg-heat 1.6s ease-in-out infinite;
+}
+
+.lesson-scene .scene-focus {
+  fill: var(--accent-soft);
+  stroke: var(--accent);
+  stroke-width: 2;
+  stroke-dasharray: 8 6;
+  animation: scene-march 1.2s linear infinite;
+}
+
+.lesson-scene .scene-probe {
+  fill: none;
+  stroke: var(--ok);
+  stroke-width: 2;
+  stroke-dasharray: 5 5;
+}
+
+.lesson-scene .scene-board {
+  fill: var(--surface-2);
+  stroke: var(--line-strong);
+  stroke-width: 2;
+}
+
+.lesson-scene .scene-channel {
+  fill: var(--surface-3);
+}
+
+.lesson-scene .scene-hole {
+  fill: var(--line-strong);
+}
+
+.lesson-scene .scene-strip {
+  fill: var(--accent-soft);
+}
+
+.lesson-scene .scene-cable {
+  fill: none;
+  stroke-width: 4;
+  stroke-linecap: round;
+}
+
+.lesson-scene .scene-cable-red {
+  stroke: var(--bad);
+}
+
+.lesson-scene .scene-cable-dark {
+  stroke: var(--muted);
+}
+
+@keyframes pg-heat {
+  0% { transform: translateY(6px); opacity: 0; }
+  50% { opacity: 1; }
+  100% { transform: translateY(-8px); opacity: 0; }
+}
+
+@keyframes scene-march {
+  to { stroke-dashoffset: -28; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pg-heat,
+  .lesson-scene .scene-heat,
+  .lesson-scene .scene-focus {
+    animation: none;
+  }
+}

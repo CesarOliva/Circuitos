@@ -45,6 +45,36 @@ function CircuitArt() {
   );
 }
 
+// Esquema del curso de análisis: una fuente, un resistor en serie y dos ramas en paralelo.
+function AnalysisArt() {
+  const wire = "M44 80 H66 M140 80 H168 M168 80 V52 H196 M270 52 H290 M168 80 V108 H196 M270 108 H290 M290 52 V150 H162 M150 150 H44 V80";
+  return (
+    <svg className="course-art" viewBox="0 0 320 200" aria-hidden="true">
+      <rect x="16" y="16" width="288" height="168" rx="10" fill="var(--surface-2)" stroke="var(--line-strong)" />
+      {Array.from({ length: 6 }, (_, row) =>
+        Array.from({ length: 12 }, (_, col) => <circle key={`${row}-${col}`} cx={34 + col * 23} cy={32 + row * 28} r="1.2" fill="var(--line-strong)" />),
+      )}
+      <path d={wire} fill="none" stroke="var(--line-strong)" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+      <path d={wire} fill="none" stroke="var(--accent)" strokeWidth="3" strokeLinecap="round" strokeDasharray="1 11" />
+      <g fill="none" stroke="var(--foreground)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M150 134 V166 M162 141 V159" />
+        <path d="M66 80 l9 -12 14 24 14 -24 14 24 14 -24 9 12" />
+        <path d="M196 52 l9 -12 14 24 14 -24 14 24 14 -24 9 12" />
+        <path d="M196 108 l9 -12 14 24 14 -24 14 24 14 -24 9 12" />
+      </g>
+      <circle cx="168" cy="80" r="4.5" fill="var(--accent-bright)" />
+      <circle cx="290" cy="80" r="4.5" fill="var(--accent-bright)" />
+      <g fill="var(--muted)" fontFamily="monospace" fontSize="11">
+        <text x="103" y="62" textAnchor="middle">R1</text>
+        <text x="233" y="32" textAnchor="middle">R2</text>
+        <text x="233" y="130" textAnchor="middle">R3</text>
+        <text x="156" y="128" textAnchor="middle" fill="var(--accent-ink)">9 V</text>
+      </g>
+      <text x="160" y="177" textAnchor="middle" fill="var(--faint)" fontFamily="monospace" fontSize="10">ΣI = 0 · ΣV = 0</text>
+    </svg>
+  );
+}
+
 function GenericArt({ label }: { label: string }) {
   return (
     <svg className="course-art" viewBox="0 0 320 200" aria-hidden="true">
@@ -58,5 +88,6 @@ function GenericArt({ label }: { label: string }) {
 
 export function CourseArt({ kind = "generic", label = "Curso" }: { kind?: CourseArtKind; label?: string }) {
   if (kind === "circuit") return <CircuitArt />;
+  if (kind === "analysis") return <AnalysisArt />;
   return <GenericArt label={label} />;
 }

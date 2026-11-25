@@ -1,4 +1,5 @@
 import type { SubjectSource } from "../types";
+import { ANALISIS_DE_CIRCUITOS } from "./analisis-de-circuitos";
 
 // Cifras del curso: R = 1 kΩ, V = 9 V, LED rojo con caída de 2 V, C = 100 µF.
 export const CIRCUITOS: SubjectSource = {
@@ -196,5 +197,6 @@ export const CIRCUITOS: SubjectSource = {
         },
       ],
     },
+    ANALISIS_DE_CIRCUITOS,
   ],
 };

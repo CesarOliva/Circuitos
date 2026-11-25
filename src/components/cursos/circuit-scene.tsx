@@ -150,12 +150,148 @@ function Capacitor() {
   );
 }
 
+function Power() {
+  const wire = "M116 112 H340 M414 112 H650 V190 H72 V112 H100";
+  return (
+    <svg viewBox="0 0 760 230" role="img" aria-labelledby="circuit-title circuit-description">
+      <title id="circuit-title">Potencia en un resistor</title>
+      <desc id="circuit-description">Una fuente de 9 voltios y un resistor de 1 kiloohmio: la energía eléctrica se disipa como calor.</desc>
+      <path className="scene-wire" d={wire} />
+      <path className="scene-current" d={wire} />
+      <Battery x={100} label="9 V" />
+      <Resistor x={340} label="R = 1 kΩ" labelY={152} />
+      {[357, 377, 397].map((x, index) => (
+        <path key={x} className="scene-heat" d={`M${x} 90 q 6 -8 0 -16 t 0 -16`} style={{ animationDelay: `${index * -0.5}s` }} />
+      ))}
+      <g className="scene-part"><text x="377" y="42" textAnchor="middle">P = 81 mW</text></g>
+      <circle className="scene-node" cx="72" cy="112" r="5" />
+      <circle className="scene-node" cx="650" cy="112" r="5" />
+      <text className="scene-note" x="72" y="218">LA ENERGÍA SE DISIPA COMO CALOR · P = V · I = 9 V × 9 mA</text>
+    </svg>
+  );
+}
+
+function Divider() {
+  const wire = "M116 112 H200 M274 112 H386 M460 112 H650 V190 H72 V112 H100";
+  return (
+    <svg viewBox="0 0 760 230" role="img" aria-labelledby="circuit-title circuit-description">
+      <title id="circuit-title">Divisor de voltaje</title>
+      <desc id="circuit-description">Dos resistores en serie conectados a 9 voltios. El voltaje de salida se mide entre la unión de los dos resistores y el cable de regreso.</desc>
+      <path className="scene-wire" d={wire} />
+      <path className="scene-current" d={wire} />
+      <path className="scene-probe" d="M330 112 V190" />
+      <Battery x={100} label="9 V" />
+      <Resistor x={200} label="R1 = 2 kΩ" labelY={74} />
+      <Resistor x={386} label="R2 = 1 kΩ" labelY={74} />
+      <g className="scene-part"><text x="342" y="156">Vout = 3 V</text></g>
+      <circle className="scene-node" cx="330" cy="112" r="5" />
+      <circle className="scene-node" cx="330" cy="190" r="5" />
+      <text className="scene-note" x="72" y="218">Vout = 9 V × 1 kΩ / (2 kΩ + 1 kΩ) = 3 V</text>
+    </svg>
+  );
+}
+
+function Kirchhoff() {
+  const trunk = "M116 112 H220 M500 112 H650 V206 H72 V112 H100";
+  const top = "M220 112 V62 H300 M374 62 H500 V112";
+  const bottom = "M220 112 V162 H300 M374 162 H500 V112";
+  return (
+    <svg viewBox="0 0 760 230" role="img" aria-labelledby="circuit-title circuit-description">
+      <title id="circuit-title">Corrientes en un nodo</title>
+      <desc id="circuit-description">Una fuente de 9 voltios alimenta dos ramas en paralelo. La corriente total de 13.5 miliamperios se reparte en 9 y 4.5 miliamperios.</desc>
+      <path className="scene-wire" d={`${trunk} ${top} ${bottom}`} />
+      <path className="scene-current" d={trunk} style={{ animationDuration: "1.2s" }} />
+      <path className="scene-current" d={top} style={{ animationDuration: "1.8s" }} />
+      <path className="scene-current" d={bottom} style={{ animationDuration: "3.6s" }} />
+      <Battery x={100} label="9 V" />
+      <Resistor x={300} y={62} label="R1 = 1 kΩ" labelY={40} />
+      <Resistor x={300} y={162} label="R2 = 2 kΩ" labelY={140} />
+      <g className="scene-part">
+        <text x="168" y="98" textAnchor="middle">I = 13.5 mA</text>
+        <text x="337" y="92" textAnchor="middle">I1 = 9 mA</text>
+        <text x="337" y="192" textAnchor="middle">I2 = 4.5 mA</text>
+      </g>
+      <circle className="scene-node" cx="220" cy="112" r="5" />
+      <circle className="scene-node" cx="500" cy="112" r="5" />
+      <text className="scene-note" x="72" y="224">LO QUE ENTRA AL NODO = LO QUE SALE · 13.5 mA = 9 mA + 4.5 mA</text>
+    </svg>
+  );
+}
+
+function Mixed() {
+  const wire = "M116 112 H170 M244 112 H290 M290 112 V62 H340 M414 62 H464 V112 M290 112 V162 H340 M414 162 H464 V112 M464 112 H650 V206 H72 V112 H100";
+  return (
+    <svg viewBox="0 0 760 230" role="img" aria-labelledby="circuit-title circuit-description">
+      <title id="circuit-title">Circuito mixto</title>
+      <desc id="circuit-description">Un resistor en serie con otros dos en paralelo, conectados a 9 voltios. Los dos resistores en paralelo se reducen primero a uno equivalente.</desc>
+      <rect className="scene-focus" x="268" y="30" width="218" height="162" rx="14" />
+      <path className="scene-wire" d={wire} />
+      <path className="scene-current" d={wire} style={{ animationDuration: "3.6s" }} />
+      <Battery x={100} label="9 V" />
+      <Resistor x={170} label="R1 = 1 kΩ" labelY={88} />
+      <Resistor x={340} y={62} label="R2 = 2 kΩ" labelY={46} />
+      <Resistor x={340} y={162} label="R3 = 2 kΩ" labelY={142} />
+      <g className="scene-part"><text x="377" y="22" textAnchor="middle">R2 ∥ R3 = 1 kΩ</text></g>
+      <circle className="scene-node" cx="72" cy="112" r="5" />
+      <circle className="scene-node" cx="650" cy="112" r="5" />
+      <text className="scene-note" x="72" y="224">2 kΩ ∥ 2 kΩ = 1 kΩ · 1 kΩ + 1 kΩ = 2 kΩ · I = 9 V / 2 kΩ = 4.5 mA</text>
+    </svg>
+  );
+}
+
+const BOARD_COLUMNS = Array.from({ length: 14 }, (_, index) => 90 + index * 46);
+const BOARD_ROWS = [62, 74, 86, 98, 110, 144, 156, 168, 180, 192];
+
+function Breadboard() {
+  const flow = "M228 20 V110 H283 M357 110 H412 V86 H482 M504 86 H596 V34";
+  return (
+    <svg viewBox="0 0 760 230" role="img" aria-labelledby="circuit-title circuit-description">
+      <title id="circuit-title">Un circuito armado en la protoboard</title>
+      <desc id="circuit-description">Una batería lleva el positivo y el negativo a los rieles. Un resistor y un LED, conectados entre tiras de cinco agujeros, forman un circuito en serie.</desc>
+      <rect className="scene-board" x="44" y="8" width="668" height="194" rx="10" />
+      <rect className="scene-channel" x="44" y="118" width="668" height="16" />
+      <rect className="scene-strip" x="72" y="15" width="622" height="10" rx="5" />
+      <rect className="scene-strip" x="72" y="29" width="622" height="10" rx="5" />
+      {[228, 412, 596].map((x) => (
+        <rect key={x} className="scene-strip" x={x - 8} y="56" width="16" height="60" rx="6" />
+      ))}
+      {BOARD_COLUMNS.map((x) => (
+        <g key={x}>
+          {[20, 34, ...BOARD_ROWS].map((y) => <circle key={y} className="scene-hole" cx={x} cy={y} r="3" />)}
+        </g>
+      ))}
+      <path className="scene-cable scene-cable-red" d="M228 20 V62" />
+      <path className="scene-cable scene-cable-dark" d="M596 62 V34" />
+      <path className="scene-current" d={flow} />
+      <g className="scene-part">
+        <path d="M228 110 H283 l9 -14 14 28 14 -28 14 28 14 -28 9 14 H412" />
+        <text x="320" y="130" textAnchor="middle">R = 470 Ω</text>
+      </g>
+      <g className="scene-part scene-led">
+        <path d="M412 110 V86 H482 M482 74 V98 L504 86 Z M504 74 V98 M504 86 H596" />
+        <path d="M494 66 l12 -12 M504 74 l12 -12" />
+        <text x="504" y="130" textAnchor="middle">LED</text>
+      </g>
+      <g className="scene-part">
+        <text x="38" y="24" textAnchor="end">+ 9 V</text>
+        <text x="38" y="38" textAnchor="end">−</text>
+      </g>
+      <text className="scene-note" x="44" y="224">CADA TIRA DE 5 AGUJEROS ESTÁ UNIDA POR DENTRO · LOS RIELES LLEVAN + Y −</text>
+    </svg>
+  );
+}
+
 const SCENES: Record<LessonScene, { Drawing: () => React.JSX.Element; caption: string }> = {
   magnitudes: { Drawing: Magnitudes, caption: "Las tres magnitudes en un solo circuito: la fuente empuja, la corriente fluye y la resistencia se opone." },
   ohm: { Drawing: Ohm, caption: "Con el mismo voltaje, duplicar la resistencia reduce la corriente a la mitad." },
   led: { Drawing: Led, caption: "Del diagrama al concepto: sigue el recorrido de la corriente." },
   "series-parallel": { Drawing: SeriesParallel, caption: "En serie pasa la misma corriente por todas; en paralelo se reparte entre las ramas." },
   capacitor: { Drawing: Capacitor, caption: "El capacitor se llena poco a poco mientras la corriente disminuye." },
+  power: { Drawing: Power, caption: "Mientras más corriente pasa por el resistor, más calor se produce: P = V · I." },
+  divider: { Drawing: Divider, caption: "Dos resistores en serie se reparten el voltaje de la fuente." },
+  kirchhoff: { Drawing: Kirchhoff, caption: "La corriente se reparte entre las ramas y vuelve a sumarse al otro lado del nodo." },
+  mixed: { Drawing: Mixed, caption: "Primero reduce lo que está en paralelo; después suma lo que queda en serie." },
+  breadboard: { Drawing: Breadboard, caption: "Los agujeros de cada tira están unidos por dentro; los componentes cierran el circuito entre tiras." },
 };
 
 export function CircuitScene({ scene = "led" }: { scene?: LessonScene }) {

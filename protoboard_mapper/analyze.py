@@ -66,6 +66,8 @@ LABELS = {
     "switch": "switch",
     "red dip switch": "switch",
     "red dip switch white toggles": "switch",
+    "dip switch": "switch",
+    "microchip": "integrated circuit",
     "potentiometer": "potentiometer",
     "push button": "push button",
 }
@@ -81,7 +83,7 @@ class Detection:
 def canonical_label(label: str) -> str | None:
     normalized = label.lower().strip().removesuffix(".")
     normalized = normalized.removeprefix("a ").removeprefix("an ")
-    if "wire" in normalized.split():
+    if {"wire", "jumper"}.intersection(normalized.split()):
         return "wire"
     if "axial resistor" in normalized:
         return "resistor"
@@ -141,8 +143,26 @@ def detect_board_corners(
     close_size = max(7, (min(crop.shape[:2]) // 45) | 1)
     kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (close_size, close_size))
     mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel, iterations=2)
+    min_area = crop.shape[0] * crop.shape[1] * 0.18
     contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-    candidates = [contour for contour in contours if cv2.contourArea(contour) > crop.shape[0] * crop.shape[1] * 0.18]
+    candidates = [contour for contour in contours if cv2.contourArea(contour) > min_area]
+    if not candidates:
+        # A board on a similarly colored surface can still have a visible outline.
+        smoothed = cv2.GaussianBlur(gray, (3, 3), 0)
+        edges = cv2.Canny(smoothed, 12, 24)
+        edges = cv2.morphologyEx(edges, cv2.MORPH_CLOSE, kernel)
+        contours, _ = cv2.findContours(edges, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
+        for contour in contours:
+            if cv2.contourArea(contour) <= min_area:
+                continue
+            x, y, width, height = cv2.boundingRect(contour)
+            if (
+                abs(left + x - x1) <= pad_x / 2
+                and abs(top + y - y1) <= pad_y / 2
+                and abs(left + x + width - x2) <= pad_x / 2
+                and abs(top + y + height - y2) <= pad_y / 2
+            ):
+                candidates.append(contour)
     if not candidates:
         raise ValueError(
             "No pude encontrar el borde claro del protoboard. "
@@ -197,6 +217,24 @@ def project_points(
     }
 
 
+def rectify_board(image_rgb: np.ndarray, corners: np.ndarray, aspect_ratio: float) -> tuple[Image.Image, np.ndarray]:
+    width = 800
+    height = round(min(1200, max(2, width / aspect_ratio)))
+    destination = np.array([[0, 0], [width - 1, 0], [width - 1, height - 1], [0, height - 1]], dtype=np.float32)
+    transform = cv2.getPerspectiveTransform(corners, destination)
+    rectified = cv2.warpPerspective(image_rgb, transform, (width, height))
+    return Image.fromarray(rectified), transform
+
+
+def transform_detection(item: Detection, transform: np.ndarray) -> Detection:
+    points = np.array(list(box_keypoints(item.box).values()), dtype=np.float32).reshape(-1, 1, 2)
+    projected = cv2.perspectiveTransform(points, transform).reshape(-1, 2)
+    center = projected[-1]
+    # Keep the projected center as the placement anchor during duplicate filtering.
+    half_size = np.ptp(projected[:4], axis=0) / 2
+    return Detection(item.label, item.score, (*map(float, center - half_size), *map(float, center + half_size)))
+
+
 def intersection_over_union(
     first: tuple[float, float, float, float],
     second: tuple[float, float, float, float],
@@ -222,6 +260,16 @@ def remove_duplicate_boxes(detections: list[Detection], overlap: float = 0.5) ->
         ):
             kept.append(candidate)
     return sorted(kept, key=lambda item: (item.box[1], item.box[0]))
+
+
+def exclude_wires(detections: list[Detection], wires: list[Detection]) -> list[Detection]:
+    return [
+        item for item in detections
+        if item.label == BOARD_LABEL or not any(
+            wire.score >= item.score and intersection_over_union(item.box, wire.box) > 0.4
+            for wire in wires
+        )
+    ]
 
 
 def is_resistor_group(candidate: Detection, resistors: list[Detection]) -> bool:
@@ -300,36 +348,29 @@ def detect_objects(
         coordinates = tuple(float(value) for value in box.tolist())
         if coordinates[2] - coordinates[0] < 4 or coordinates[3] - coordinates[1] < 4:
             continue
-        class_name = (
-            detail_label(str(label), hsv, coordinates, float(score), threshold)
-            if detail else canonical_label(str(label))
-        )
+        class_name = canonical_label(str(label))
+        if class_name == "wire":
+            wires.append(Detection(class_name, float(score), coordinates))
+            continue
+        if detail:
+            class_name = detail_label(str(label), hsv, coordinates, float(score), threshold)
         if class_name is None:
             continue
         candidate = Detection(class_name, float(score), coordinates)
         if detail:
             detections.append(candidate)
-        elif class_name == "wire":
-            wires.append(candidate)
         elif candidate.score >= threshold or (
             class_name == "resistor" and has_resistor_body(hsv, candidate.box)
         ):
             detections.append(candidate)
 
+    detections = exclude_wires(detections, wires)
     if detail:
-        return detections
+        return detections + wires
 
-    detections = [
-        item for item in detections
-        if item.label == BOARD_LABEL or not any(
-            wire.score >= item.score
-            and intersection_over_union(item.box, wire.box) > 0.5
-            for wire in wires
-        )
-    ]
     resistors = [item for item in detections if item.label == "resistor"]
     detections = [item for item in detections if item.label != "resistor" or not is_resistor_group(item, resistors)]
-    return remove_duplicate_boxes(detections)
+    return remove_duplicate_boxes(detections) + wires
 
 
 def detail_label(
@@ -339,23 +380,32 @@ def detail_label(
     score: float,
     threshold: float,
 ) -> str | None:
+    label = label.lower()
+    if canonical_label(label) == "wire":
+        return None
     height, width = hsv.shape[:2]
     x1, y1, x2, y2 = map(round, box)
     w, h = x2 - x1, y2 - y1
     if (
         min(w, h) < max(8, height * 0.036)
         or max(w, h) / min(w, h) > 4
-        or w * h > width * height * 0.09
         or x1 < 3 or y1 < 3 or x2 > width - 3 or y2 > height - 3
     ):
         return None
-    label = label.lower()
     core = hsv[y1 + h // 4:y2 - h // 4, x1 + w // 4:x2 - w // 4]
     hue, saturation, value = cv2.split(core)
     dark = np.mean(value < 95)
     vivid = np.mean(saturation > 150)
     median_hue = np.median(hue)
     elongated = max(w, h) / min(w, h)
+    class_name = canonical_label(label)
+    # A chip or switch can occupy much of a detail crop.
+    if class_name == "integrated circuit" and score >= threshold and dark > 0.35:
+        return class_name
+    if class_name == "switch" and score >= max(threshold, 0.35) and vivid > 0.4:
+        return class_name
+    if w * h > width * height * 0.09:
+        return None
     if (
         elongated >= 1.65
         and dark >= 0.06
@@ -364,15 +414,13 @@ def detail_label(
         and has_resistor_body(hsv, box)
     ):
         return "resistor"
-    if score < threshold or "wire" in label.split() or elongated > 2.6:
+    if score < threshold or elongated > 2.6:
         return None
     if h >= w and vivid > 0.4 and ("capacitor" in label or "push button" in label):
         # Disc capacitors show their colored body above the exposed leads.
         upper = hsv[y1 + h // 10:y1 + h // 2, x1 + w // 4:x2 - w // 4]
         if 6 <= np.median(upper[:, :, 0]) <= 23 and np.mean(upper[:, :, 1] > 150) > 0.8:
             return "capacitor"
-    if "dip switch" in label:
-        return "switch" if score >= 0.35 and min(w, h) >= height * 0.13 and vivid > 0.4 else None
     if "bulb" in label and score >= 0.25 and vivid > 0.65 and dark < 0.2:
         return "led"
     if "potentiometer" in label and vivid > 0.25 and min(w, h) >= height * 0.08:
@@ -415,6 +463,9 @@ def detail_detections(
 
 
 def merge_detail_detections(original: list[Detection], details: list[Detection]) -> list[Detection]:
+    wires = [item for item in original + details if item.label == "wire"]
+    original = exclude_wires([item for item in original if item.label != "wire"], wires)
+    details = exclude_wires([item for item in details if item.label != "wire"], wires)
     resistors = [item for item in original + details if item.label == "resistor"]
     merged = [item for item in original if item.label != "resistor" or not is_resistor_group(item, resistors)]
     for candidate in sorted(details, key=lambda item: item.score, reverse=True):
@@ -422,8 +473,13 @@ def merge_detail_detections(original: list[Detection], details: list[Detection])
             continue
         cx, cy = box_keypoints(candidate.box)["centro"]
         if any(
-            intersection_over_union(item.box, candidate.box) > 0.25
-            or (item.box[0] <= cx <= item.box[2] and item.box[1] <= cy <= item.box[3])
+            intersection_over_union(item.box, candidate.box) > (
+                0.5 if item.label == candidate.label == "resistor" else 0.25
+            )
+            or (
+                not (item.label == candidate.label == "resistor")
+                and item.box[0] <= cx <= item.box[2] and item.box[1] <= cy <= item.box[3]
+            )
             for item in merged
         ):
             continue
@@ -559,42 +615,35 @@ def process_image(
     board_detection = max(boards, key=lambda item: item.score)
     try:
         board_corners = detect_board_corners(image_rgb, board_detection.box)
-    except ValueError:
+    except ValueError as error:
         if output_dir is not None:
             raise
-        if board_detection.score < 0.5:
-            return {"breadboard": False, "components": []}
-        x1, y1, x2, y2 = board_detection.box
-        board_corners = np.array([[x1, y1], [x2, y1], [x2, y2], [x1, y2]], dtype=np.float32)
+        return {"error": str(error), "breadboard": False, "components": []}
     components = [
         item for item in detections
         if item.label != BOARD_LABEL
         and cv2.pointPolygonTest(board_corners, tuple(box_keypoints(item.box)["centro"]), False) >= 0
     ]
-    details = detail_detections(image, board_detection, processor, model, device, threshold)
-    components = merge_detail_detections(components, [
-        item for item in details
-        if cv2.pointPolygonTest(board_corners, tuple(box_keypoints(item.box)["centro"]), False) >= 0
-    ])
+    rectified, transform = rectify_board(image_rgb, board_corners, board_width / board_height)
+    width, height = rectified.width - 1, rectified.height - 1
+    rectified_board = Detection(BOARD_LABEL, board_detection.score, (0, 0, width, height))
+    details = detail_detections(rectified, rectified_board, processor, model, device, threshold)
+    components = merge_detail_detections([transform_detection(item, transform) for item in components], details)
     if output_dir is None:
-        centers = {
-            str(index): box_keypoints(item.box)["centro"]
-            for index, item in enumerate(components)
-        }
-        projected = project_points(board_corners, centers, board_width, board_height) if centers else {}
         return {
             "breadboard": True,
             "components": [
-                {"x": point["x"] / board_width, "y": point["y"] / board_height}
-                for point in projected.values()
+                {"x": x / width - 0.5, "y": y / height - 0.5}
+                for x, y in (box_keypoints(item.box)["centro"] for item in components)
             ],
         }
+    inverse = np.linalg.inv(transform)
     save_outputs(
         image_path,
         image_rgb,
         board_corners,
         board_detection,
-        components,
+        [transform_detection(item, inverse) for item in components],
         board_width,
         board_height,
         output_dir,

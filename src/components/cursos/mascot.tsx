@@ -2,7 +2,7 @@
 
 import { useState, type FormEvent } from "react";
 import Link from "next/link";
-import { COURSES } from "@/data/cursos";
+import type { Course } from "@/content";
 import { replyTo } from "./assistant";
 
 interface Message {
@@ -13,7 +13,7 @@ interface Message {
 const GREETING = "¡Hola! Soy Chip, tu asistente de cursos. Pronto podré responder tus dudas con IA. Por ahora, elige un curso o escribe tu pregunta.";
 
 // Mascota flotante con chat. Las respuestas salen de replyTo (ver assistant.ts).
-export function Mascot() {
+export function Mascot({ courses }: { courses: Course[] }) {
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([{ from: "bot", text: GREETING }]);
   const [draft, setDraft] = useState("");
@@ -54,8 +54,8 @@ export function Mascot() {
             )}
           </ol>
           <div className="mascot-links">
-            {COURSES.map((course) => (
-              <Link key={course.slug} href={`/cursos/${course.slug}`}>
+            {courses.map((course) => (
+              <Link key={`${course.subjectSlug}/${course.slug}`} href={`/cursos/${course.subjectSlug}/${course.slug}`}>
                 {course.title}
               </Link>
             ))}
@@ -64,7 +64,7 @@ export function Mascot() {
             <input
               value={draft}
               onChange={(event) => setDraft(event.target.value)}
-              placeholder="Pregunta sobre circuitos…"
+              placeholder="Pregunta sobre tus cursos…"
               aria-label="Escribe tu pregunta"
             />
             <button type="submit" disabled={thinking}>Enviar</button>

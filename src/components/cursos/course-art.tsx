@@ -1,9 +1,10 @@
-// Imagen del curso de circuitos: una protoboard con batería, resistor y LED, dibujada con sombras y brillos para
-// que se vea semirrealista. Es estática: no tiene animaciones.
+import type { CourseArt as CourseArtKind } from "@/content";
+
+// Dibujo del curso de circuitos: una protoboard con batería, resistor y LED.
 const COLUMNS = Array.from({ length: 24 }, (_, index) => 28 + index * 12);
 const ROWS = [30, 42, 54, 66, 78, 106, 118, 130, 142, 154];
 
-export function CourseArt() {
+function CircuitArt() {
   return (
     <svg className="course-art" viewBox="0 0 320 200" aria-hidden="true">
       <rect x="16" y="16" width="288" height="168" rx="10" fill="#ebe8de" stroke="#c9c4b4" />
@@ -42,4 +43,20 @@ export function CourseArt() {
       <path d="M68 160 C 96 190 236 188 260 165" fill="none" stroke="#fff" strokeWidth="1.2" opacity="0.2" />
     </svg>
   );
+}
+
+function GenericArt({ label }: { label: string }) {
+  return (
+    <svg className="course-art" viewBox="0 0 320 200" aria-hidden="true">
+      <rect x="16" y="16" width="288" height="168" rx="10" fill="var(--surface-2)" stroke="var(--line-strong)" />
+      <circle cx="160" cy="88" r="38" fill="var(--accent-soft)" stroke="var(--accent)" strokeWidth="1.5" />
+      <path d="M160 62v52M134 88h52" stroke="var(--accent-bright)" strokeWidth="2" strokeLinecap="round" />
+      <text x="160" y="158" textAnchor="middle" fill="var(--foreground)" fontSize="14" fontFamily="Arial, sans-serif">{label}</text>
+    </svg>
+  );
+}
+
+export function CourseArt({ kind = "generic", label = "Curso" }: { kind?: CourseArtKind; label?: string }) {
+  if (kind === "circuit") return <CircuitArt />;
+  return <GenericArt label={label} />;
 }

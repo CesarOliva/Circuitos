@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, type CSSProperties } from "react";
-import type { Quiz as QuizData } from "@/data/cursos";
+import type { Quiz as QuizData } from "@/content";
 
 // Pregunta de opción múltiple: al elegir se marca la respuesta y se muestra por qué es correcta.
 export function Quiz({ quiz }: { quiz: QuizData }) {
@@ -18,8 +18,19 @@ export function Quiz({ quiz }: { quiz: QuizData }) {
 
   return (
     <section className="quiz" aria-labelledby="quiz-title">
-      <h2 id="quiz-title">Comprueba lo aprendido</h2>
-      <p>{quiz.question}</p>
+      <header className="quiz-heading">
+        <div>
+          <p className="quiz-kicker">Hora de practicar</p>
+          <h2 id="quiz-title">Comprueba lo aprendido</h2>
+        </div>
+        <p className="quiz-score" aria-label={`${correct ? 1 : 0} de 1 aciertos`}>
+          <strong>{correct ? 1 : 0}</strong><span>/ 1 aciertos</span>
+        </p>
+      </header>
+      <div className="quiz-question">
+        <p className="quiz-kicker">Reto 01 / 01</p>
+        <p>{quiz.question}</p>
+      </div>
       <ol className="quiz-options">
         {quiz.options.map((option, index) => (
           <li key={option} style={{ "--i": index + 2 } as CSSProperties}>
@@ -30,7 +41,8 @@ export function Quiz({ quiz }: { quiz: QuizData }) {
               disabled={answered}
               onClick={() => setSelected(index)}
             >
-              {option}
+              <span className="quiz-option-index" aria-hidden="true">{String.fromCharCode(65 + index)}</span>
+              <span>{option}</span>
             </button>
           </li>
         ))}

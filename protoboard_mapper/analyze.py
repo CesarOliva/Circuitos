@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+from collections import deque
 import json
 import os
 from dataclasses import dataclass
@@ -24,7 +25,7 @@ BOARD_LABEL = "breadboard"
 PROMPTS = [
     "solderless breadboard",
     "axial resistor with colored bands",
-    "yellow LED bulb",
+    "LED bulb",
     "black rectangular microchip",
     "red DIP switch with white toggles",
     "jumper wire",
@@ -104,7 +105,11 @@ def order_corners(points: np.ndarray) -> np.ndarray:
         dtype=np.float32,
     )
     if len(np.unique(ordered, axis=0)) != 4:
-        raise ValueError("No se pudieron ordenar las cuatro esquinas del protoboard.")
+        # At steep angles, one corner can be extreme on both diagonals.
+        hull = cv2.convexHull(points, clockwise=False).reshape(-1, 2)
+        if len(hull) != 4:
+            raise ValueError("No se pudieron ordenar las cuatro esquinas del protoboard.")
+        ordered = np.roll(hull, -int(np.argmin(hull.sum(axis=1))), axis=0)
     return ordered
 
 
@@ -164,6 +169,54 @@ def detect_board_corners(
             ):
                 candidates.append(contour)
     if not candidates:
+        # Cream plastic can stand out in color even when it is darker than the background.
+        hue, saturation, value = cv2.split(hsv)
+        cream = (
+            (hue >= 18) & (hue <= 50) & (saturation >= 15)
+            & (saturation < 105) & (value >= 145)
+        ).astype(np.uint8) * 255
+        cream = cv2.morphologyEx(cream, cv2.MORPH_OPEN, kernel)
+        cream = cv2.morphologyEx(cream, cv2.MORPH_CLOSE, kernel, iterations=2)
+        contours, _ = cv2.findContours(cream, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        for contour in sorted(contours, key=cv2.contourArea, reverse=True):
+            if cv2.contourArea(contour) <= min_area:
+                break
+            x, y, width, height = cv2.boundingRect(contour)
+            if (
+                abs(left + x - x1) > pad_x / 2
+                or abs(top + y - y1) > pad_y / 2
+                or abs(left + x + width - x2) > pad_x / 2
+                or abs(top + y + height - y2) > pad_y / 2
+            ):
+                continue
+            hull = cv2.convexHull(contour)
+            polygon = cv2.approxPolyDP(hull, 0.035 * cv2.arcLength(hull, True), True)
+            if len(polygon) == 4:
+                return order_corners(polygon.reshape(4, 2) + [left, top])
+        # A nearly frontal board can have visible rail marks even when its outline
+        # blends into the background. Check for a long stripe at each end of the box.
+        sat = hsv[:, :, 1]
+        hue = hsv[:, :, 0]
+        rail_ink = ((sat >= 120) & ((hue <= 10) | (hue >= 165) | ((hue >= 88) & (hue <= 130))))
+        lines = cv2.HoughLinesP(
+            rail_ink.astype(np.uint8), 1, np.pi / 360, max(1, int(box_width * 0.25)),
+            minLineLength=int(box_width * 0.60), maxLineGap=int(box_width * 0.10),
+        )
+        if lines is not None:
+            stripes = [
+                (top + (ay + by) / 2, (by - ay) / (bx - ax))
+                for ax, ay, bx, by in lines.reshape(-1, 4)
+                if abs(bx - ax) >= box_width * 0.60
+                and abs(by - ay) <= abs(bx - ax) * 0.06
+            ]
+            upper = [slope for y, slope in stripes if y1 <= y <= y1 + box_height * 0.25]
+            lower = [slope for y, slope in stripes if y2 - box_height * 0.25 <= y <= y2]
+            if upper and lower and abs(np.median(upper) - np.median(lower)) <= 0.025:
+                tilt = float(np.median(upper + lower)) * box_width / 2
+                return np.array([
+                    [x1, y1 - tilt], [x2, y1 + tilt],
+                    [x2, y2 + tilt], [x1, y2 - tilt],
+                ], dtype=np.float32).clip([0, 0], [image_width - 1, image_height - 1]).astype(np.float32)
         raise ValueError(
             "No pude encontrar el borde claro del protoboard. "
             "Usa una foto donde se vean sus cuatro esquinas y contraste con el fondo."
@@ -357,6 +410,10 @@ def detect_objects(
         if class_name is None:
             continue
         candidate = Detection(class_name, float(score), coordinates)
+        if not detail and class_name == "switch" and detail_label(
+            str(label), hsv, coordinates, candidate.score, threshold,
+        ) is None:
+            continue
         if detail:
             detections.append(candidate)
         elif candidate.score >= threshold or (
@@ -381,7 +438,8 @@ def detail_label(
     threshold: float,
 ) -> str | None:
     label = label.lower()
-    if canonical_label(label) == "wire":
+    class_name = canonical_label(label)
+    if class_name == "wire":
         return None
     height, width = hsv.shape[:2]
     x1, y1, x2, y2 = map(round, box)
@@ -398,7 +456,6 @@ def detail_label(
     vivid = np.mean(saturation > 150)
     median_hue = np.median(hue)
     elongated = max(w, h) / min(w, h)
-    class_name = canonical_label(label)
     # A chip or switch can occupy much of a detail crop.
     if class_name == "integrated circuit" and score >= threshold and dark > 0.35:
         return class_name
@@ -485,6 +542,133 @@ def merge_detail_detections(original: list[Detection], details: list[Detection])
             continue
         merged.append(candidate)
     return sorted(merged, key=lambda item: (item.box[1], item.box[0]))
+
+
+def is_board_sized(item: Detection, corners: np.ndarray) -> bool:
+    x1, y1, x2, y2 = item.box
+    box_area = (x2 - x1) * (y2 - y1)
+    return box_area >= cv2.contourArea(corners) * 0.5
+
+
+def is_rail_sized_resistor(item: Detection, width: int, height: int) -> bool:
+    x1, y1, x2, y2 = item.box
+    return item.label == "resistor" and (x2 - x1 > width / 2 or y2 - y1 > height / 2)
+
+
+def detect_pin_headers(image: Image.Image) -> list[Detection]:
+    hsv = cv2.cvtColor(np.asarray(image), cv2.COLOR_RGB2HSV)
+    dark = cv2.inRange(hsv[:, :, 2], 0, 99)
+    dark = cv2.morphologyEx(dark, cv2.MORPH_CLOSE, np.ones((3, 3), np.uint8))
+    _, _, bodies, _ = cv2.connectedComponentsWithStats(dark)
+    headers = []
+    for x, y, width, height, area in bodies[1:]:
+        short, long = sorted((width, height))
+        if short < 9 or long < short * 3 or area < width * height * 0.5:
+            continue
+        region = hsv[y:y + height, x:x + width]
+        if height > width:
+            region = region.transpose(1, 0, 2)
+        metal = cv2.inRange(region, (10, 35, 155), (48, 255, 255))
+        _, _, spots, centers = cv2.connectedComponentsWithStats(metal)
+        contacts = np.array(sorted(
+            tuple(center)
+            for (left, top, w, h, size), center in zip(spots[1:], centers[1:])
+            if size >= 5 and left > 0 and top > 0 and left + w < long and top + h < short
+        ))
+        if len(contacts) < 4 or np.ptp(contacts[:, 1]) > short * 0.18:
+            continue
+        spacing = np.diff(contacts[:, 0])
+        pitch = float(np.median(spacing))
+        if (
+            short * 0.6 <= pitch <= short * 1.8
+            and np.all(np.abs(spacing - pitch) <= pitch * 0.2)
+            and np.ptp(contacts[:, 0]) >= long * 0.65
+        ):
+            headers.append(Detection("pin header", 1.0, (float(x), float(y), float(x + width), float(y + height))))
+    return headers
+
+
+def trace_wire(mask: np.ndarray) -> list[tuple[int, int]]:
+    pixels = {tuple(point) for point in np.argwhere(mask)}
+
+    def farthest(start: tuple[int, int]) -> tuple[tuple[int, int], dict]:
+        frontier = deque([start])
+        parents = {start: None}
+        while frontier:
+            point = frontier.popleft()
+            y, x = point
+            for dy, dx in ((-1, -1), (-1, 0), (-1, 1), (0, -1), (0, 1), (1, -1), (1, 0), (1, 1)):
+                neighbor = (y + dy, x + dx)
+                if neighbor in pixels and neighbor not in parents:
+                    parents[neighbor] = point
+                    frontier.append(neighbor)
+        return point, parents
+
+    start, _ = farthest(min(pixels))
+    end, parents = farthest(start)
+    path = [end]
+    while path[-1] != start:
+        path.append(parents[path[-1]])
+    return path
+
+
+def detect_wires(image: Image.Image, headers: list[Detection]) -> list[dict[str, Any]]:
+    rgb = np.asarray(image)
+    hsv = cv2.cvtColor(rgb, cv2.COLOR_RGB2HSV)
+    hue, saturation, value = cv2.split(hsv)
+    height, width = hue.shape
+    pitch = width * 0.03
+    colored = (saturation >= 125) & (value >= 75)
+    masks = [
+        (colored & ((hue < 11) | (hue >= 165)), True),
+        (colored & (hue >= 11) & (hue < 38), False),
+        (colored & (hue >= 38) & (hue < 84), False),
+        (colored & (hue >= 84) & (hue < 137), True),
+        (colored & (hue >= 137) & (hue < 165), False),
+        (value < 65, False),
+    ]
+    wires = []
+    kernel = np.ones((3, 3), np.uint8)
+    for mask, check_rails in masks:
+        mask = mask.astype(np.uint8)
+        for header in headers:
+            x1, y1, x2, y2 = map(int, header.box)
+            mask[y1:y2, x1:x2] = 0
+        # Rail markings can still slope slightly after rectification.
+        if check_rails:
+            rails = mask.copy()
+            rails[height // 4:height * 3 // 4] = 0
+            lines = cv2.HoughLinesP(
+                rails, 1, np.pi / 360, width // 5,
+                minLineLength=width // 2, maxLineGap=width // 14,
+            )
+            if lines is not None:
+                for x1, y1, x2, y2 in lines.reshape(-1, 4):
+                    if abs(y2 - y1) <= abs(x2 - x1) * 0.1:
+                        cv2.line(mask, (x1, y1), (x2, y2), 0, 5)
+        mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel)
+        _, labels, regions, _ = cv2.connectedComponentsWithStats(mask)
+        for index, (x, y, w, h, area) in enumerate(regions[1:], 1):
+            if max(w, h) < pitch or area > pitch * max(w, h):
+                continue
+            if x == 0 or y == 0 or x + w == width or y + h == height:
+                continue
+            region = labels[y:y + h, x:x + w] == index
+            path = trace_wire(region)
+            length = len(path) - 1
+            if length < pitch or not 2 <= area / length <= pitch * 0.65:
+                continue
+            if np.linalg.norm(np.subtract(path[0], path[-1])) < pitch * 0.8:
+                continue
+            contour = np.asarray(path, dtype=np.int32).reshape(-1, 1, 2)
+            route = cv2.approxPolyDP(contour, 3, False).reshape(-1, 2)
+            points = [
+                {"x": float((px + x) / (width - 1) - 0.5), "y": float((py + y) / (height - 1) - 0.5)}
+                for py, px in route
+            ]
+            color = "#" + "".join(f"{int(channel):02x}" for channel in np.median(rgb[y:y + h, x:x + w][region], axis=0))
+            wires.append({"from": points[0], "to": points[-1], "via": points[1:-1], "color": color})
+    return wires
 
 
 def save_outputs(
@@ -622,19 +806,35 @@ def process_image(
     components = [
         item for item in detections
         if item.label != BOARD_LABEL
+        and (item.label == "wire" or not is_board_sized(item, board_corners))
         and cv2.pointPolygonTest(board_corners, tuple(box_keypoints(item.box)["centro"]), False) >= 0
     ]
     rectified, transform = rectify_board(image_rgb, board_corners, board_width / board_height)
     width, height = rectified.width - 1, rectified.height - 1
     rectified_board = Detection(BOARD_LABEL, board_detection.score, (0, 0, width, height))
     details = detail_detections(rectified, rectified_board, processor, model, device, threshold)
-    components = merge_detail_detections([transform_detection(item, transform) for item in components], details)
+    projected = [transform_detection(item, transform) for item in components]
+    components = merge_detail_detections(
+        [item for item in projected if not is_rail_sized_resistor(item, width, height)],
+        [item for item in details if not is_rail_sized_resistor(item, width, height)],
+    )
+    headers = detect_pin_headers(rectified)
+    components = [
+        item for item in components
+        if not any(
+            header.box[0] <= x <= header.box[2] and header.box[1] <= y <= header.box[3]
+            for x, y in [box_keypoints(item.box)["centro"]]
+            for header in headers
+        )
+    ] + headers
     if output_dir is None:
         return {
             "breadboard": True,
+            "wires": detect_wires(rectified, headers),
             "components": [
-                {"x": x / width - 0.5, "y": y / height - 0.5}
-                for x, y in (box_keypoints(item.box)["centro"] for item in components)
+                {"x": x / width - 0.5, "y": y / height - 0.5, "label": item.label}
+                for item in components
+                for x, y in [box_keypoints(item.box)["centro"]]
             ],
         }
     inverse = np.linalg.inv(transform)

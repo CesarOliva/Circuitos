@@ -37,6 +37,7 @@ export interface Jumper {
   from: TerminalRef;
   to: TerminalRef;
   live: boolean;
+  color?: string;
 }
 
 export interface Circuit3DProps {
@@ -289,7 +290,7 @@ class Table {
       path.add(new THREE.LineCurve3(a, a1));
       path.add(new THREE.CubicBezierCurve3(a1, a1.clone().add(lift), b1.clone().add(lift), b1));
       path.add(new THREE.LineCurve3(b1, b));
-      const colour = WIRE_COLOURS[(Number(wire.id.replace(/\D/g, "")) || 0) % WIRE_COLOURS.length];
+      const colour = wire.color ?? WIRE_COLOURS[(Number(wire.id.replace(/\D/g, "")) || 0) % WIRE_COLOURS.length];
       const material = new THREE.MeshStandardMaterial({ color: colour, roughness: 0.5, emissive: colour, emissiveIntensity: wire.live ? 0.55 : 0 });
       const mesh = new THREE.Mesh(new THREE.TubeGeometry(path, 32, 1.05, 6, false), material);
       mesh.castShadow = true;

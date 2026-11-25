@@ -39,7 +39,7 @@ export async function POST(request: Request) {
     const { stdout } = await run(python, [join(mapper, "analyze.py"), "--import-image", image], {
       timeout: 180_000,
       windowsHide: true,
-      env: { ...process.env, PYTHONIOENCODING: "utf-8" },
+      env: { ...process.env, HF_HUB_OFFLINE: "1", PYTHONIOENCODING: "utf-8" },
     });
     const result = JSON.parse(stdout);
     return Response.json(result, { status: result.error ? 422 : 200 });

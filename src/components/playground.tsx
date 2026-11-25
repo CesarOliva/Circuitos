@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState, type PointerEvent } from "react";
+import { useEffect, useEffectEvent, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent, type SetStateAction } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import {
@@ -55,7 +55,16 @@ type Part = {
 type TerminalRef = { componentId: string; terminalId: string };
 type CanvasPoint = { x: number; y: number };
 type SelectionBox = CanvasPoint & { width: number; height: number };
-type Wire = { id: string; from: TerminalRef; to: TerminalRef };
+type Wire = { id: string; from: TerminalRef; to: TerminalRef; photoRoute?: CanvasPoint[]; color?: string };
+type CircuitLayout = { parts: Part[]; wires: Wire[] };
+type EditorState = {
+  layout: CircuitLayout;
+  past: CircuitLayout[];
+  future: CircuitLayout[];
+  selectedIds: string[];
+  group?: symbol;
+};
+type PhotoWire = { from: CanvasPoint; to: CanvasPoint; via: CanvasPoint[]; color?: string };
 type TerminalSpec = { id: string; name?: string; x: number; y: number; ax: number; ay: number; labelX: number; labelY: number; anchor: "start" | "middle" | "end" };
 type GroupName = "Montaje" | "Pasivos y controles" | "Sensores y actuadores" | "Semiconductores" | "Microcontroladores";
 // `half` is how far the part reaches from its centre, which keeps it inside the canvas.
@@ -119,6 +128,21 @@ const kinds = Object.keys(specs) as Kind[];
 const initialParts: Part[] = [];
 const photoPartKinds = ["resistor", "led", "diode", "capacitor"] as const;
 
+function photoHole(point: CanvasPoint) {
+  const x = point.x * BB_W;
+  const y = point.y * BB_H;
+  let nearest: string | undefined;
+  let distance = BB_PITCH * 0.75;
+  for (const hole of BB_HOLES) {
+    const offset = Math.hypot(hole.x - x, hole.y - y);
+    if (offset < distance) {
+      distance = offset;
+      nearest = hole.id;
+    }
+  }
+  return nearest;
+}
+
 function makePart(parts: Part[], kind: Kind, x: number, y: number): Part {
   const spec = specs[kind];
   let count = 1;
@@ -131,6 +155,49 @@ function makePart(parts: Part[], kind: Kind, x: number, y: number): Part {
     ...(kind === "potentiometer" ? { position: 0.5 } : {}),
     ...(kind === "transistor" ? { polarity: "NPN" as const } : {}),
   };
+}
+
+function nextWireId(wires: Wire[]) {
+  let index = 1;
+  while (wires.some(wire => wire.id === `W${index}`)) index++;
+  return `W${index}`;
+}
+
+function isDeleteKey(key: string, code: string) {
+  return key === "Delete" || key === "Backspace" || code === "Delete" || code === "Backspace";
+}
+
+function recordEdit(editor: EditorState, layout: CircuitLayout, group?: symbol): EditorState {
+  if (layout.parts === editor.layout.parts && layout.wires === editor.layout.wires) return editor;
+  const past = group && group === editor.group ? editor.past : [...editor.past.slice(-99), editor.layout];
+  return { ...editor, layout, past, future: [], group };
+}
+
+function pasteLayout(layout: CircuitLayout, copied: CircuitLayout) {
+  const parts = [...layout.parts];
+  const wires = [...layout.wires];
+  const ids = new Map<string, string>();
+  // Move the group together. Use the opposite direction when it is already at an edge.
+  const forward = copied.parts.map(part => clampTo(part.kind, part.x + 24, part.y + 24));
+  const backward = copied.parts.map(part => clampTo(part.kind, part.x - 24, part.y - 24));
+  const dx = Math.min(...forward.map((point, index) => point.x - copied.parts[index].x))
+    || Math.max(...backward.map((point, index) => point.x - copied.parts[index].x));
+  const dy = Math.min(...forward.map((point, index) => point.y - copied.parts[index].y))
+    || Math.max(...backward.map((point, index) => point.y - copied.parts[index].y));
+  for (const part of copied.parts) {
+    const copy = makePart(parts, part.kind, part.x + dx, part.y + dy);
+    parts.push({ ...part, id: copy.id, x: copy.x, y: copy.y });
+    ids.set(part.id, copy.id);
+  }
+  for (const wire of copied.wires) {
+    wires.push({
+      ...wire,
+      id: nextWireId(wires),
+      from: { ...wire.from, componentId: ids.get(wire.from.componentId)! },
+      to: { ...wire.to, componentId: ids.get(wire.to.componentId)! },
+    });
+  }
+  return { layout: { parts, wires }, selectedIds: [...ids.values()] };
 }
 
 function setValue(part: Part, value: number) {
@@ -321,9 +388,38 @@ function BreadboardHoles({ onHole }: { onHole(id: string): void }) {
 }
 
 export default function Playground() {
-  const [parts, setParts] = useState<Part[]>(initialParts);
-  const [wires, setWires] = useState<Wire[]>([]);
-  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [{ layout: { parts, wires }, past, future, selectedIds }, setEditor] = useState<EditorState>({
+    layout: { parts: initialParts, wires: [] }, past: [], future: [], selectedIds: [],
+  });
+  const setCircuit = (update: (layout: CircuitLayout) => CircuitLayout, group?: symbol) =>
+    setEditor(current => recordEdit(current, update(current.layout), group));
+  const setParts = (update: (parts: Part[]) => Part[], group?: symbol) =>
+    setCircuit(current => ({ ...current, parts: update(current.parts) }), group);
+  const setWires = (update: (wires: Wire[]) => Wire[]) =>
+    setCircuit(current => ({ ...current, wires: update(current.wires) }));
+  const setSelectedIds = (update: SetStateAction<string[]>) =>
+    setEditor(current => ({
+      ...current,
+      selectedIds: typeof update === "function" ? update(current.selectedIds) : update,
+    }));
+  const clipboard = useRef<CircuitLayout | null>(null);
+  const dragGroup = useRef<symbol | undefined>(undefined);
+  const deleteSelectionOnKey = useEffectEvent((event: globalThis.KeyboardEvent) => {
+    if (event.defaultPrevented || event.repeat || event.isComposing || event.ctrlKey
+      || event.metaKey || event.altKey || !isDeleteKey(event.key, event.code)
+      || !selectedIds.length) return;
+    if (event.target instanceof Element
+      && event.target.closest("textarea, select, input:not([type=file]), [contenteditable]:not([contenteditable=false])")) return;
+    event.preventDefault();
+    finishDrag();
+    removeSelected();
+    canvasRef.current?.focus({ preventScroll: true });
+  });
+  useEffect(() => {
+    const onKeyDown = (event: globalThis.KeyboardEvent) => deleteSelectionOnKey(event);
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, []);
   const [selectionBox, setSelectionBox] = useState<SelectionBox | null>(null);
   const [pendingTerminal, setPendingTerminal] = useState<TerminalRef | null>(null);
   const [result, setResult] = useState<Result | null>(null);
@@ -372,9 +468,13 @@ export default function Playground() {
     const spec = specs[kind];
     const index = parts.length % 15;
     const [x, y] = at ?? (kind === "breadboard" ? [480, 280] : [125 + (index % 5) * 178, 115 + Math.floor(index / 5) * 170]);
-    const part = makePart(parts, kind, x, y);
-    setParts(current => [...current, part]);
-    setSelectedIds([part.id]);
+    setEditor(current => {
+      const part = makePart(current.layout.parts, kind, x, y);
+      return {
+        ...recordEdit(current, { ...current.layout, parts: [...current.layout.parts, part] }),
+        selectedIds: [part.id],
+      };
+    });
     setResult(null);
     setMessage(kind === "breadboard" ? "Protoboard añadida. Por dentro, cada columna une sus agujeros a–e y f–j, y cada riel va de punta a punta." : isBoard(kind) ? `${spec.name} añadida. Cablea sus pines; el circuito no la resuelve.` : `${spec.name} añadido. Conecta sus terminales.`);
   }
@@ -393,6 +493,7 @@ export default function Playground() {
       const analysis: {
         breadboard: boolean;
         components: { x: number; y: number }[];
+        wires?: PhotoWire[];
         error?: string;
       } = await response.json();
       if (!response.ok) throw new Error(analysis.error ?? "No se pudo analizar la foto.");
@@ -405,19 +506,34 @@ export default function Playground() {
         ...point,
         kind: photoPartKinds[Math.floor(Math.random() * photoPartKinds.length)],
       }));
-      setParts(current => {
-        const board = makePart(current, "breadboard", 480, 280);
-        const next = [...current, board];
+      const connections = new Map<string, { from: string; to: string; via: CanvasPoint[]; color?: string }>();
+      for (const wire of analysis.wires ?? []) {
+        const from = photoHole(wire.from);
+        const to = photoHole(wire.to);
+        if (from && to && from !== to) {
+          connections.set([from, to].sort().join("/"), { from, to, via: wire.via, color: wire.color });
+        }
+      }
+      setCircuit(current => {
+        const board = makePart(current.parts, "breadboard", 480, 280);
+        const next = [...current.parts, board];
         for (const { x, y, kind } of detections) {
           next.push(makePart(next, kind, board.x + x * BB_W, board.y + y * BB_H));
         }
-        return next;
+        const imported = Array.from(connections, ([key, { from, to, via, color }]) => ({
+          id: `${board.id}/${key}`,
+          from: { componentId: board.id, terminalId: from },
+          to: { componentId: board.id, terminalId: to },
+          photoRoute: via,
+          color,
+        }));
+        return { parts: next, wires: [...current.wires, ...imported] };
       });
       setSelectedIds([]);
       setPendingTerminal(null);
       setResult(null);
       setView("2d");
-      setMessage(`Protoboard importado. Componentes provisionales añadidos: ${detections.length}.`);
+      setMessage(`Protoboard importado. Componentes provisionales: ${detections.length}. Cables conectados: ${connections.size}.`);
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "No se pudo importar la foto.");
     } finally {
@@ -448,9 +564,7 @@ export default function Playground() {
       setMessage("Esas terminales ya están conectadas.");
       return;
     }
-    let index = 1;
-    while (wires.some(wire => wire.id === `W${index}`)) index++;
-    setWires(current => [...current, { id: `W${index}`, from: pendingTerminal, to: ref }]);
+    setWires(current => [...current, { id: nextWireId(current), from: pendingTerminal, to: ref }]);
     setMessage("Cable conectado. Sigue con el circuito o simúlalo.");
   }
 
@@ -488,8 +602,14 @@ export default function Playground() {
     setMessage("Circuito modificado. Simula de nuevo para ver las lecturas.");
   }
 
-  function movePart(partId: string, x: number, y: number) {
-    setParts(current => current.map(part => part.id === partId ? { ...part, ...clampTo(part.kind, x, y) } : part));
+  function movePart(partId: string, x: number, y: number, group?: symbol) {
+    setParts(current => {
+      const part = current.find(item => item.id === partId);
+      if (!part) return current;
+      const point = clampTo(part.kind, x, y);
+      if (point.x === part.x && point.y === part.y) return current;
+      return current.map(item => item === part ? { ...item, ...point } : item);
+    }, group);
   }
 
   // A screen point in canvas units, through whichever view is showing; null outside it.
@@ -610,6 +730,7 @@ export default function Playground() {
     const x = ((event.clientX - rect.left) / rect.width) * 960;
     const y = ((event.clientY - rect.top) / rect.height) * 560;
     dragOffset.current = [part.x - x, part.y - y];
+    dragGroup.current = Symbol();
     setDragging(part.id);
     event.currentTarget.setPointerCapture(event.pointerId);
   }
@@ -617,7 +738,12 @@ export default function Playground() {
   function onDrag(event: PointerEvent<SVGGElement>, partId: string) {
     if (dragging !== partId || !svgRef.current) return;
     const rect = svgRef.current.getBoundingClientRect();
-    movePart(partId, ((event.clientX - rect.left) / rect.width) * 960 + dragOffset.current[0], ((event.clientY - rect.top) / rect.height) * 560 + dragOffset.current[1]);
+    movePart(partId, ((event.clientX - rect.left) / rect.width) * 960 + dragOffset.current[0], ((event.clientY - rect.top) / rect.height) * 560 + dragOffset.current[1], dragGroup.current);
+  }
+
+  function finishDrag() {
+    dragGroup.current = undefined;
+    setDragging(null);
   }
 
   function removeWire(wireId: string) {
@@ -629,19 +755,89 @@ export default function Playground() {
   function removeSelected() {
     if (!selectedIds.length) return;
     const ids = new Set(selectedIds);
-    setParts(current => current.filter(part => !ids.has(part.id)));
-    setWires(current => current.filter(wire => !ids.has(wire.from.componentId) && !ids.has(wire.to.componentId)));
+    setCircuit(current => ({
+      parts: current.parts.filter(part => !ids.has(part.id)),
+      wires: current.wires.filter(wire => !ids.has(wire.from.componentId) && !ids.has(wire.to.componentId)),
+    }));
     setSelectedIds([]);
     setPendingTerminal(current => current && ids.has(current.componentId) ? null : current);
     setResult(null);
     setMessage(selectedIds.length === 1 ? "Objeto eliminado." : `${selectedIds.length} objetos eliminados.`);
   }
 
+  function restoreHistory(redo: boolean) {
+    if (redo ? !future.length : !past.length) return;
+    setEditor(current => {
+      const layout = redo ? current.future[0] : current.past.at(-1);
+      if (!layout) return current;
+      return {
+        layout,
+        past: redo ? [...current.past, current.layout] : current.past.slice(0, -1),
+        future: redo ? current.future.slice(1) : [current.layout, ...current.future],
+        selectedIds: [],
+      };
+    });
+    setPendingTerminal(null);
+    setResult(null);
+    setMessage(redo ? "Cambio rehecho." : "Cambio deshecho.");
+    canvasRef.current?.focus({ preventScroll: true });
+  }
+
+  function copySelected(cut: boolean) {
+    const ids = new Set(selectedIds);
+    clipboard.current = {
+      parts: parts.filter(part => ids.has(part.id)),
+      wires: wires.filter(wire => ids.has(wire.from.componentId) && ids.has(wire.to.componentId)),
+    };
+    if (cut) removeSelected();
+    setMessage(cut ? "Selección cortada." : "Selección copiada.");
+    canvasRef.current?.focus({ preventScroll: true });
+  }
+
+  function pasteSelected() {
+    const copied = clipboard.current;
+    if (!copied?.parts.length) return;
+    setEditor(current => {
+      const { layout, selectedIds } = pasteLayout(current.layout, copied);
+      return { ...recordEdit(current, layout), selectedIds };
+    });
+    setPendingTerminal(null);
+    setResult(null);
+    setMessage("Selección pegada.");
+    canvasRef.current?.focus({ preventScroll: true });
+  }
+
+  function handleShortcut(event: KeyboardEvent<HTMLElement>) {
+    if (event.defaultPrevented || event.repeat || event.altKey
+      || (event.target as Element).closest("input, textarea, select, [contenteditable]")) return;
+    const key = event.key.toLowerCase();
+    const modifier = event.ctrlKey || event.metaKey;
+    if (key === "escape") {
+      cancelBoxSelection();
+      setSelectedIds([]);
+      setPendingTerminal(null);
+    }
+    if (dragGroup.current) return;
+    if (modifier && (key === "z" || key === "y")) {
+      event.preventDefault();
+      restoreHistory(key === "y" || event.shiftKey);
+    } else if (modifier && key === "a") {
+      event.preventDefault();
+      setSelectedIds(parts.map(part => part.id));
+    } else if (modifier && (key === "x" || key === "c") && selectedIds.length) {
+      event.preventDefault();
+      copySelected(key === "x");
+    } else if (modifier && key === "v" && clipboard.current?.parts.length) {
+      event.preventDefault();
+      pasteSelected();
+    }
+  }
+
   function renderPart(part: Part) {
     const componentResult = result?.components.find(component => component.componentId === part.id);
     const active = part.kind === "dc-motor" ? Number(componentResult?.measurements?.rpm) > 0 : part.kind === "active-buzzer" ? Boolean(componentResult?.measurements?.active) : false;
     const isSelected = selectedIds.includes(part.id);
-    return <g key={part.id} data-selection-board={part.kind === "breadboard" ? part.id : undefined} className={`placed-part${isSelected ? " part-selected" : ""}${dragging === part.id ? " part-dragging" : ""}`} transform={`translate(${part.x} ${part.y})`} onPointerDown={event => startDrag(event, part)} onPointerMove={event => onDrag(event, part.id)} onPointerUp={() => setDragging(null)} onPointerCancel={() => setDragging(null)} onKeyDown={event => {
+    return <g key={part.id} data-selection-board={part.kind === "breadboard" ? part.id : undefined} className={`placed-part${isSelected ? " part-selected" : ""}${dragging === part.id ? " part-dragging" : ""}`} transform={`translate(${part.x} ${part.y})`} onPointerDown={event => startDrag(event, part)} onPointerMove={event => onDrag(event, part.id)} onPointerUp={finishDrag} onPointerCancel={finishDrag} onLostPointerCapture={finishDrag} onKeyDown={event => {
       if (event.target !== event.currentTarget) return;
       if (event.key === "Enter" || event.key === " ") {
         event.preventDefault();
@@ -698,18 +894,7 @@ export default function Playground() {
         <div className="step-hint"><span>Playground</span> Componentes, controles y sensores en un mismo lugar.</div>
       </section>
 
-      <section className="workspace" aria-label="Constructor de circuitos" onKeyDown={event => {
-        if (event.defaultPrevented || event.repeat || (event.target as Element).closest("input, textarea, select, [contenteditable]")) return;
-        if (event.key === "Escape") {
-          cancelBoxSelection();
-          setSelectedIds([]);
-        }
-        if (event.key === "Delete" && selectedIds.length) {
-          event.preventDefault();
-          removeSelected();
-          canvasRef.current?.focus();
-        }
-      }}>
+      <section className="workspace" aria-label="Constructor de circuitos" onKeyDown={handleShortcut}>
         <div className="work-topbar">
           <div className="work-title"><span className="live-dot" /> Área de trabajo <span className="part-count">{parts.length} {parts.length === 1 ? "componente" : "componentes"}</span></div>
           <div className="work-controls">
@@ -724,7 +909,7 @@ export default function Playground() {
             <button type="button" className="remove-button" disabled={!selectedIds.length} onClick={() => {
               removeSelected();
               canvasRef.current?.focus();
-            }} title="Mayús + clic para seleccionar varios objetos. Supr para eliminar.">
+            }} title="Mayús + clic para seleccionar varios objetos. Retroceso o Supr para eliminar.">
               Eliminar{selectedIds.length > 0 ? ` (${selectedIds.length})` : ""}
             </button>
             {view === "3d" && <div className="view-toggle" role="group" aria-label="Montaje de los componentes">
@@ -759,8 +944,18 @@ export default function Playground() {
               const [x1, y1] = terminalPoint(from, wire.from.terminalId);
               const [x2, y2] = terminalPoint(to, wire.to.terminalId);
               const mid = (x1 + x2) / 2;
-              return <g key={wire.id} className="wire-group" onClick={() => removeWire(wire.id)} role="button" tabIndex={0} aria-label={`Quitar cable ${wire.id}`} onKeyDown={event => { if (event.key === "Enter" || event.key === " ") removeWire(wire.id); }}>
-                <path className={`wire${ledLit ? " wire-live" : ""}`} d={`M${x1} ${y1} H${mid} V${y2} H${x2}`} /><path className="wire-hit" d={`M${x1} ${y1} H${mid} V${y2} H${x2}`} />
+              const path = wire.photoRoute
+                ? `M${x1} ${y1}${wire.photoRoute.map(point => ` L${from.x + point.x * BB_W} ${from.y + point.y * BB_H}`).join("")} L${x2} ${y2}`
+                : `M${x1} ${y1} H${mid} V${y2} H${x2}`;
+              return <g key={wire.id} className="wire-group" onClick={() => removeWire(wire.id)} role="button" tabIndex={0} aria-label={`Quitar cable ${wire.id}`} onKeyDown={event => {
+                if (event.key !== "Enter" && event.key !== " " && !isDeleteKey(event.key, event.code)) return;
+                event.preventDefault();
+                if (event.repeat) return;
+                removeWire(wire.id);
+                canvasRef.current?.focus({ preventScroll: true });
+              }}>
+                <path className={`wire${ledLit ? " wire-live" : ""}`} style={{ "--wire-color": wire.color } as CSSProperties} d={path} />
+                <path className="wire-hit" d={path} />
               </g>;
             })}
             {parts.filter(part => part.kind === "breadboard").map(part => <g key={`${part.id}-holes`} transform={`translate(${part.x} ${part.y})`}>

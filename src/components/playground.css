@@ -130,8 +130,8 @@
 .terminal-button:hover .terminal-dot,.terminal-button:focus-visible .terminal-dot { fill: rgb(31 143 255 / 40%); stroke: var(--accent-bright); stroke-width: 2.5; }
 .terminal-pending .terminal-dot { fill: var(--accent); stroke: var(--accent-bright); stroke-width: 2.5; filter: drop-shadow(0 0 5px var(--accent)); }
 .terminal-label { fill: #8ea3c6; text-anchor: middle; font-family: var(--font-geist-mono), monospace; font-size: 9px; font-weight: 600; pointer-events: none; }
-.wire { fill: none; stroke: #4a6290; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; pointer-events: none; }
-.wire-live { stroke: #3aa0ff; stroke-width: 3; filter: drop-shadow(0 0 4px rgb(31 143 255 / 90%)); }
+.wire { fill: none; stroke: var(--wire-color, #4a6290); stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; pointer-events: none; }
+.wire-live { stroke: var(--wire-color, #3aa0ff); stroke-width: 3; filter: drop-shadow(0 0 4px rgb(31 143 255 / 90%)); }
 .wire-hit { fill: none; stroke: transparent; stroke-width: 16; pointer-events: stroke; }
 .wire-group { cursor: pointer; outline: none; }
 .wire-group:focus-visible .wire { stroke: var(--accent-bright); stroke-width: 4; }

@@ -1,0 +1,98 @@
+{
+  "classes": [
+    "capacitor",
+    "led",
+    "resistor",
+    "wire"
+  ],
+  "images": {
+    "train": {
+      "capacitor": 27,
+      "led": 32,
+      "resistor": 80,
+      "wire": 82
+    },
+    "validation": {
+      "capacitor": 17,
+      "led": 12,
+      "resistor": 50,
+      "wire": 151
+    },
+    "test": {
+      "capacitor": 37,
+      "led": 3,
+      "resistor": 37,
+      "wire": 40
+    }
+  },
+  "chosen_C": 1.0,
+  "validation_balanced_accuracy_by_C": {
+    "0.01": 0.841819893520322,
+    "0.1": 0.8451642643812491,
+    "1": 0.8712647708089858,
+    "10": 0.8515588884560448,
+    "100": 0.8387758083365796
+  },
+  "test": {
+    "accuracy": 0.8717948717948718,
+    "balanced_accuracy": 0.900168918918919,
+    "per_class": {
+      "capacitor": {
+        "precision": 0.8823529411764706,
+        "recall": 0.8108108108108109,
+        "f1": 0.8450704225352113,
+        "support": 37
+      },
+      "led": {
+        "precision": 0.3333333333333333,
+        "recall": 1.0,
+        "f1": 0.5,
+        "support": 3
+      },
+      "resistor": {
+        "precision": 0.9411764705882353,
+        "recall": 0.8648648648648649,
+        "f1": 0.9014084507042254,
+        "support": 37
+      },
+      "wire": {
+        "precision": 0.925,
+        "recall": 0.925,
+        "f1": 0.925,
+        "support": 40
+      }
+    },
+    "confusion_matrix": [
+      [
+        30,
+        5,
+        0,
+        2
+      ],
+      [
+        0,
+        3,
+        0,
+        0
+      ],
+      [
+        4,
+        0,
+        32,
+        1
+      ],
+      [
+        0,
+        1,
+        2,
+        37
+      ]
+    ]
+  },
+  "versions": {
+    "python": "3.12.16",
+    "numpy": "2.5.5",
+    "scikit-learn": "1.9.1",
+    "torch": "2.15.0"
+  }
+}

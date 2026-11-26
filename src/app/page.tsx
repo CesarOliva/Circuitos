@@ -1,25 +1,14 @@
 import { Fragment, type CSSProperties } from "react";
 import Link from "next/link";
-import { CATALOG } from "@/components/simulador/catalog";
-import { BOARD_LIST } from "@/components/simulador/boards";
-import { FAULTS } from "@/components/simulador/faults";
 import { Reveal } from "@/components/landing/reveal";
-import { CountUp } from "@/components/landing/count-up";
 import { IntroScreen } from "@/components/landing/intro-screen";
 import { HowItWorks } from "@/components/landing/how-it-works";
 import { CtaZoom } from "@/components/landing/cta-zoom";
-import { SpotlightLink } from "@/components/landing/spotlight-link";
 import "@/components/landing/landing.css";
 
 const HERO_WORDS = ["Arma,", "simula", "y", "entiende", "tus", "circuitos."];
 
 export default function Home() {
-  // Las cifras salen del catálogo real, así la landing nunca queda desactualizada.
-  const componentCount = CATALOG.length;
-  const boardCount = BOARD_LIST.length;
-  const familyCount = new Set(CATALOG.map((entry) => entry.folder)).size;
-  const faultCount = CATALOG.reduce((sum, { component }) => sum + (FAULTS[component.type] ?? []).length, 0);
-
   return (
     <>
       <IntroScreen />
@@ -60,26 +49,6 @@ export default function Home() {
           </div>
         </section>
 
-        <Reveal>
-          <section className="stats" aria-label="El simulador en números">
-            <div className="stat">
-              <span className="stat-number"><CountUp value={componentCount} /></span>
-              <span className="stat-label">clases de componentes en {familyCount} familias</span>
-            </div>
-            <div className="stat">
-              <span className="stat-number"><CountUp value={boardCount} /></span>
-              <span className="stat-label">placas: Arduino UNO R3 y ESP32 DevKit V1</span>
-            </div>
-            <div className="stat">
-              <span className="stat-number"><CountUp value={faultCount} /></span>
-              <span className="stat-label">fallos de fichas técnicas, dibujados</span>
-            </div>
-            <div className="stat">
-              <span className="stat-number"><CountUp value={2} /></span>
-              <span className="stat-label">vistas del área de trabajo: 2D y 3D</span>
-            </div>
-          </section>
-        </Reveal>
       </main>
 
       <div className="landing">
@@ -87,7 +56,7 @@ export default function Home() {
           <section className="features" aria-label="Secciones del sitio">
             <h2>Todo el laboratorio, en cuatro ventanas</h2>
             <div className="features-grid">
-              <SpotlightLink className="feature-card" href="/simulador">
+              <Link className="spotlight feature-card" href="/simulador">
                 <span className="fv fv-sim" aria-hidden="true">
                   <svg viewBox="0 0 180 120">
                     <path className="sim-wire" pathLength="1" d="M25 34 V20 H150 V48" />
@@ -115,8 +84,8 @@ export default function Home() {
                   terminales y pulsa Simular: el solucionador DC calcula voltajes y corrientes en vivo.
                 </p>
                 <span className="feature-go">Abrir el simulador →</span>
-              </SpotlightLink>
-              <SpotlightLink className="feature-card" href="/componentes">
+              </Link>
+              <Link className="spotlight feature-card" href="/componentes">
                 <span className="fv fv-comp" aria-hidden="true">
                   <span className="carousel">
                     <span style={{ "--i": 0 } as CSSProperties}>R</span>
@@ -141,8 +110,8 @@ export default function Home() {
                   propiedades salen directamente del modelo de simulación.
                 </p>
                 <span className="feature-go">Ver la galería →</span>
-              </SpotlightLink>
-              <SpotlightLink className="feature-card" href="/componentes/3d">
+              </Link>
+              <Link className="spotlight feature-card" href="/componentes/3d">
                 <span className="fv fv-3d" aria-hidden="true">
                   <span className="cube">
                     <span />
@@ -167,8 +136,8 @@ export default function Home() {
                   Sigue cada terminal hasta su borne o hasta la punta de su patita.
                 </p>
                 <span className="feature-go">Girar los modelos →</span>
-              </SpotlightLink>
-              <SpotlightLink className="feature-card" href="/componentes/fallos">
+              </Link>
+              <Link className="spotlight feature-card" href="/componentes/fallos">
                 <span className="fv fv-fault" aria-hidden="true">
                   <svg viewBox="0 0 80 70">
                     <path className="fault-tri" d="M40 6 L74 64 H6 Z" />
@@ -189,7 +158,7 @@ export default function Home() {
                   cobre, una grieta, una señal irregular o el cuerpo quemado.
                 </p>
                 <span className="feature-go">Estudiar los fallos →</span>
-              </SpotlightLink>
+              </Link>
             </div>
           </section>
         </Reveal>

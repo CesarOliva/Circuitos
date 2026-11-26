@@ -74,6 +74,9 @@
 .control-on { fill: rgb(31 143 255 / 16%); stroke: var(--accent); }
 .control-mark { stroke: #8fb3e8; stroke-width: 2.5; }
 .contact-dot { fill: #7aa7ff; }
+/* The generic chip: an epoxy body with bright legs, readable on both pages. */
+.chip-body { fill: #161c29; stroke: #3b4b68; }
+.chip-leg { stroke: #9aaccb; stroke-width: 2.4; stroke-linecap: round; }
 .pot-marker { fill: var(--accent-bright); stroke: #0a0e17; stroke-width: 1.5; }
 .ldr-body { fill: #19170e; stroke: #8f7c3f; }
 .ldr-mark,.ldr-rays { stroke: #e0c25e; }
@@ -140,6 +143,7 @@
 .part-tile { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; width: 100%; min-height: 82px; padding: 6px 4px 7px; border: 1px solid #222e44; border-radius: 11px; background: radial-gradient(circle at 50% 35%, #1b2539, #0f1520 75%); color: #c5d2e8; font: inherit; cursor: grab; touch-action: pan-x; user-select: none; transition: border-color .15s ease, transform .15s ease, box-shadow .15s ease; }
 .part-tile:hover { border-color: var(--accent); transform: translateY(-2px); box-shadow: 0 0 0 1px rgb(31 143 255 / 30%), 0 8px 22px rgb(31 143 255 / 22%); }
 .part-tile:active { cursor: grabbing; }
+.part-tile.spotlight { --spot: 110px; }
 .part-picture { display: block; flex: none; width: 44px; height: 44px; pointer-events: none; }
 /* A thin cold rim, so the dark parts don't sink into the dark tiles. */
 .part-tile .part-picture,.drag-ghost .part-picture { filter: drop-shadow(0 0 .8px rgb(170 205 255 / 60%)); }

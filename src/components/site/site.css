@@ -136,6 +136,27 @@
 [data-theme="light"] .theme-icon-sun { display: none; }
 [data-theme="light"] .theme-icon-moon { display: block; }
 
+/* Halo azul tenue que sigue al cursor; SpotlightTracker escribe --mx/--my. --spot ajusta el tamaño por elemento. */
+.spotlight {
+  position: relative;
+  overflow: hidden;
+}
+
+.spotlight::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: radial-gradient(var(--spot, 260px) circle at var(--mx, 50%) var(--my, 50%), rgb(31 143 255 / 16%), transparent 70%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+
+.spotlight:hover::before {
+  opacity: 1;
+}
+
 @media (max-width: 760px) {
   .site-header-inner {
     gap: 10px;

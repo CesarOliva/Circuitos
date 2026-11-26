@@ -12,6 +12,7 @@ import { ficha as esp32 } from "./esp32-devkit-v1";
 import { ficha as inductor } from "./inductor";
 import { ficha as ldr } from "./ldr";
 import { ficha as led } from "./led";
+import { ficha as microchip } from "./microchip";
 import { ficha as potentiometer } from "./potentiometer";
 import { ficha as pushButton } from "./push-button";
 import { ficha as resistor } from "./resistor";
@@ -38,6 +39,7 @@ export const FICHAS: Ficha[] = [
   transistor,
   ldr,
   ultrasonic,
+  microchip,
   breadboard,
   arduinoUno,
   esp32,

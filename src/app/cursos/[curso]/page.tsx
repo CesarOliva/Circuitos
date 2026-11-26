@@ -45,7 +45,7 @@ export default async function CursoPage({ params }: PageProps<"/cursos/[curso]">
         <ol className="lesson-list">
           {course.lessons.map((lesson, index) => (
             <li key={lesson.slug} style={{ "--i": index } as CSSProperties}>
-              <Link className="lesson-link" href={`/cursos/${course.slug}/${lesson.slug}`}>
+              <Link className="spotlight lesson-link" href={`/cursos/${course.slug}/${lesson.slug}`}>
                 <span className="lesson-num" aria-hidden="true">{String(index + 1).padStart(2, "0")}</span>
                 <span className="lesson-link-copy">
                   <strong>{lesson.title}</strong>

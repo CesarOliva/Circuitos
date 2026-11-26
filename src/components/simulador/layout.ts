@@ -20,12 +20,27 @@ export const TOWER_D = 9;
 export const TOWER_Z = 11;
 export const PITCH = 13;
 export const CY = -14;
+// The spacing of a terminal block's cells for the generic chip: four cells of 11 sit between the chip's two rows.
+export const CHIP_PITCH = 11;
 const LANES = [24, 21, 18, 15];
+
+// A terminal block: the cells (terminal indices, left to right), where it sits along y, how deep it is,
+// and the edge of it that faces the component, where the traces end.
+export interface Block {
+  cells: number[];
+  y: number;
+  depth: number;
+  near: number;
+}
 
 export interface Footprint {
   footprint: Plan;
   // where each terminal meets the board, in the component's terminal order
   pads: Plane[];
+  // the spacing of the terminal block's cells, when the default would not fit the board
+  pitch?: number;
+  // the terminal blocks, when the terminals don't share one row; by default every terminal is in the front block
+  blocks?: Block[];
 }
 
 export interface FootprintLandmark {
@@ -33,6 +48,18 @@ export interface FootprintLandmark {
   name: string;
   point: Plane;
 }
+
+const CHIP_BODY: Plan = { x: -42, y: -18, w: 84, d: 18, r: 2 };
+const CHIP_BACK = -22;
+const CHIP_FRONT = 6;
+// Pins 1–8 along the back, pins 16–9 along the front, so pin 9 is the rightmost of the front row.
+const CHIP_PADS: Plane[] = Array.from({ length: 16 }, (_, index): Plane =>
+  index < 8 ? [(index - 3.5) * CHIP_PITCH, CHIP_BACK] : [(15 - index - 3.5) * CHIP_PITCH, CHIP_FRONT],
+);
+const CHIP_BLOCKS: Block[] = [
+  { cells: [0, 1, 2, 3, 4, 5, 6, 7], y: -38, depth: 14, near: -24 },
+  { cells: [15, 14, 13, 12, 11, 10, 9, 8], y: BLOCK_Y, depth: BLOCK_D, near: BLOCK_Y },
+];
 
 export const LAYOUT: Record<string, Footprint> = {
   "dc-voltage-source": { footprint: { x: -15, y: -29, w: 30, d: 26, r: 2 }, pads: [[-22, -2], [22, -2]] },
@@ -49,6 +76,8 @@ export const LAYOUT: Record<string, Footprint> = {
   "transistor-bjt": { footprint: { x: -7, y: -19, w: 14, d: 15, r: 1 }, pads: [[-5, -6], [0, -6], [5, -6]] },
   ldr: { footprint: { x: -7, y: CY - 7, w: 14, d: 14, r: 7 }, pads: [[-2.6, -11], [2.6, -11]] },
   ultrasonic: { footprint: { x: -23, y: -32, w: 46, d: 23, r: 1 }, pads: [[-4.5, -6], [-1.5, -6], [1.5, -6], [4.5, -6]] },
+  // A DIP-16: pins 1–8 along the back edge, 16–9 along the front. Each row has its own block, its cells left to right.
+  microchip: { footprint: CHIP_BODY, pads: CHIP_PADS, pitch: CHIP_PITCH, blocks: CHIP_BLOCKS },
 };
 
 export function footprintLandmarks(footprint: Plan): FootprintLandmark[] {
@@ -63,25 +92,42 @@ export function footprintLandmarks(footprint: Plan): FootprintLandmark[] {
   ];
 }
 
-export const cellX = (index: number, count: number) => (index - (count - 1) / 2) * PITCH;
+export const cellX = (index: number, count: number, pitch = PITCH) => (index - (count - 1) / 2) * pitch;
 
 // Copper traces from each pad to its cell of the terminal block, routed so no two cross.
-export function traces(pads: Plane[], count: number) {
+export function traces(pads: Plane[], count: number, pitch = PITCH, near = BLOCK_Y) {
   for (let index = 1; index < pads.length; index++) {
     if (pads[index][0] <= pads[index - 1][0]) throw new Error("pads must run left to right in terminal order");
   }
-  const shifts = pads.map(([x], index) => cellX(index, count) - x);
+  const shifts = pads.map(([x], index) => cellX(index, count, pitch) - x);
   const right = shifts.map((shift, index) => (shift > 0.01 ? index : -1)).filter((index) => index >= 0);
   const left = shifts.map((shift, index) => (shift < -0.01 ? index : -1)).filter((index) => index >= 0);
   const lane = new Map<number, number>();
   right.forEach((index, order) => lane.set(index, LANES[order]));
   [...left].reverse().forEach((index, order) => lane.set(index, LANES[order]));
   return pads.map(([x, y], index) => {
-    const cx = cellX(index, count);
+    const cx = cellX(index, count, pitch);
     const turn = lane.get(index);
-    const route: Plane[] = turn === undefined ? [[x, y], [x, BLOCK_Y]] : [[x, y], [x, turn], [cx, turn], [cx, BLOCK_Y]];
+    const route: Plane[] = turn === undefined ? [[x, y], [x, near]] : [[x, y], [x, turn], [cx, turn], [cx, near]];
     return chamfer(route, 1.6);
   });
+}
+
+// The front block of a component with `count` terminals, one cell each.
+export function blockOf(count: number): Block {
+  return { cells: Array.from({ length: count }, (_, index) => index), y: BLOCK_Y, depth: BLOCK_D, near: BLOCK_Y };
+}
+
+// The blocks of a component: its one front block, unless its footprint says otherwise.
+export function blocksOf(layout: Footprint, count: number): Block[] {
+  return layout.blocks ?? [blockOf(count)];
+}
+
+// Every terminal's trace, with the terminal it belongs to. Each block's pads are routed among themselves.
+export function routesOf(layout: Footprint, count: number): Array<{ index: number; route: Plane[] }> {
+  return blocksOf(layout, count).flatMap((block) =>
+    traces(block.cells.map((index) => layout.pads[index]), block.cells.length, layout.pitch, block.near).map((route, slot) => ({ index: block.cells[slot], route })),
+  );
 }
 
 function chamfer(route: Plane[], cut: number): Plane[] {

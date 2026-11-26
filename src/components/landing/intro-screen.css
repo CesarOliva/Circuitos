@@ -1,0 +1,390 @@
+/* Intro de la portada: el circuito que enciende la marca (ver intro-screen.tsx).
+   Todas las clases van con el prefijo ix- y dentro de .intro-screen para no chocar con el resto del sitio.
+   Usa los tokens de tema de globals.css, así funciona igual en claro y en oscuro. */
+
+.intro-screen {
+  /* Momentos clave. Deben coincidir con SPARK_TIMELINE en intro-screen.tsx. */
+  /* La intro completa dura 3 s: 2.65 s de animación + 0.35 s de desvanecido (INTRO_MS y FADE_MS). */
+  --ix-batt: 0s; /* aparece la batería */
+  --ix-walk: 0.05s; /* el LED entra caminando; salta la S y aterriza en la O en --ix-led */
+  --ix-switch: 0.76s; /* el interruptor hace contacto (la palanca empieza a dudar 0.3 s antes) */
+  --ix-res: 0.95s; /* la chispa entra a la resistencia */
+  --ix-led: 1.86s; /* la chispa sonríe al pie del LED y entra: se enciende */
+  --ix-word: 1.89s; /* el destello del LED enciende el nombre */
+  --ix-back: 1.91s; /* la corriente regresa al −: circuito cerrado */
+  --ix-flash: #fff; /* destello de cada letra al recibir la corriente */
+  --ix-letter-blue: #4da3ff; /* azul con el que se quedan encendidas las letras */
+  --ix-current: #ff8a00; /* la corriente es naranja (la chispa, amarilla; el LED, azul) */
+  --ix-current-glow: #ff6a00;
+
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  display: grid;
+  place-items: center;
+  background: var(--background);
+}
+
+[data-theme="light"] .intro-screen {
+  --ix-flash: var(--accent-bright);
+  --ix-letter-blue: var(--accent);
+}
+
+.intro-screen[data-state="leaving"] {
+  pointer-events: none;
+  animation: ix-out 0.35s ease forwards;
+}
+
+.intro-screen[data-state="gone"] {
+  display: none;
+}
+
+/* Hasta que el script arranca la chispa, la escena espera quieta: así todo empieza sincronizado.
+   (!important porque cada elemento declara su propio `animation`, que reinicia el play-state). */
+.intro-screen:not([data-run]) * {
+  animation-play-state: paused !important;
+}
+
+.ix-art {
+  width: min(860px, 94vw);
+  height: auto;
+  overflow: visible;
+}
+
+/* ---------- Cables ---------- */
+
+.intro-screen .ix-track {
+  fill: none;
+  stroke: var(--line-strong);
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* La corriente: naranja en todo el circuito */
+.intro-screen .ix-wire {
+  fill: none;
+  stroke: var(--ix-current);
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  filter: drop-shadow(0 0 4px var(--ix-current-glow));
+}
+
+/* El rastro principal lo dibuja el script detrás de la chispa; antes de eso no se ve. */
+.intro-screen #ix-trail {
+  stroke-dasharray: 1000;
+  stroke-dashoffset: 1000;
+}
+
+.intro-screen .ix-wire-back {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  opacity: 0.75;
+  animation: ix-draw 0.3s var(--ix-back) cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+/* ---------- Batería de 9 V ---------- */
+
+.intro-screen .ix-battery {
+  opacity: 0;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: ix-pop 0.3s var(--ix-batt) cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+.intro-screen .ix-batt-body { fill: var(--surface-2); stroke: var(--line-strong); stroke-width: 2; }
+.intro-screen .ix-batt-band { fill: var(--accent); }
+.intro-screen .ix-cap { fill: var(--line-strong); }
+.intro-screen .ix-sign { fill: #fff; font: 700 14px var(--sans); text-anchor: middle; }
+.intro-screen .ix-volts { fill: var(--foreground); font: 600 15px var(--mono); text-anchor: middle; }
+.intro-screen .ix-label { fill: var(--muted); font: 500 11px var(--mono); text-anchor: middle; }
+.intro-screen .ix-ohm { font: 500 10px system-ui, sans-serif; }
+
+/* ---------- Interruptor con carácter ---------- */
+
+.intro-screen .ix-post {
+  fill: var(--background);
+  stroke: var(--muted);
+  stroke-width: 2.5;
+  animation: ix-post-on 0.2s var(--ix-switch) ease-out forwards;
+}
+
+/* Duda (baja un poco y se arrepiente), toma aire, cae con fuerza y rebota dos veces. */
+.intro-screen .ix-lever {
+  stroke: var(--muted);
+  stroke-width: 4;
+  stroke-linecap: round;
+  transform-box: view-box;
+  transform-origin: 106px 48px;
+  transform: rotate(-35deg);
+  animation: ix-lever 0.5s calc(var(--ix-switch) - 0.3s) linear forwards;
+}
+
+.intro-screen .ix-contact {
+  opacity: 0;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: ix-contact 0.3s calc(var(--ix-switch) + 0.02s) ease-out forwards;
+}
+
+.intro-screen .ix-contact line { stroke: #ffe14d; stroke-width: 2; stroke-linecap: round; }
+
+.intro-screen .ix-state { font: 500 11px var(--mono); text-anchor: middle; }
+.intro-screen .ix-off { fill: var(--muted); animation: ix-hide 0.1s var(--ix-switch) forwards; }
+.intro-screen .ix-on {
+  fill: var(--ix-current);
+  opacity: 0;
+  animation: ix-show 0.15s calc(var(--ix-switch) + 0.05s) forwards;
+}
+
+/* ---------- Resistencia: brilla mientras la chispa la atraviesa ---------- */
+
+.intro-screen .ix-res-body { fill: #c9b48a; stroke: #8e7a55; stroke-width: 1.5; }
+
+.intro-screen .ix-resistor {
+  transform-box: fill-box;
+  animation: ix-res-glow 0.4s var(--ix-res) ease-out forwards;
+}
+
+/* ---------- Letras: la corriente las recorre y se encienden de azul ---------- */
+
+/* --i = orden de izquierda a derecha (C = 0 … S = 7): cada letra recibe la corriente después de la anterior. */
+.intro-screen .ix-letter {
+  fill: var(--line-strong);
+  font: 700 64px var(--sans);
+  text-anchor: middle;
+  animation: ix-letter-on 0.32s calc(var(--ix-word) + var(--i) * 0.07s) linear forwards;
+}
+
+/* ---------- El LED: llega caminando, salta por encima de la S y se enciende ---------- */
+
+/* Pies del LED en su lugar final: (595, 174). Camina hasta quedar a la derecha de la S, se detiene
+   y, justo antes de que entre la chispa, salta por encima de la S: cae en la O al encenderse.
+   La llegada dura de --ix-walk a --ix-led (1.81 s); el aterrizaje se recupera después. */
+.intro-screen .ix-led-actor {
+  transform-box: view-box;
+  transform-origin: 595px 174px;
+  opacity: 0;
+  animation:
+    ix-led-arrive 1.81s var(--ix-walk) linear forwards,
+    ix-led-land 0.22s var(--ix-led) ease-out forwards;
+}
+
+/* Cojea un poco: la pata del ánodo es más larga que la del cátodo. */
+.intro-screen .ix-led-bob {
+  transform-box: view-box;
+  transform-origin: 595px 174px;
+  animation: ix-limp 0.27s var(--ix-walk) ease-in-out 3;
+}
+
+.intro-screen .ix-leg {
+  stroke: var(--muted);
+  stroke-width: 3;
+  stroke-linecap: round;
+  transform-box: fill-box;
+  transform-origin: 50% 0;
+}
+
+.intro-screen .ix-leg-anode { animation: ix-step 0.135s var(--ix-walk) ease-in-out 6; }
+.intro-screen .ix-leg-cathode { animation: ix-step 0.135s calc(var(--ix-walk) + 0.0675s) ease-in-out 6; }
+
+.intro-screen .ix-led-body { fill: rgb(31 143 255 / 12%); stroke: var(--line-strong); stroke-width: 2; }
+.intro-screen .ix-led-rim { fill: var(--line-strong); }
+
+/* Ojos del LED: solo aparecen al encenderse (blancos sobre el azul), guiña el derecho y se
+   desvanecen. Tiempos desde --ix-led: aparecen en 0.1 s, guiño 0.12–0.42 s, desvanecido 0.42–0.74 s. */
+.intro-screen .ix-led-eyes {
+  fill: #fff;
+  filter: drop-shadow(0 0 2px #fff);
+  opacity: 0;
+  animation: ix-eyes 0.7s calc(var(--ix-led) + 0.04s) linear forwards;
+}
+
+.intro-screen .ix-led-wink {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: ix-wink 0.3s calc(var(--ix-led) + 0.12s) ease-in-out;
+}
+
+/* Mientras el ojo está cerrado se ve su línea delgada */
+.intro-screen .ix-led-wink-line {
+  fill: none;
+  stroke: #fff;
+  stroke-width: 1.1;
+  stroke-linecap: round;
+  opacity: 0;
+  animation: ix-wink-line 0.3s calc(var(--ix-led) + 0.12s) linear;
+}
+
+.intro-screen .ix-led-on {
+  opacity: 0;
+  filter: drop-shadow(0 0 6px #bfd9ff) drop-shadow(0 0 18px var(--accent)) drop-shadow(0 0 36px var(--accent));
+  animation: ix-led-on 0.35s var(--ix-led) cubic-bezier(0.2, 0.8, 0.3, 1) forwards;
+}
+
+
+.intro-screen .ix-led-halo {
+  opacity: 0;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: ix-halo 0.5s var(--ix-led) ease-out forwards;
+}
+
+
+/* ---------- La chispa (la mueve el script) ---------- */
+
+.intro-screen .ix-spark { opacity: 0; }
+.intro-screen .ix-spark-body { filter: drop-shadow(0 0 2px #ffe600); }
+
+/* ---------- Saltar ---------- */
+
+.ix-skip {
+  position: absolute;
+  right: 28px;
+  bottom: 28px;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border: 1px solid var(--line-strong);
+  border-radius: 6px;
+  background: var(--surface-2);
+  color: var(--muted);
+  font: 600 var(--text-sm) var(--sans);
+  cursor: pointer;
+  animation: ix-show 0.3s 0.3s both;
+  transition: color 0.12s ease, border-color 0.12s ease, background 0.12s ease;
+}
+
+.ix-skip:hover {
+  color: var(--foreground);
+  border-color: var(--accent);
+  background: var(--surface-3);
+}
+
+.ix-skip:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.ix-skip kbd {
+  padding: 1px 6px;
+  border: 1px solid var(--line-strong);
+  border-radius: 4px;
+  font: 500 var(--text-xs) var(--mono);
+}
+
+/* ---------- Keyframes ---------- */
+
+@keyframes ix-out { to { opacity: 0; visibility: hidden; } }
+@keyframes ix-draw { to { stroke-dashoffset: 0; } }
+@keyframes ix-hide { to { opacity: 0; } }
+@keyframes ix-show { from { opacity: 0; } to { opacity: 1; } }
+@keyframes ix-pop { from { opacity: 0; transform: scale(0.7); } to { opacity: 1; transform: none; } }
+
+@keyframes ix-post-on {
+  to { stroke: var(--ix-current); filter: drop-shadow(0 0 4px var(--ix-current-glow)); }
+}
+
+
+@keyframes ix-lever {
+  0%   { transform: rotate(-35deg); animation-timing-function: ease-out; }
+  16%  { transform: rotate(-21deg); animation-timing-function: ease-in-out; } /* baja dudando… */
+  36%  { transform: rotate(-38deg); animation-timing-function: ease-in-out; } /* …se arrepiente */
+  44%  { transform: rotate(-36deg); animation-timing-function: ease-in; }     /* toma aire */
+  60%  { transform: rotate(0deg); stroke: var(--ix-current); filter: drop-shadow(0 0 5px var(--ix-current-glow)); animation-timing-function: ease-out; } /* ¡cae! */
+  69%  { transform: rotate(-9deg); stroke: var(--ix-current); animation-timing-function: ease-in; } /* rebote 1 */
+  78%  { transform: rotate(0deg); stroke: var(--ix-current); animation-timing-function: ease-out; }
+  85%  { transform: rotate(-3deg); stroke: var(--ix-current); animation-timing-function: ease-in; } /* rebote 2 */
+  92%, 100% { transform: rotate(0deg); stroke: var(--ix-current); filter: drop-shadow(0 0 5px var(--ix-current-glow)); }
+}
+
+@keyframes ix-contact {
+  0% { opacity: 0; transform: scale(0.3); }
+  25% { opacity: 1; transform: scale(1.1); }
+  100% { opacity: 0; transform: scale(1.5); }
+}
+
+@keyframes ix-res-glow {
+  0% { filter: none; }
+  50% { filter: drop-shadow(0 0 10px var(--ix-current-glow)) brightness(1.2); }
+  100% { filter: drop-shadow(0 0 3px rgb(255 122 0 / 60%)); }
+}
+
+/* Le llega la corriente: destello, parpadeo como un filamento que arranca, y se queda encendida en azul. */
+@keyframes ix-letter-on {
+  0%   { fill: var(--line-strong); filter: none; }
+  12%  { fill: var(--ix-flash); filter: drop-shadow(0 0 14px var(--accent)) drop-shadow(0 0 4px var(--ix-flash)); }
+  24%  { fill: var(--line-strong); filter: none; }
+  40%  { fill: var(--ix-flash); filter: drop-shadow(0 0 16px var(--accent)); }
+  100% { fill: var(--ix-letter-blue); filter: drop-shadow(0 0 8px var(--accent)); }
+}
+
+/* (tiempos desde que empieza a caminar) 0 → 0.81 s camina hasta la derecha de la S (x + 95) y frena;
+   espera; 1.47 s se agacha; 1.64 s en lo alto, por encima de la S; 1.81 s cae en la O aplastándose. */
+@keyframes ix-led-arrive {
+  0%   { opacity: 0; transform: translate(175px, 0); animation-timing-function: ease-out; }
+  4%   { opacity: 1; animation-timing-function: ease-out; }
+  45%  { opacity: 1; transform: translate(95px, 0); }
+  50%  { opacity: 1; transform: translate(95px, 0) scale(1.06, 0.92); }  /* frena */
+  55%  { opacity: 1; transform: translate(95px, 0); }
+  74%  { opacity: 1; transform: translate(95px, 0); animation-timing-function: ease-out; }
+  81%  { opacity: 1; transform: translate(95px, 0) scale(1.12, 0.84); animation-timing-function: ease-out; } /* se agacha */
+  90.5% { opacity: 1; transform: translate(48px, -100px) scale(0.92, 1.1); animation-timing-function: ease-in; } /* por encima de la S */
+  100% { opacity: 1; transform: translate(0, 0) scale(1.15, 0.82); } /* cae en la O */
+}
+
+/* Recupera su forma después de aterrizar (justo cuando se enciende). */
+@keyframes ix-led-land {
+  0%   { transform: scale(1.15, 0.82); }
+  60%  { transform: scale(0.96, 1.05); }
+  100% { transform: none; }
+}
+
+@keyframes ix-limp {
+  0%, 100% { transform: none; }
+  25% { transform: translateY(-5px) rotate(-7deg); }
+  50% { transform: none; }
+  75% { transform: translateY(-2px) rotate(3deg); }
+}
+
+@keyframes ix-step {
+  0%, 100% { transform: none; }
+  50% { transform: scaleY(0.8); }
+}
+
+@keyframes ix-eyes {
+  0%   { opacity: 0; animation-timing-function: ease-out; }
+  14%  { opacity: 1; }                                      /* aparecen */
+  54%  { opacity: 1; animation-timing-function: ease-in-out; } /* (guiño en medio) */
+  100% { opacity: 0; }                                      /* se desvanecen */
+}
+
+@keyframes ix-wink {
+  0%   { transform: none; }
+  25%, 75% { transform: scaleY(0); }
+  100% { transform: none; }
+}
+
+@keyframes ix-wink-line {
+  0%, 20% { opacity: 0; }
+  25%, 75% { opacity: 1; }
+  80%, 100% { opacity: 0; }
+}
+
+@keyframes ix-led-on {
+  0% { opacity: 0; } 15% { opacity: 1; } 25% { opacity: 0.35; } 40% { opacity: 1; } 100% { opacity: 1; }
+}
+
+@keyframes ix-halo {
+  0% { opacity: 0; transform: scale(0.5); }
+  35% { opacity: 1; transform: scale(1.2); }
+  100% { opacity: 1; transform: none; }
+}
+
+
+/* Con movimiento reducido no hay intro: el script en línea ya la marca como vista. */
+@media (prefers-reduced-motion: reduce) {
+  .intro-screen { display: none; }
+}

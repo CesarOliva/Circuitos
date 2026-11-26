@@ -14,110 +14,16 @@
   letter-spacing: -0.02em;
 }
 
-/* ---------- Bienvenida a pantalla completa ---------- */
+/* ---------- Bienvenida ---------- */
 
-/* Cuándo empieza a irse la intro: el hero espera hasta entonces para animarse. */
+/* La intro vive en intro-screen.css. Mientras se reproduce, las animaciones del hero esperan en pausa
+   y arrancan cuando termina o cuando se salta; --intro-end es solo un respiro tras el desvanecido. */
 :root {
-  --intro-end: 2.5s;
+  --intro-end: 0.2s;
 }
 
-/* Ocho pistas de circuito impreso convergen en el logo, un pulso de corriente lo enciende
-   y después aparece el nombre de la marca. */
-.intro-screen {
-  position: fixed;
-  inset: 0;
-  z-index: 300;
-  display: grid;
-  place-items: center;
-  background: var(--background);
-  pointer-events: none;
-  animation: intro-out 0.6s var(--intro-end) ease forwards;
-}
-
-.intro-scene {
-  display: grid;
-  justify-items: center;
-  gap: 18px;
-}
-
-.intro-art {
-  width: min(560px, 92vw);
-  height: auto;
-  /* Las pistas nacen de la nada: se desvanecen hacia los bordes de la escena. */
-  -webkit-mask-image: radial-gradient(closest-side, #000 55%, transparent);
-  mask-image: radial-gradient(closest-side, #000 55%, transparent);
-}
-
-.intro-trace,
-.intro-pulse {
-  fill: none;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-
-.intro-trace {
-  stroke: var(--line-strong);
-  stroke-width: 3;
-  stroke-dasharray: 1;
-  stroke-dashoffset: 1;
-  animation: intro-draw 0.6s calc(0.1s + var(--d)) cubic-bezier(0.45, 0, 0.2, 1) forwards;
-}
-
-/* Un pulso de corriente recorre cada pista hacia el logo; llegan casi juntos y lo encienden. */
-.intro-pulse {
-  stroke: var(--accent-bright);
-  stroke-width: 3;
-  stroke-dasharray: 0.12 1.2;
-  stroke-dashoffset: 0.12;
-  opacity: 0;
-  filter: drop-shadow(0 0 5px var(--accent));
-  animation: intro-pulse 0.5s calc(0.8s + var(--d)) ease-in forwards;
-}
-
-.intro-via {
-  fill: var(--background);
-  stroke: var(--line-strong);
-  stroke-width: 2;
-  opacity: 0;
-  transform-box: fill-box;
-  transform-origin: center;
-  animation: intro-pop 0.35s calc(0.3s + var(--d)) cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
-}
-
-.intro-mark-outline {
-  fill: var(--surface);
-  stroke: var(--line-strong);
-  stroke-width: 2;
-  opacity: 0;
-  transform-box: fill-box;
-  transform-origin: center;
-  animation: intro-pop 0.4s 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
-}
-
-.intro-mark {
-  opacity: 0;
-  transform-box: fill-box;
-  transform-origin: center;
-  animation: intro-power 0.45s 1.3s cubic-bezier(0.22, 0.8, 0.3, 1) forwards;
-}
-
-.intro-mark text {
-  fill: #fff;
-  font-family: var(--sans);
-  font-size: 30px;
-  font-weight: 700;
-  text-anchor: middle;
-}
-
-
-.intro-brand {
-  margin: 0;
-  color: var(--foreground);
-  font-size: var(--text-sm);
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.24em;
-  animation: brand-in 0.8s 1.45s cubic-bezier(0.22, 0.8, 0.3, 1) both;
+body:has(.intro-screen[data-state="playing"]) :is(.hero-copy > *, .hw > span) {
+  animation-play-state: paused;
 }
 
 /* ---------- Hero ---------- */
@@ -886,39 +792,9 @@
 
 /* ---------- Keyframes ---------- */
 
-@keyframes intro-out {
-  to { opacity: 0; visibility: hidden; }
-}
-
-@keyframes intro-draw {
-  to { stroke-dashoffset: 0; }
-}
-
-@keyframes intro-pulse {
-  0% { opacity: 1; stroke-dashoffset: 0.12; }
-  90% { opacity: 1; }
-  100% { opacity: 0; stroke-dashoffset: -1; }
-}
-
-@keyframes intro-pop {
-  from { opacity: 0; transform: scale(0.6); }
-  to { opacity: 1; transform: none; }
-}
-
-@keyframes intro-power {
-  0% { opacity: 0; transform: scale(0.85); filter: none; }
-  60% { opacity: 1; transform: scale(1.06); filter: drop-shadow(0 0 22px var(--accent)); }
-  100% { opacity: 1; transform: none; filter: drop-shadow(0 0 12px var(--accent)); }
-}
-
 @keyframes hero-letter {
   from { opacity: 0; transform: translateY(0.35em); filter: blur(3px); }
   to { opacity: 1; transform: none; filter: blur(0); }
-}
-
-@keyframes brand-in {
-  from { opacity: 0; letter-spacing: 0.6em; filter: blur(4px); }
-  to { opacity: 1; letter-spacing: 0.24em; filter: blur(0); }
 }
 
 @keyframes rise-in {
@@ -1049,10 +925,6 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .intro-screen {
-    display: none;
-  }
-
   .hero-copy > *,
   .hw > span,
   .feature-card,

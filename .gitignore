@@ -32,6 +32,7 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+.env.local
 
 # vercel
 .vercel
@@ -39,3 +40,22 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+#datasets
+src/app/experiments/dinov2/recortes/
+src/app/experiments/dinov2/labeled/
+src/app/experiments/dinov2/dataset/
+src/app/experiments/dinov2/dataset_catalogo_led/
+src/app/experiments/sam3/fotos/
+
+# Modelos pesados (el classifier.npz sí se sube)
+*.pt
+*.pth
+*.joblib
+
+api_key.txt
+.env*
+
+.venv/
+__pycache__/
+*.pyc

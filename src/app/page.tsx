@@ -6,7 +6,8 @@ import { FAULTS } from "@/components/simulador/faults";
 import { Reveal } from "@/components/landing/reveal";
 import { CountUp } from "@/components/landing/count-up";
 import { IntroScreen } from "@/components/landing/intro-screen";
-import { ChargeScope } from "@/components/landing/charge-scope";
+import { HowItWorks } from "@/components/landing/how-it-works";
+import { CtaZoom } from "@/components/landing/cta-zoom";
 import { SpotlightLink } from "@/components/landing/spotlight-link";
 import "@/components/landing/landing.css";
 
@@ -82,8 +83,6 @@ export default function Home() {
           </section>
         </Reveal>
       </main>
-
-      <ChargeScope />
 
       <div className="landing">
         <Reveal>
@@ -196,40 +195,11 @@ export default function Home() {
             </div>
           </section>
         </Reveal>
-
-        <Reveal>
-          <section className="steps" aria-label="Cómo funciona">
-            <h2>Cómo funciona</h2>
-            <ol className="steps-grid">
-              <li className="step">
-                <span className="step-number" aria-hidden="true">1</span>
-                <h3>Arrastra</h3>
-                <p>Toma un componente de la bandeja y suéltalo en el área de trabajo o sobre la protoboard.</p>
-              </li>
-              <li className="step">
-                <span className="step-number" aria-hidden="true">2</span>
-                <h3>Conecta</h3>
-                <p>Haz clic en un terminal y luego en otro para tender un cable entre ellos; cada borne sabe quién es.</p>
-              </li>
-              <li className="step">
-                <span className="step-number" aria-hidden="true">3</span>
-                <h3>Simula</h3>
-                <p>Pulsa Simular y mira el resultado: el LED enciende, el motor gira y cada readout muestra su medición.</p>
-              </li>
-            </ol>
-          </section>
-        </Reveal>
-
-        <Reveal>
-          <section className="cta-final">
-            <h2>Tu banco de trabajo te espera</h2>
-            <p>Sin instalar nada: el circuito se arma, se simula y se examina aquí mismo, en claro o en oscuro.</p>
-            <Link className="cta-primary" href="/simulador">
-              <span aria-hidden="true">▶</span> Empezar a armar
-            </Link>
-          </section>
-        </Reveal>
       </div>
+
+      <HowItWorks />
+
+      <CtaZoom />
     </>
   );
 }

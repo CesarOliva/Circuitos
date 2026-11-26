@@ -5,6 +5,9 @@
 :root {
   --sans: var(--font-plex-sans), system-ui, sans-serif;
   --mono: var(--font-plex-mono), ui-monospace, monospace;
+  /* Nombres que usan los estilos de la rama simulador (cursos, portada, playground): apuntan a Plex. */
+  --font-geist-sans: var(--sans);
+  --font-geist-mono: var(--mono);
   --text-xs: 0.75rem;
   --text-sm: 0.8125rem;
   --text-base: 0.875rem;

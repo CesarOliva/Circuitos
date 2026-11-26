@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { IBM_Plex_Mono, IBM_Plex_Sans } from "next/font/google";
+import Script from "next/script";
 import "./globals.css";
 import "@/components/site/site.css";
 import { SiteHeader } from "@/components/site/site-header";
@@ -13,6 +14,7 @@ export const metadata: Metadata = {
     "Arma un circuito en la protoboard, simúlalo y examina cada componente en isométrico y 3D, con sus fallos reales.",
 };
 
+// globals.css usa estas fuentes (--font-plex-sans y --font-plex-mono): sin ellas todo el sitio cae en Times.
 const plexSans = IBM_Plex_Sans({ subsets: ["latin", "latin-ext"], weight: "variable", variable: "--font-plex-sans" });
 const plexMono = IBM_Plex_Mono({ subsets: ["latin", "latin-ext"], weight: ["400", "500", "600"], variable: "--font-plex-mono" });
 
@@ -27,10 +29,12 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       suppressHydrationWarning
       className={`${plexSans.variable} ${plexMono.variable} h-full antialiased`}
     >
-      <head>
-        <script dangerouslySetInnerHTML={{ __html: THEME_INIT }} />
-      </head>
       <body className="min-h-full flex flex-col">
+        <Script
+          id="theme-init"
+          strategy="beforeInteractive"
+          dangerouslySetInnerHTML={{ __html: THEME_INIT }}
+        />
         <SiteHeader />
         {children}
       </body>

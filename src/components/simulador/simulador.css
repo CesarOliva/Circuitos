@@ -119,6 +119,143 @@
   margin: 0;
 }
 
+.sim-coordinate-grid {
+  max-width: 1240px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 520px), 1fr));
+  gap: 20px;
+}
+
+.sim-coordinate-card {
+  min-width: 0;
+  padding: 18px;
+  border: 1px solid var(--anatomy-lo);
+  border-radius: 6px;
+  background: var(--anatomy-card);
+}
+
+.sim-coordinate-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.sim-coordinate-heading h2 {
+  color: var(--anatomy-strong);
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.sim-coordinate-heading span,
+.sim-coordinate-list {
+  font-family: var(--anatomy-mono);
+}
+
+.sim-coordinate-heading span {
+  color: var(--anatomy-muted);
+  font-size: 11px;
+}
+
+.sim-coordinate-content {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(210px, 0.9fr);
+  align-items: start;
+  gap: 14px;
+}
+
+.sim-coordinate-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.sim-coordinate-board {
+  fill: var(--anatomy-paper);
+  stroke: var(--anatomy-mid);
+  stroke-width: 1.4;
+}
+
+.sim-coordinate-axis {
+  stroke: var(--anatomy-faint);
+  stroke-dasharray: 3 4;
+  stroke-width: 0.8;
+}
+
+.sim-coordinate-origin {
+  fill: var(--anatomy-strong);
+}
+
+.sim-coordinate-origin-label {
+  fill: var(--anatomy-text);
+  font-size: 7px;
+}
+
+.sim-coordinate-footprint {
+  fill: var(--anatomy-lit-shade);
+  fill-opacity: 0.5;
+  stroke: var(--anatomy-mid);
+  stroke-dasharray: 2 2;
+  stroke-width: 1;
+}
+
+.sim-coordinate-landmark circle {
+  fill: var(--anatomy-red);
+  stroke: var(--anatomy-paper);
+  stroke-width: 0.8;
+}
+
+.sim-coordinate-center circle {
+  fill: var(--anatomy-blue);
+  stroke: var(--anatomy-paper);
+  stroke-width: 0.8;
+}
+
+.sim-coordinate-landmark text,
+.sim-coordinate-center text,
+.sim-coordinate-terminal text {
+  fill: var(--anatomy-strong);
+  font-family: var(--anatomy-mono);
+  font-size: 7px;
+}
+
+.sim-coordinate-terminal circle {
+  fill: var(--anatomy-green);
+  stroke: var(--anatomy-paper);
+  stroke-width: 0.8;
+}
+
+.sim-coordinate-list {
+  display: grid;
+  gap: 7px;
+  font-size: 10px;
+}
+
+.sim-coordinate-section {
+  padding-top: 5px;
+  color: var(--anatomy-muted);
+  font-size: 9px;
+  text-transform: uppercase;
+}
+
+.sim-coordinate-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+}
+
+.sim-coordinate-row dt {
+  overflow-wrap: anywhere;
+}
+
+.sim-coordinate-row dd {
+  color: var(--anatomy-strong);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
 /* The component's name is the card's title: larger and stronger than the kit's corner label. */
 .sim-grid .iso-plate-corner[data-corner="title"] {
   font-family: var(--sans);
@@ -234,6 +371,17 @@
 .sim-hole {
   fill: var(--anatomy-shade-0);
   stroke: none;
+}
+
+@media (max-width: 700px) {
+  .sim-coordinate-content {
+    grid-template-columns: 1fr;
+  }
+
+  .sim-coordinate-svg {
+    max-width: 420px;
+    margin: 0 auto;
+  }
 }
 
 /* A lit terminal: its pad, trace, leads and block cell. */

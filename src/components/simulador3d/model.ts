@@ -639,6 +639,16 @@ export function buildModel(spec: ModelSpec, palette: Palette, mount: Mount = "bo
       break;
     }
     case "ultrasonic": {
+      if (loose) {
+        root.rotation.y = Math.PI / 2;
+        root.rotation.z = Math.PI / 2;
+        const pivot = new THREE.Vector3(0, -20, 8);
+        root.updateMatrixWorld(true);
+        const center = root.localToWorld(pivot.clone());
+        root.rotateOnWorldAxis(new THREE.Vector3(0, 1, 0), -Math.PI / 2);
+        root.updateMatrixWorld(true);
+        root.position.add(center.sub(root.localToWorld(pivot.clone())));
+      }
       for (const x of [-19, 19]) cylinder(x, -28, 1.6, 0, 2.6, M.black, 20);
       slab({ x: -6.5, y: -12.2, w: 13, d: 2.6, r: 0.3 }, 0, 2.6, M.black, 0.2);
       const pcb = { x: -22, y: -31, w: 44, d: 21, r: 1 };
@@ -745,6 +755,22 @@ export function buildModel(spec: ModelSpec, palette: Palette, mount: Mount = "bo
     extent.union(child.geometry.boundingBox!);
   }
   ground.position.z = extent.min.z - 0.01;
+
+  if (spec.type === "ultrasonic" && loose) {
+    root.updateMatrixWorld(true);
+    const orient = (point: THREE.Vector3) => {
+      const transformed = root.localToWorld(point);
+      return new THREE.Vector3(transformed.x, transformed.z, transformed.y);
+    };
+    for (const [id, end] of ends) ends.set(id, orient(end.clone()));
+    const bounds = extent.clone();
+    extent.makeEmpty();
+    for (const x of [bounds.min.x, bounds.max.x]) {
+      for (const y of [bounds.min.y, bounds.max.y]) {
+        for (const z of [bounds.min.z, bounds.max.z]) extent.expandByPoint(orient(new THREE.Vector3(x, y, z)));
+      }
+    }
+  }
 
   return {
     root,

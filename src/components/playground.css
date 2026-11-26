@@ -233,6 +233,24 @@ button:focus-visible,input:focus-visible { outline: 3px solid var(--accent-brigh
 [data-theme="light"] .play-footer kbd { border-color: var(--line-strong); color: #0a5cb8; }
 [data-theme="light"] .drag-ghost { background: rgb(255 255 255 / 94%); box-shadow: 0 12px 28px rgb(13 38 76 / 25%); }
 [data-theme="light"] ::selection { background: rgb(31 143 255 / 30%); color: #0c1527; }
+/* Light page: the canvas, tray tiles and parts are white and grey. Lit or running parts keep their own colours. */
+[data-theme="light"] .canvas-wrap { background: radial-gradient(ellipse 80% 70% at 50% 0%, rgb(31 143 255 / 7%), transparent 70%), #f5f7fb; }
+[data-theme="light"] .part-tile { background: radial-gradient(circle at 50% 35%, #ffffff, #eef2f8 75%); border-color: #cfd9ea; color: #1c2a44; }
+[data-theme="light"] .part-body:not(.chip-body):not(.led-on):not(.motor-active):not(.buzzer-active):not(.control-on) { fill: #ffffff; stroke: #8195b5; }
+[data-theme="light"] .chip-body { fill: #e4e9f2; stroke: #8195b5; }
+[data-theme="light"] .chip-leg { stroke: #5b6f92; }
+[data-theme="light"] .part-name { fill: #1c2a44; }
+[data-theme="light"] .terminal-dot { fill: #ffffff; stroke: #6d85ad; }
+[data-theme="light"] .dot-grid-dot { fill: #c3cde0; }
+[data-theme="light"] .empty-canvas circle { fill: #ffffff; stroke: #cfd9ea; }
+[data-theme="light"] .battery-mark,
+[data-theme="light"] .resistor-mark,
+[data-theme="light"] .diode-mark,
+[data-theme="light"] .capacitor-mark,
+[data-theme="light"] .inductor-mark,
+[data-theme="light"] .control-mark,
+[data-theme="light"] .motor-mark,
+[data-theme="light"] .transistor-mark { stroke: #34445f; }
 
 @media (prefers-reduced-motion: reduce) {
   *,*::before,*::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; }

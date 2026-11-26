@@ -6,6 +6,7 @@ import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { BOARD, BOARD_T, CY, STANDOFF_H } from "@/components/simulador/layout";
 import { buildBreadboard } from "./breadboard";
 import { buildModel, type Built, type ModelSpec, type Mount, type Palette } from "./model";
+import { isDarkTheme, watchTheme } from "./theme";
 
 // The playground canvas is 960 × 560; its centre is the table's origin and its units shrink to board units.
 const CANVAS_W = 960;
@@ -15,7 +16,10 @@ const FLOOR = -BOARD_T - STANDOFF_H;
 const TOP = 45;
 const AZIMUTH = (76 * Math.PI) / 180;
 const ELEVATION = (48 * Math.PI) / 180;
-const PALETTE: Palette = { dark: true, ink: "#c9d3e6", faint: "#3a4a66", accent: "#1f8fff" };
+const PALETTE_ACCENT = "#1f8fff";
+// The table follows the site's theme: dark pages get the black table, light pages a white one.
+const paletteNow = (): Palette =>
+  isDarkTheme() ? { dark: true, ink: "#c9d3e6", faint: "#3a4a66", accent: PALETTE_ACCENT } : { dark: false, ink: "#1c2a44", faint: "#8294b4", accent: PALETTE_ACCENT };
 // Jumper colours that read on a dark table; no black.
 const WIRE_COLOURS = ["#e5484d", "#1f8fff", "#e8ecf4", "#f2c230", "#33c27a", "#ff8a3d"];
 
@@ -92,9 +96,10 @@ class Table {
   private controls: OrbitControls;
   private slots = new Map<string, Slot>();
   private wires = new THREE.Group();
-  private accent = new THREE.Color(PALETTE.accent);
+  private accent = new THREE.Color(PALETTE_ACCENT);
+  private palette = paletteNow();
   private originals = new Map<THREE.MeshStandardMaterial, [THREE.Color, THREE.Color, number]>();
-  private markMaterial = new THREE.MeshBasicMaterial({ color: PALETTE.accent, transparent: true, opacity: 0.22, depthWrite: false });
+  private markMaterial = new THREE.MeshBasicMaterial({ color: PALETTE_ACCENT, transparent: true, opacity: 0.22, depthWrite: false });
   private disposables: Array<{ dispose(): void }> = [this.markMaterial];
   private raycaster = new THREE.Raycaster();
   private pointer = new THREE.Vector2();
@@ -119,7 +124,7 @@ class Table {
     this.renderer.toneMappingExposure = 1.1;
     host.appendChild(this.renderer.domElement);
 
-    this.scene.add(new THREE.HemisphereLight("#dfe9ff", "#10141c", 1.3));
+    this.scene.add(new THREE.HemisphereLight(this.palette.dark ? "#dfe9ff" : "#ffffff", this.palette.dark ? "#10141c" : "#b9b7b0", 1.3));
     const sun = new THREE.DirectionalLight("#ffffff", 2.4);
     sun.position.set(-160, 380, 190);
     sun.castShadow = true;
@@ -137,7 +142,7 @@ class Table {
     this.scene.add(fill);
 
     // The table: the 2D dot grid becomes a faint line grid, with one shadow catcher for every board.
-    const grid = new THREE.GridHelper(CANVAS_W * SCALE * 1.5, 60, "#1f3358", "#152033");
+    const grid = this.palette.dark ? new THREE.GridHelper(CANVAS_W * SCALE * 1.5, 60, "#1f3358", "#152033") : new THREE.GridHelper(CANVAS_W * SCALE * 1.5, 60, "#b8c6de", "#d9e1ef");
     grid.position.y = FLOOR - 0.05;
     this.disposables.push(grid.geometry, grid.material as THREE.Material);
     this.scene.add(grid);
@@ -213,7 +218,7 @@ class Table {
 
   private place(spec: ModelSpec, mount: Mount, key: string): Slot {
     // The protoboard is what the parts get wired through, the same however they are mounted.
-    const built = spec.type === "breadboard" ? buildBreadboard(PALETTE, SCALE) : buildModel(spec, PALETTE, mount);
+    const built = spec.type === "breadboard" ? buildBreadboard(this.palette, SCALE) : buildModel(spec, this.palette, mount);
     // Each model brings its own shadow catcher; the table has one for all of them.
     for (const child of built.root.children) if (child.userData.ground) child.visible = false;
     const group = new THREE.Group();
@@ -480,6 +485,10 @@ export default function Circuit3D(props: Circuit3DProps) {
   const table = React.useRef<Table | null>(null);
   const latest = React.useRef(props);
   const { parts, wires, mount, selectedIds, pending } = props;
+  // A new table is built when the site switches theme, so its boards and table take the new colours.
+  const [dark, setDark] = React.useState(() => isDarkTheme());
+
+  React.useEffect(() => watchTheme(() => setDark(isDarkTheme())), []);
 
   // The table calls back through the latest props, so its handlers never see stale state.
   React.useEffect(() => {
@@ -507,7 +516,7 @@ export default function Circuit3D(props: Circuit3DProps) {
       instance.destroy();
       table.current = null;
     };
-  }, []);
+  }, [dark]);
 
   React.useEffect(() => {
     table.current?.update({ ...latest.current, parts, wires, mount, selectedIds, pending });

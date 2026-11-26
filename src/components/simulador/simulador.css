@@ -75,6 +75,12 @@
   box-shadow: none;
 }
 
+/* On light pages the current view is a soft grey pill, not a black one. */
+[data-theme="light"] .sim-nav [aria-current="page"] {
+  background: var(--anatomy-lo);
+  color: var(--anatomy-strong);
+}
+
 .sim-nav a:hover {
   box-shadow: 0 0 0 1px var(--anatomy-mid);
   color: var(--anatomy-strong);

@@ -17,13 +17,13 @@
   border-radius: 999px;
   background: var(--accent-soft);
   color: var(--accent-ink);
-  font-size: 11px;
-  font-weight: 650;
+  font-size: var(--text-xs);
+  font-weight: 600;
 }
 
 .edu h1 {
   margin: 0 0 10px;
-  font-size: clamp(26px, 3.4vw, 36px);
+  font-size: var(--text-2xl);
   font-weight: 700;
   line-height: 1.15;
   letter-spacing: -0.02em;
@@ -31,8 +31,8 @@
 
 .edu h2 {
   margin: 0 0 14px;
-  font-size: 20px;
-  font-weight: 650;
+  font-size: var(--text-lg);
+  font-weight: 600;
   letter-spacing: -0.01em;
 }
 
@@ -40,7 +40,7 @@
   max-width: 62ch;
   margin: 0 0 30px;
   color: var(--muted);
-  font-size: 15px;
+  font-size: var(--text-md);
   line-height: 1.6;
 }
 
@@ -50,7 +50,7 @@
   gap: 8px;
   margin: 0 0 26px;
   color: var(--muted);
-  font-size: 12px;
+  font-size: var(--text-xs);
 }
 
 .edu-meta span {
@@ -65,7 +65,7 @@
   width: fit-content;
   margin-bottom: 18px;
   color: var(--accent-ink);
-  font-size: 13px;
+  font-size: var(--text-sm);
   font-weight: 600;
   text-decoration: none;
 }
@@ -106,20 +106,20 @@
 
 .course-card h3 {
   margin: 0;
-  font-size: 18px;
-  font-weight: 650;
+  font-size: var(--text-lg);
+  font-weight: 600;
 }
 
 .course-card p {
   margin: 0;
   color: var(--muted);
-  font-size: 14px;
+  font-size: var(--text-base);
   line-height: 1.55;
 }
 
 .course-card small {
   color: var(--faint);
-  font-size: 12px;
+  font-size: var(--text-xs);
 }
 
 /* ---------- Lista de lecciones ---------- */
@@ -159,25 +159,25 @@
   border-radius: 50%;
   background: var(--accent-soft);
   color: var(--accent-ink);
-  font-family: var(--font-geist-mono), monospace;
-  font-size: 13px;
+  font-family: var(--mono);
+  font-size: var(--text-sm);
   font-weight: 700;
 }
 
 .lesson-link strong {
   display: block;
-  font-size: 15px;
-  font-weight: 640;
+  font-size: var(--text-md);
+  font-weight: 600;
 }
 
 .lesson-summary {
   color: var(--muted);
-  font-size: 13px;
+  font-size: var(--text-sm);
 }
 
 .lesson-go {
   color: var(--accent-ink);
-  font-size: 13px;
+  font-size: var(--text-sm);
   font-weight: 600;
 }
 
@@ -193,7 +193,7 @@
 .lesson-body p {
   margin: 0;
   color: var(--foreground);
-  font-size: 16px;
+  font-size: var(--text-md);
   line-height: 1.7;
 }
 
@@ -210,7 +210,7 @@
 
 .quiz h2 {
   margin: 0;
-  font-size: 16px;
+  font-size: var(--text-md);
 }
 
 .quiz-options {
@@ -229,7 +229,7 @@
   background: var(--surface-2);
   color: var(--foreground);
   font: inherit;
-  font-size: 14px;
+  font-size: var(--text-base);
   text-align: left;
   cursor: pointer;
   transition: border-color 0.15s ease, background 0.15s ease;
@@ -255,7 +255,7 @@
 
 .quiz-feedback {
   margin: 0;
-  font-size: 14px;
+  font-size: var(--text-base);
   line-height: 1.55;
 }
 
@@ -276,7 +276,7 @@
   background: transparent;
   color: var(--foreground);
   font: inherit;
-  font-size: 13px;
+  font-size: var(--text-sm);
   font-weight: 600;
   cursor: pointer;
 }
@@ -309,12 +309,12 @@
 
 .lesson-pager small {
   color: var(--faint);
-  font-size: 12px;
+  font-size: var(--text-xs);
 }
 
 .lesson-pager strong {
-  font-size: 14px;
-  font-weight: 640;
+  font-size: var(--text-base);
+  font-weight: 600;
 }
 
 /* ---------- Inicio de sesiÃ³n ---------- */
@@ -331,7 +331,7 @@
 }
 
 .auth h1 {
-  font-size: 24px;
+  font-size: var(--text-xl);
 }
 
 .auth-field {
@@ -341,7 +341,7 @@
 
 .auth-field label {
   color: var(--muted);
-  font-size: 13px;
+  font-size: var(--text-sm);
   font-weight: 600;
 }
 
@@ -353,7 +353,7 @@
   background: var(--surface-2);
   color: var(--foreground);
   font: inherit;
-  font-size: 15px;
+  font-size: var(--text-md);
 }
 
 .auth-field input:focus-visible {
@@ -368,7 +368,7 @@
 .auth-error {
   margin: -6px 0 0;
   color: var(--bad);
-  font-size: 12px;
+  font-size: var(--text-xs);
 }
 
 .auth-submit {
@@ -378,8 +378,8 @@
   background: linear-gradient(#2c9dff, #1672e4);
   color: #fff;
   font: inherit;
-  font-size: 15px;
-  font-weight: 620;
+  font-size: var(--text-md);
+  font-weight: 600;
   cursor: pointer;
 }
 
@@ -395,14 +395,14 @@
   border-radius: 10px;
   background: var(--accent-soft);
   color: var(--muted);
-  font-size: 13px;
+  font-size: var(--text-sm);
   line-height: 1.5;
 }
 
 .auth-foot {
   margin: 0;
   color: var(--muted);
-  font-size: 13px;
+  font-size: var(--text-sm);
   text-align: center;
 }
 
@@ -564,12 +564,12 @@
 }
 
 .mascot-head strong {
-  font-size: 14px;
+  font-size: var(--text-base);
 }
 
 .mascot-head span {
   color: var(--faint);
-  font-size: 11px;
+  font-size: var(--text-xs);
 }
 
 .mascot-log {
@@ -586,7 +586,7 @@
   max-width: 88%;
   padding: 9px 12px;
   border-radius: 12px;
-  font-size: 13px;
+  font-size: var(--text-sm);
   line-height: 1.5;
   animation: edu-rise 0.35s ease both;
 }
@@ -637,7 +637,7 @@
   border: 1px solid var(--line-strong);
   border-radius: 999px;
   color: var(--accent-ink);
-  font-size: 12px;
+  font-size: var(--text-xs);
   text-decoration: none;
 }
 
@@ -656,7 +656,7 @@
   background: var(--surface-2);
   color: var(--foreground);
   font: inherit;
-  font-size: 14px;
+  font-size: var(--text-base);
 }
 
 .mascot-form button {
@@ -667,7 +667,7 @@
   background: linear-gradient(#2c9dff, #1672e4);
   color: #fff;
   font: inherit;
-  font-size: 13px;
+  font-size: var(--text-sm);
   font-weight: 600;
   cursor: pointer;
 }

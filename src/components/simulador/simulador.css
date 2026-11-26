@@ -37,14 +37,14 @@
 
 .sim-header h1 {
   color: var(--anatomy-strong);
-  font-size: 22px;
+  font-size: var(--text-2xl);
   font-weight: 600;
   letter-spacing: -0.01em;
 }
 
 .sim-header p {
   color: var(--anatomy-muted);
-  font-size: 14px;
+  font-size: var(--text-base);
   max-width: 68ch;
 }
 
@@ -59,7 +59,7 @@
   gap: 4px;
   margin-bottom: 10px;
   font-family: var(--anatomy-mono);
-  font-size: 12px;
+  font-size: var(--text-xs);
 }
 
 .sim-nav > * {
@@ -104,7 +104,7 @@
   display: grid;
   place-items: center;
   color: var(--anatomy-muted);
-  font-size: 13px;
+  font-size: var(--text-sm);
 }
 
 .sim-grid {
@@ -121,8 +121,8 @@
 
 /* The component's name is the card's title: larger and stronger than the kit's corner label. */
 .sim-grid .iso-plate-corner[data-corner="title"] {
-  font-family: var(--font-geist-sans), system-ui, sans-serif;
-  font-size: 15px;
+  font-family: var(--sans);
+  font-size: var(--text-md);
   font-weight: 600;
   letter-spacing: 0;
   text-transform: none;
@@ -152,7 +152,7 @@
   display: flex;
   flex-wrap: wrap;
   gap: 2px 16px;
-  font-size: 11.5px;
+  font-size: var(--text-xs);
 }
 
 .sim-properties div {
@@ -173,7 +173,7 @@
 
 .sim-fault-group > h2 {
   color: var(--anatomy-strong);
-  font-size: 16px;
+  font-size: var(--text-md);
   font-weight: 600;
   margin-bottom: 16px;
 }
@@ -192,7 +192,7 @@
 .sim-fault {
   display: block;
   color: var(--anatomy-text);
-  font-size: 12.5px;
+  font-size: var(--text-sm);
   line-height: 1.5;
   margin-bottom: 4px;
 }

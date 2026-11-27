@@ -181,8 +181,8 @@ export class TransientSolver {
                     const position = numberAt(potentiometerWaveforms, item.id, sampleTime, item.position, 0, 1, "potentiometer position");
                     potValues.set(item.id, {
                         position,
-                        resistanceAW: item.totalResistanceOhms * position,
-                        resistanceWB: item.totalResistanceOhms * (1 - position),
+                        resistanceAW: item.wiperOpen ? 1e12 : item.totalResistanceOhms * position,
+                        resistanceWB: item.wiperOpen ? 1e12 : item.totalResistanceOhms * (1 - position),
                     });
                 } else if (item instanceof LDR) {
                     const lux = numberAt(ldrWaveforms, item.id, sampleTime, item.illuminanceLux, 0, Infinity, "LDR illuminance");

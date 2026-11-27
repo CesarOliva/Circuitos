@@ -610,6 +610,48 @@ export interface Medicion {
   measurements?: Record<string, number | boolean>;
 }
 
+export type EstadoLed = "apagado" | "encendido" | "quemado";
+export type FalloAutomatico =
+  | "led-burnt"
+  | "resistor-open"
+  | "potentiometer-open"
+  | "inductor-saturated"
+  | "diode-short"
+  | "active-buzzer-silent"
+  | "transistor-short"
+  | "dc-motor-stalled";
+
+/** Derives the playground LED state from the same current and reverse-voltage limits shown in its sheet. */
+export function estadoLed(pieza: Pick<Pieza, "value">, m: Medicion): EstadoLed {
+  const corrienteMaxima = COMPONENT_SPECS.led.limites.find((limite) => limite.magnitud === "corriente")?.max ?? Infinity;
+  const voltajeInversoMaximo = COMPONENT_SPECS.led.limites.find((limite) => limite.magnitud === "voltajeInverso")?.max ?? Infinity;
+  if (Math.abs(m.current) > corrienteMaxima || Math.max(0, -m.voltage) > voltajeInversoMaximo) return "quemado";
+  if (m.voltage < pieza.value || m.voltage <= 0 || m.current <= 0.002) return "apagado";
+  return "encendido";
+}
+
+/** The numeric failures the playground can infer from its DC measurements. */
+export function detectarFalloAutomatico(pieza: { kind: string; value: number }, m: Medicion): FalloAutomatico | null {
+  const kind = pieza.kind as ComponentKind;
+  const spec = COMPONENT_SPECS[kind];
+  if (!spec) return null;
+  const limites = spec.limites;
+  const maximo = (magnitud: Magnitud) => {
+    const limite = limites.find((item) => item.magnitud === magnitud);
+    return limite?.max ?? (limite?.maxRelativo !== undefined ? limite.maxRelativo * pieza.value : Infinity);
+  };
+  switch (kind) {
+    case "resistor": return Math.abs(m.power) > maximo("potencia") ? "resistor-open" : null;
+    case "potentiometer": return Math.abs(m.power) > maximo("potencia") ? "potentiometer-open" : null;
+    case "inductor": return Math.abs(m.current) > maximo("corriente") ? "inductor-saturated" : null;
+    case "diode": return Math.max(0, -m.voltage) > maximo("voltajeInverso") ? "diode-short" : null;
+    case "active-buzzer": return Math.abs(m.voltage) > maximo("voltaje") ? "active-buzzer-silent" : null;
+    case "transistor": return Math.abs(m.current) > maximo("corriente") || Math.abs(m.voltage) > maximo("voltaje") ? "transistor-short" : null;
+    case "dc-motor": return m.measurements?.stalled ? "dc-motor-stalled" : null;
+    default: return null;
+  }
+}
+
 function magnitud(m: Medicion, cual: Magnitud): number {
   switch (cual) {
     case "voltaje": return Math.abs(m.voltage);

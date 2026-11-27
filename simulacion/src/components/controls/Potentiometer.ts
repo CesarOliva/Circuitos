@@ -6,6 +6,7 @@ export class Potentiometer extends ElectronicComponent {
     readonly type = "potentiometer";
     private _position: number;
     readonly totalResistanceOhms: number;
+    wiperOpen = false;
 
     constructor(id: string, totalResistanceOhms: number, position = 0.5) {
         super(id, "Potentiometer", [
@@ -29,11 +30,12 @@ export class Potentiometer extends ElectronicComponent {
     }
 
     get resistanceAW(): number { 
-        return this.totalResistanceOhms * this.position; 
+        // shortcut: 1 TΩ approximates an open wiper until the solver supports floating terminals.
+        return this.wiperOpen ? 1e12 : this.totalResistanceOhms * this.position;
     }
 
     get resistanceWB(): number { 
-        return this.totalResistanceOhms * (1 - this.position); 
+        return this.wiperOpen ? 1e12 : this.totalResistanceOhms * (1 - this.position);
     }
 
     getProperties() {

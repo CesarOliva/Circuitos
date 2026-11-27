@@ -34,6 +34,7 @@ export interface Placed {
   x: number;
   y: number;
   glow: boolean;
+  burnt?: boolean;
 }
 
 export interface Jumper {
@@ -182,13 +183,13 @@ class Table {
     for (const part of parts) {
       const id = part.spec.id;
       seen.add(id);
-      const key = JSON.stringify([mount, part.spec.type, part.spec.terminals.map((terminal) => terminal.id), part.spec.properties]);
+      const key = JSON.stringify([mount, part.spec.type, part.spec.terminals.map((terminal) => terminal.id), part.spec.properties, Boolean(part.burnt)]);
       let slot = this.slots.get(id);
       if (slot && slot.key !== key) {
         this.drop(id);
         slot = undefined;
       }
-      slot ??= this.place(part.spec, mount, key);
+      slot ??= this.place(part.spec, mount, key, Boolean(part.burnt));
       slot.group.position.copy(toTable(part.x, part.y)).setY(slot.lift);
       slot.mark.visible = selectedIds.includes(id);
       for (const material of slot.epoxy) material.emissiveIntensity = part.glow ? 2.6 : 0.35;
@@ -216,9 +217,9 @@ class Table {
     this.invalidate();
   }
 
-  private place(spec: ModelSpec, mount: Mount, key: string): Slot {
+  private place(spec: ModelSpec, mount: Mount, key: string, burnt = false): Slot {
     // The protoboard is what the parts get wired through, the same however they are mounted.
-    const built = spec.type === "breadboard" ? buildBreadboard(this.palette, SCALE) : buildModel(spec, this.palette, mount);
+    const built = spec.type === "breadboard" ? buildBreadboard(this.palette, SCALE) : buildModel(spec, this.palette, mount, burnt ? { burnt: true } : {});
     // Each model brings its own shadow catcher; the table has one for all of them.
     for (const child of built.root.children) if (child.userData.ground) child.visible = false;
     const group = new THREE.Group();

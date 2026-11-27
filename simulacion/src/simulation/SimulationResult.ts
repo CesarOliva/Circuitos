@@ -17,4 +17,6 @@ export interface SimulationResult {
     nodes: NodeResult[];
     components: ComponentResult[];
     errors: string[];
+    /** Automatic component failures detected from the healthy solution and applied for the final result. */
+    automaticFailures?: Record<string, string>;
 }

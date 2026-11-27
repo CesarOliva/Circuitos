@@ -32,7 +32,7 @@ export const ficha: Ficha = {
       { clave: "current", significado: "Corriente por el LED." },
       { clave: "maxForwardCurrentExceeded", significado: "Corriente mayor que 20 mA: supera la corriente recomendada; muy por encima de ella, un LED real se daña." },
     ],
-    limitaciones: ["El brillo no es proporcional a la corriente: solo hay encendido o apagado.", "El playground no detecta voltaje inverso excesivo: en inversa el LED solo queda abierto, aunque supere los ~5 V que soporta uno real."],
+    limitaciones: ["El brillo no es proporcional a la corriente: solo hay encendido o apagado."],
   },
   pruebas: [
     {
@@ -51,7 +51,7 @@ export const ficha: Ficha = {
       titulo: "LED invertido",
       montaje: "El primer circuito con el LED girado.",
       pasos: ["Invierte el LED y simula."],
-      esperado: "0 mA: el LED no enciende. Ojo: queda con 9 V en inversa, más que los ~5 V que soporta un LED real; el playground no lo marca.",
+      esperado: "0 mA: el LED no enciende y se marca quemado, porque los 9 V en inversa superan los ~5 V que soporta.",
     },
   ],
   fallos: [

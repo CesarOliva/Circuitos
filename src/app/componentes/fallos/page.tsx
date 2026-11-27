@@ -5,9 +5,10 @@ import "@/components/simulador/simulador.css";
 import { Plate } from "@/components/iso/react/draw";
 import { CATALOG, specOf } from "@/components/simulador/catalog";
 import { Caption, figureNumber } from "@/components/simulador/caption";
-import { FAULTS } from "@/components/simulador/faults";
+import { faultsForFicha } from "@/components/simulador/faults";
 import { ComponentFigure } from "@/components/simulador/figure";
 import { Viewer3D } from "@/components/simulador3d/viewer";
+import { fichaPorSlug } from "@/components/simulador/fichas";
 
 export const metadata: Metadata = {
   title: "Componentes del simulador en fallo",
@@ -16,7 +17,7 @@ export const metadata: Metadata = {
 
 export default async function ComponentesFallosPage({ searchParams }: PageProps<"/componentes/fallos">) {
   const loose = (await searchParams).montaje === "sueltos";
-  const total = CATALOG.reduce((sum, { component }) => sum + (FAULTS[component.type] ?? []).length, 0);
+  const total = CATALOG.reduce((sum, { component }) => sum + (fichaPorSlug(component.type)?.fallos.length ?? 0), 0);
   return (
     <main className="iso sim-gallery">
       <header className="sim-header">
@@ -33,15 +34,16 @@ export default async function ComponentesFallosPage({ searchParams }: PageProps<
         </div>
         <h1>Componentes en fallo</h1>
         <p>
-          {total} fallos de las fichas técnicas, cada uno dibujado en isométrico sobre la placa y en 3D{" "}
-          {loose ? "con el componente suelto, como sale de la bolsa" : "montado en la placa"}. En rojo, lo que falla: una patilla cortada, un puente de
-          cobre entre dos terminales, una grieta o una señal irregular. El cuerpo quemado se ve negro.
+          {total} fallos documentados en las fichas técnicas, mostrados en isométrico sobre la placa y en 3D{" "}
+          {loose ? "con el componente suelto, como sale de la bolsa" : "montado en la placa"}. Cuando el fallo se puede representar, la figura marca una patilla abierta,
+          un puente, una grieta, una señal irregular o un cuerpo quemado. El playground activa fallos por límites eléctricos medibles; no simula desgaste ni roturas físicas.
         </p>
       </header>
       {CATALOG.map((entry, index) => {
         const spec = specOf(entry);
         const idle = `${spec.terminals.length} terminales`;
-        const faults = FAULTS[entry.component.type] ?? [];
+        const ficha = fichaPorSlug(entry.component.type);
+        const faults = ficha ? faultsForFicha(ficha) : [];
         if (!faults.length) return null;
         return (
           <section key={entry.component.id} className="sim-fault-group">

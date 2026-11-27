@@ -64,8 +64,10 @@
 .resistor-mark { stroke: #d6b46a; }
 .led-body { fill: #1d1014; stroke: #a5434b; }
 .led-on { fill: #ffd66c; stroke: #ffb02e; filter: drop-shadow(0 0 14px rgb(255 190 60 / 80%)); }
+.led-burnt { fill: #1f1a16; stroke: #51423b; filter: none; }
 .led-mark { stroke: #ff7a80; }
 .led-on + .led-mark { stroke: #7a4a10; }
+.led-mark-burnt { stroke: #c86f52; }
 .diode-mark,.capacitor-mark,.inductor-mark,.control-mark,.ldr-mark,.motor-mark,.buzzer-mark,.transistor-mark { fill: none; stroke: #9db4d6; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .capacitor-body,.potentiometer-body,.ultrasonic-body { fill: #0f1724; stroke: #3b5375; }
 .capacitor-mark { stroke-width: 2.5; }
@@ -163,6 +165,7 @@
 .work-controls .remove-button { min-height: 36px; padding: 0 12px; border: 1px solid currentColor; border-radius: 8px; font-size: 12px; }
 .remove-button:disabled { opacity: .4; cursor: default; text-decoration: none; }
 .readout { display: inline-flex; align-items: center; gap: 7px; padding: 7px 9px; border: 1px solid rgb(31 143 255 / 25%); border-radius: 7px; background: var(--accent-soft); color: #9fd0ff; font-family: var(--font-geist-mono), monospace; font-size: 10px; font-variant-numeric: tabular-nums; }
+.failure-readout { margin: 0; color: #ff7a80; font-size: 11px; }
 .readout-led { width: 7px; height: 7px; border-radius: 50%; background: #34405a; }
 .readout-on { background: #ffc24a; box-shadow: 0 0 8px rgb(255 194 74 / 70%); }
 .control-button { min-height: 30px; padding: 0 9px; border: 1px solid rgb(31 143 255 / 40%); border-radius: 7px; background: var(--accent-soft); color: var(--accent-bright); font: inherit; font-size: 10px; cursor: pointer; }
@@ -236,7 +239,7 @@ button:focus-visible,input:focus-visible { outline: 3px solid var(--accent-brigh
 /* Light page: the canvas, tray tiles and parts are white and grey. Lit or running parts keep their own colours. */
 [data-theme="light"] .canvas-wrap { background: radial-gradient(ellipse 80% 70% at 50% 0%, rgb(31 143 255 / 7%), transparent 70%), #f5f7fb; }
 [data-theme="light"] .part-tile { background: radial-gradient(circle at 50% 35%, #ffffff, #eef2f8 75%); border-color: #cfd9ea; color: #1c2a44; }
-[data-theme="light"] .part-body:not(.chip-body):not(.led-on):not(.motor-active):not(.buzzer-active):not(.control-on) { fill: #ffffff; stroke: #8195b5; }
+[data-theme="light"] .part-body:not(.chip-body):not(.led-on):not(.led-burnt):not(.motor-active):not(.buzzer-active):not(.control-on) { fill: #ffffff; stroke: #8195b5; }
 [data-theme="light"] .chip-body { fill: #e4e9f2; stroke: #8195b5; }
 [data-theme="light"] .chip-leg { stroke: #5b6f92; }
 [data-theme="light"] .part-name { fill: #1c2a44; }

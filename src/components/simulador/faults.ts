@@ -1,4 +1,5 @@
 import { CY } from "./layout";
+import type { Ficha } from "./fichas/tipos";
 
 // The failure modes of docs/fichas-tecnicas-y-fallos-componentes.md, one list per component type.
 // Each one says what its drawings add to the healthy part, in model units (x and y on the board, z up).
@@ -24,47 +25,44 @@ export interface Fault {
   cues: Cues;
 }
 
-export const FAULTS: Record<string, Fault[]> = {
-  "dc-motor": [
-    { label: "Escobillas o rodamientos desgastados", symptom: "Arranque irregular, ruido, chispas o pérdida de velocidad.", cues: { wave: true } },
-  ],
-  "active-buzzer": [{ label: "Oscilador o transductor dañado", symptom: "Sonido débil, distorsionado o ausente.", cues: { cracked: true } }],
-  potentiometer: [{ label: "Sobrecalentamiento", symptom: "Deriva del valor, daño de la pista o circuito abierto.", cues: { burnt: true } }],
-  resistor: [{ label: "Sobrecarga térmica", symptom: "Se calienta; el valor puede derivar y finalmente abrirse.", cues: { burnt: true } }],
-  capacitor: [
-    {
-      label: "Fuga o corto",
-      symptom: "Aumenta el consumo, calienta el capacitor o hace caer la tensión de la fuente.",
-      cues: { bridge: [0, 1], burnt: true },
-    },
-    { label: "ESR elevada", symptom: "Aumenta el rizado y la temperatura.", cues: { wave: true } },
-    { label: "Capacitor explotado", symptom: "Hinchamiento, venteo o ruptura del encapsulado.", cues: { cracked: true, burnt: true } },
-  ],
-  inductor: [{ label: "Saturación del núcleo", symptom: "Cae la inductancia efectiva y la corriente puede crecer con rapidez.", cues: { wave: true } }],
-  diode: [
-    {
-      label: "Ruptura inversa",
-      symptom: "Al exceder su tensión inversa máxima puede aumentar la fuga y quedar en corto o abierto.",
-      cues: { cracked: true, burnt: true },
-    },
-  ],
-  led: [{ label: "Exceso de corriente o temperatura", symptom: "Disminuye el brillo con el tiempo o se daña de forma permanente.", cues: { burnt: true } }],
-  "transistor-bjt": [
-    { label: "Ganancia degradada", symptom: "La carga requiere más corriente de base o deja de activarse.", cues: { wave: true } },
-    { label: "Sobrecalentamiento o exceso de VCE/IC", symptom: "Puede causar fuga, cortocircuito o circuito abierto.", cues: { burnt: true } },
-  ],
-  ldr: [{ label: "Envejecimiento, suciedad o daño óptico", symptom: "Deriva de resistencia o sensibilidad reducida.", cues: { cracked: true } }],
-  ultrasonic: [{ label: "Transductor dañado o montaje inadecuado", symptom: "Lecturas inestables o alcance reducido.", cues: { cracked: true } }],
+const CUES_BY_FAILURE: Record<string, Record<string, Cues>> = {
+  "dc-voltage-source": { "Cortocircuito externo": { bridge: [0, 1] } },
+  "dc-motor": { "Bobinado abierto o escobillas gastadas": { cracked: true }, "Eje bloqueado": { wave: true } },
+  "active-buzzer": { "Oscilador dañado": { cracked: true } },
+  potentiometer: { "Cursor sucio o desgastado": { wave: true }, "Pista abierta": { open: [1] }, "Corriente excesiva por el cursor": { burnt: true } },
+  "push-button": { "Contacto que no cierra": { open: [0] }, "Contacto pegado": { bridge: [0, 1] }, "Contacto sucio o gastado": { wave: true } },
+  switch: { "Contacto abierto": { open: [0] }, "Contacto soldado": { bridge: [0, 1] }, Oxidación: { wave: true } },
+  resistor: { "Sobrecarga térmica": { burnt: true }, Abierta: { open: [0] } },
+  capacitor: {
+    "Capacitor seco o con capacitancia reducida": { wave: true },
+    "Fuga o corto": { bridge: [0, 1], burnt: true },
+    "ESR elevada": { wave: true },
+    "Polaridad invertida o sobrevoltaje": { cracked: true, burnt: true },
+  },
+  inductor: { "Bobinado abierto": { open: [0] }, "Espiras en corto": { bridge: [0, 1], burnt: true }, "Saturación del núcleo": { wave: true } },
+  diode: { Abierto: { open: [0] }, "En corto": { bridge: [0, 1] }, "Ruptura inversa": { cracked: true, burnt: true } },
+  led: { "Quemado por exceso de corriente": { burnt: true }, "Degradación por calor": { wave: true } },
+  "transistor-bjt": { "Unión abierta": { cracked: true }, "Colector-emisor en corto": { bridge: [1, 2] }, "Sin resistencia de base": { burnt: true } },
+  ldr: { Abierta: { open: [0] } },
+  ultrasonic: { "Sin alimentación o GND suelto": { open: [0, 3] }, "TRIG sin pulso": { open: [1] } },
+  microchip: { "Pin doblado o sin contacto": { open: [0] }, "Pines en cortocircuito": { bridge: [0, 1] } },
 };
+
+export function faultsForFicha(ficha: Pick<Ficha, "slug" | "fallos">): Fault[] {
+  return ficha.fallos.map(({ fallo, efecto }) => ({ label: fallo, symptom: efecto, cues: CUES_BY_FAILURE[ficha.slug]?.[fallo] ?? {} }));
+}
 
 // Where on the top face the crack and the waveform sit.
 export const TOP: Record<string, Point> = {
+  "dc-voltage-source": [0, CY, 38],
   "dc-motor": [0, CY, 23],
   "active-buzzer": [0, CY, 10],
   potentiometer: [0, -15, 7.4],
+  "push-button": [0, CY, 10],
   resistor: [0, CY, 8.2],
   capacitor: [0, CY, 16.4],
   inductor: [0, CY, 13.2],
+  switch: [0, CY, 8],
   diode: [0, CY, 6.1],
   led: [0, CY, 12.75],
   "transistor-bjt": [0, -13.2, 14],

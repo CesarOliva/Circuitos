@@ -25,6 +25,7 @@ import {
 } from "@simulacion/index";
 import type { Jumper, Locate, Placed } from "./simulador3d/circuit";
 import type { Mount } from "./simulador3d/model";
+import { detectarFalloAutomatico, estadoLed, type FalloAutomatico } from "@/data/componentSpecs";
 import { BB_COLUMNS, BB_H, BB_HOLE, BB_HOLES, BB_LABEL_X, BB_LETTERS, BB_NUMBER_Y, BB_PITCH, BB_RAIL_LINES, BB_W, PLAYGROUND_PIN_POSITIONS, bbX, bbY, holeName, stripBox } from "./breadboard";
 import { PartPicture } from "./part-picture";
 import { BOARDS, specOfBoard, terminalPins, type BoardDesign } from "./simulador/boards";
@@ -77,6 +78,16 @@ type GroupName = "Montaje" | "Pasivos y controles" | "Sensores y actuadores" | "
 // `half` is how far the part reaches from its centre, which keeps it inside the canvas.
 type ComponentSpec = { name: string; prefix: string; unit: string; value: number; group: GroupName; terminals: TerminalSpec[]; half?: [number, number] };
 type Result = ReturnType<DCSolver["simulate"]>;
+const FALLA_NOMBRE: Record<FalloAutomatico, string> = {
+  "led-burnt": "LED quemado",
+  "resistor-open": "resistor abierto",
+  "potentiometer-open": "cursor del potenciómetro abierto",
+  "inductor-saturated": "inductor saturado",
+  "diode-short": "diodo en corto",
+  "active-buzzer-silent": "buzzer sin sonido",
+  "transistor-short": "transistor en corto C–E",
+  "dc-motor-stalled": "motor bloqueado",
+};
 
 // Boards are schematic blocks, not to scale: their pins sit on rows along the long edges (UNO) or in columns down the sides (ESP32),
 // spaced to fit each terminal's hit area.
@@ -316,12 +327,16 @@ function netlist(parts: Part[], wires: Wire[], directContacts: DirectContact[]) 
   return [...nets.values()].flatMap(net => net.slice(1).map((to, index) => ({ from: net[index], to })));
 }
 
-function createComponent(part: Part) {
+function createComponent(part: Part, failure?: FalloAutomatico) {
   const value = setValue(part, part.value);
   switch (part.kind) {
     case "breadboard": return new Breadboard(part.id);
     case "battery": return new DCVoltageSource(part.id, value);
-    case "resistor": return new Resistor(part.id, value);
+    case "resistor": {
+      const resistor = new Resistor(part.id, value);
+      if (failure === "resistor-open") resistor.setResistance(1e12);
+      return resistor;
+    }
     case "led": return new LED(part.id, "red", value, 0.02);
     case "diode": return new Diode(part.id, value);
     case "capacitor": return new Capacitor(part.id, value, 25);
@@ -332,7 +347,11 @@ function createComponent(part: Part) {
       if (part.on) button.press();
       return button;
     }
-    case "potentiometer": return new Potentiometer(part.id, value, part.position ?? 0.5);
+    case "potentiometer": {
+      const potentiometer = new Potentiometer(part.id, value, part.position ?? 0.5);
+      potentiometer.wiperOpen = failure === "potentiometer-open";
+      return potentiometer;
+    }
     case "ldr": return new LDR(part.id, 10_000, 10, 0.7, value);
     case "ultrasonic": return new UltrasonicSensor(part.id, 2, 400, value);
     case "dc-motor": return new DCMotor(part.id, value, 0.1, 3000, 1.2);
@@ -344,7 +363,22 @@ function createComponent(part: Part) {
   }
 }
 
-function ComponentArt({ part, lit, active }: { part: Part; lit: boolean; active: boolean }) {
+function solveCircuit(parts: Part[], wires: Wire[], failures: Record<string, FalloAutomatico> = {}): Result {
+  const circuit = new Circuit("playground", "Mi circuito");
+  for (const part of parts) {
+    if (part.kind === "breadboard" || isBoard(part.kind) || part.kind === "microchip") continue;
+    circuit.addComponent(createComponent(part, failures[part.id]));
+  }
+  netlist(parts, wires, contactsOnBoard(parts)).forEach((link, index) => circuit.addConnection(new Connection(`N${index + 1}`, link.from, link.to)));
+  let faultIndex = 1;
+  for (const [componentId, failure] of Object.entries(failures)) {
+    const ends = failure === "diode-short" ? ["A", "K"] : failure === "transistor-short" ? ["C", "E"] : null;
+    if (ends) circuit.addConnection(new Connection(`F${faultIndex++}`, { componentId, terminalId: ends[0] }, { componentId, terminalId: ends[1] }));
+  }
+  return new DCSolver().simulate(circuit);
+}
+
+function ComponentArt({ part, lit, burnt, active }: { part: Part; lit: boolean; burnt: boolean; active: boolean }) {
   const commonLabel = <>
     <text className="part-name" x="0" y="58">{specs[part.kind].name}</text>
     {specs[part.kind].unit && <text className="part-value" x="0" y="73">{part.value}{specs[part.kind].unit}</text>}
@@ -359,8 +393,8 @@ function ComponentArt({ part, lit, active }: { part: Part; lit: boolean; active:
       <path className="resistor-mark" d="M-24 0h10l8-8 12 16 10-16 8 8h10" />{commonLabel}
     </>;
     case "led": return <>
-      <circle className={`part-body led-body${lit ? " led-on" : ""}`} r="29" />
-      <path className="led-mark" d="M-11 -13v26l20-13zM12 -15v30M1 -23l7-8m2 16 9-8" />{commonLabel}
+      <circle className={`part-body led-body${lit ? " led-on" : ""}${burnt ? " led-burnt" : ""}`} r="29" />
+      <path className={`led-mark${burnt ? " led-mark-burnt" : ""}`} d="M-11 -13v26l20-13zM12 -15v30M1 -23l7-8m2 16 9-8" />{commonLabel}
     </>;
     case "diode": return <>
       <rect className="part-body" x="-39" y="-25" width="78" height="50" rx="10" />
@@ -510,7 +544,7 @@ export default function Playground() {
   const [message, setMessage] = useState("Arrastra componentes al área de trabajo. Acerca sus patas a los agujeros de la protoboard para conectarlas sin cable.");
   const [dragging, setDragging] = useState<string | null>(null);
   const [view, setView] = useState<"2d" | "3d">("2d");
-  const [mount, setMount] = useState<Mount>("board");
+  const mount: Mount = "loose";
   const [importing, setImporting] = useState(false);
   const [ghost, setGhost] = useState<{ kind: Kind; x: number; y: number; over: boolean } | null>(null);
   const svgRef = useRef<SVGSVGElement>(null);
@@ -530,23 +564,30 @@ export default function Playground() {
   const locate3d = useRef<Locate | null>(null);
   const selected = selectedIds.length === 1 ? parts.find(part => part.id === selectedIds[0]) ?? null : null;
   const selectedResult = selected ? result?.components.find(component => component.componentId === selected.id) : undefined;
-  const ledLit = Boolean(result?.success && result.components.some(component => component.type === "led" && component.current > 0.002));
+  const selectedFailure = selected ? result?.automaticFailures?.[selected.id] as FalloAutomatico | undefined : undefined;
+  const ledStates = useMemo(() => new Map(parts.filter(part => part.kind === "led").map(part => {
+    if (result?.automaticFailures?.[part.id] === "led-burnt") return [part.id, "quemado"] as const;
+    const measurement = result?.success ? result.components.find(component => component.componentId === part.id) : undefined;
+    return [part.id, measurement ? estadoLed(part, measurement) : "apagado"] as const;
+  })), [parts, result]);
+  const ledLit = [...ledStates.values()].some(state => state === "encendido");
   const directContacts = useMemo(() => contactsOnBoard(parts), [parts]);
   const placed = useMemo<Placed[]>(() => parts.flatMap(part => {
     if (isBoard(part.kind)) return [{ spec: { ...specOfBoard(BOARDS[part.kind]), id: part.id }, x: part.x, y: part.y, glow: false } as Placed];
     try {
       const component = createComponent(part);
-      const current = result?.components.find(item => item.componentId === part.id)?.current ?? 0;
+      const ledState = ledStates.get(part.id);
       return [{
         spec: { type: component.type, id: component.id, className: component.name, terminals: component.terminals.map(item => ({ id: item.id, text: item.name })), properties: component.getProperties() },
         x: part.x,
         y: part.y,
-        glow: Boolean(result?.success) && part.kind === "led" && current > 0.002,
+        glow: ledState === "encendido",
+        burnt: ledState === "quemado",
       }];
     } catch {
       return [];
     }
-  }), [parts, result]);
+  }), [parts, ledStates]);
   const jumpers = useMemo<Jumper[]>(() => wires.map(wire => ({ ...wire, live: ledLit })), [wires, ledLit]);
 
   function addPart(kind: Kind, at?: [number, number]) {
@@ -654,14 +695,44 @@ export default function Playground() {
   }
 
   function simulate() {
-    const circuit = new Circuit("playground", "Mi circuito");
     try {
-      for (const part of parts) if (part.kind !== "breadboard" && !isBoard(part.kind) && part.kind !== "microchip") circuit.addComponent(createComponent(part));
-      netlist(parts, wires, directContacts).forEach((link, index) => circuit.addConnection(new Connection(`N${index + 1}`, link.from, link.to)));
-      const nextResult = new DCSolver().simulate(circuit);
+      const healthy = solveCircuit(parts, wires);
+      if (!healthy.success) {
+        setResult(healthy);
+        setMessage(healthy.errors[0] ?? "No se pudo resolver el circuito.");
+        return;
+      }
+      const failures: Record<string, FalloAutomatico> = {};
+      for (const measurement of healthy.components) {
+        const part = parts.find(item => item.id === measurement.componentId);
+        if (!part) continue;
+        if (part.kind === "led" && estadoLed(part, measurement) === "quemado") failures[part.id] = "led-burnt";
+        else {
+          const failure = detectarFalloAutomatico(part, measurement);
+          if (failure) failures[part.id] = failure;
+        }
+      }
+      const needsResimulation = Object.values(failures).some(failure => ["resistor-open", "potentiometer-open", "diode-short", "transistor-short"].includes(failure));
+      const solved = needsResimulation ? solveCircuit(parts, wires, failures) : healthy;
+      const nextResult: Result = {
+        ...solved,
+        automaticFailures: failures,
+        components: solved.components.map(component => {
+          const failure = failures[component.componentId];
+          if (failure === "active-buzzer-silent") return { ...component, measurements: { ...component.measurements, active: false } };
+          if (failure === "dc-motor-stalled") return { ...component, measurements: { ...component.measurements, stalled: true, rpm: 0 } };
+          if (failure === "inductor-saturated") return { ...component, measurements: { ...component.measurements, saturated: true } };
+          return component;
+        }),
+      };
       setResult(nextResult);
-      if (!nextResult.success) {
-        setMessage(nextResult.errors[0] ?? "No se pudo resolver el circuito.");
+      const failureSummary = Object.entries(failures).map(([id, failure]) => `${id}: ${FALLA_NOMBRE[failure]}`).join("; ");
+      if (!solved.success) {
+        setMessage(failureSummary ? `Fallas detectadas: ${failureSummary}. ${solved.errors[0] ?? "El circuito falló al aplicar el estado."}` : solved.errors[0] ?? "No se pudo resolver el circuito.");
+        return;
+      }
+      if (failureSummary) {
+        setMessage(`Fallas detectadas: ${failureSummary}.`);
         return;
       }
       const led = nextResult.components.find(component => component.type === "led");
@@ -943,7 +1014,7 @@ export default function Playground() {
     }} tabIndex={0} role="group" aria-label={`${specs[part.kind].name} ${part.id}${isSelected ? ", seleccionado" : ""}. Pulsa Enter para seleccionar y usa flechas para mover`}>
       {part.kind === "breadboard"
         ? <BreadboardArt wired={wiredHoles} pending={pendingTerminal?.componentId === part.id ? pendingTerminal.terminalId : null} />
-        : <ComponentArt part={part} lit={part.kind === "led" && ledLit} active={active} />}
+        : <ComponentArt part={part} lit={ledStates.get(part.id) === "encendido"} burnt={ledStates.get(part.id) === "quemado"} active={active} />}
       {specs[part.kind].terminals.map(item => <line key={`lead-${item.id}`} className="component-lead" x1={item.ax} y1={item.ay} x2={item.x} y2={item.y} />)}
       {specs[part.kind].terminals.map(item => {
         const pending = pendingTerminal?.componentId === part.id && pendingTerminal.terminalId === item.id;
@@ -998,9 +1069,6 @@ export default function Playground() {
             }} title="Mayús + clic para seleccionar varios objetos. Retroceso o Supr para eliminar.">
               Eliminar{selectedIds.length > 0 ? ` (${selectedIds.length})` : ""}
             </button>
-            {view === "3d" && <div className="view-toggle" role="group" aria-label="Montaje de los componentes">
-              {([["board", "En placa"], ["loose", "Sueltos"]] as const).map(([option, text]) => <button key={option} aria-pressed={mount === option} onClick={() => setMount(option)}>{text}</button>)}
-            </div>}
             <div className="view-toggle" role="group" aria-label="Vista del área de trabajo">
               {(["2d", "3d"] as const).map(option => <button key={option} aria-pressed={view === option} onClick={() => setView(option)}>{option.toUpperCase()}</button>)}
             </div>
@@ -1075,7 +1143,8 @@ export default function Playground() {
               {selected.kind === "potentiometer" && <label>Posición <input className="position-slider" type="range" min="0" max="1" step="0.01" value={selected.position ?? 0.5} onChange={event => changePart(selected.id, { position: Number(event.target.value) })} aria-label="Posición del potenciómetro" /><span>{Math.round((selected.position ?? 0.5) * 100)}%</span></label>}
               {selected.kind === "transistor" && <label>Tipo <select value={selected.polarity ?? "NPN"} onChange={event => changePart(selected.id, { polarity: event.target.value as "NPN" | "PNP" })}><option value="NPN">NPN</option><option value="PNP">PNP</option></select></label>}
             </div>}
-            {selectedResult && <div className="readout"><span className={`readout-led${ledLit ? " readout-on" : ""}`} />{selectedResult.voltage.toFixed(2)} V&nbsp; · &nbsp;{(selectedResult.current * 1000).toFixed(1)} mA{typeof selectedResult.measurements?.rpm === "number" ? ` · ${selectedResult.measurements.rpm.toFixed(0)} RPM` : ""}{selectedResult.measurements?.active ? " · Activo" : ""}{selectedResult.measurements?.triggered ? ` · Eco ${Number(selectedResult.measurements.echoPulseWidthMicroseconds).toFixed(0)} µs` : ""}</div>}
+            {selectedFailure && <p className="failure-readout">Fallo automático: {FALLA_NOMBRE[selectedFailure]}</p>}
+            {selectedResult && <div className="readout"><span className={`readout-led${ledStates.get(selected?.id ?? "") === "encendido" ? " readout-on" : ""}`} />{selectedResult.voltage.toFixed(2)} V&nbsp; · &nbsp;{(selectedResult.current * 1000).toFixed(1)} mA{typeof selectedResult.measurements?.rpm === "number" ? ` · ${selectedResult.measurements.rpm.toFixed(0)} RPM` : ""}{selectedResult.measurements?.active ? " · Activo" : ""}{selectedResult.measurements?.triggered ? ` · Eco ${Number(selectedResult.measurements.echoPulseWidthMicroseconds).toFixed(0)} µs` : ""}</div>}
           </div>
         </div>
       </section>

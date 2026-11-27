@@ -51,9 +51,7 @@ export function createComponent(part: Pieza, { seguro = false } = {}) {
     case "led": return new LED(part.id, "red", value, 0.02);
     case "diode": return new Diode(part.id, value);
     case "capacitor": return new Capacitor(part.id, value, 25);
-    // DCSolver accepts an ideal (0 Ω) inductor in its first pass but rejects it in the second with
-    // "Unsupported component", so a 1 mΩ winding resistance stands in for the ideal one.
-    case "inductor": return new Inductor(part.id, value, 1e-3, 1);
+    case "inductor": return new Inductor(part.id, value, 0, 1);
     case "switch": return new Switch(part.id, part.on ?? false);
     case "push-button": {
       const button = new PushButton(part.id, "NO");

@@ -140,8 +140,15 @@ export class DCSolver {
                 nonlinear.push({ componentId: `${component.id}:BE`, positive: nodeOf(component.polarity === "NPN" ? base : emitter), negative: nodeOf(component.polarity === "NPN" ? emitter : base), threshold: component.nominalBaseEmitterVoltage, kind: "transistor" });
             } else if (component instanceof UltrasonicSensor) {
                 sensors.push(component);
-            } else if (component instanceof Capacitor || component instanceof Switch || component instanceof PushButton || component instanceof Breadboard || component instanceof Microchip) {
-                // Capacitors are open circuits in steady-state DC; switches are handled as ideal shorts above.
+            } else if (
+                component instanceof Capacitor ||
+                component instanceof Switch ||
+                component instanceof PushButton ||
+                component instanceof Breadboard ||
+                component instanceof Microchip ||
+                (component instanceof Inductor && component.seriesResistanceOhms === 0)
+            ) {
+                // Capacitors are open circuits in DC; switches and ideal inductors are handled as shorts above.
             } else if (component.type !== "dc-voltage-source") {
                 throw new Error(`Unsupported component: ${component.id} (${component.type})`);
             }

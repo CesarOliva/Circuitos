@@ -14,6 +14,7 @@ import { Transistor } from "../components/semiconductors/Transistor.ts";
 import { DCMotor } from "../components/actuators/DCMotor.ts";
 import { ActiveBuzzer } from "../components/actuators/ActiveBuzzer.ts";
 import { Breadboard } from "../components/passive/Breadboard.ts";
+import { Microchip } from "../components/semiconductors/Microchip.ts";
 import { solveNetwork, type ConductanceBranch, type VoltageConstraint } from "./MnaSolver.ts";
 import type { SimulationResult, ComponentResult } from "./SimulationResult.ts";
 
@@ -139,7 +140,7 @@ export class DCSolver {
                 nonlinear.push({ componentId: `${component.id}:BE`, positive: nodeOf(component.polarity === "NPN" ? base : emitter), negative: nodeOf(component.polarity === "NPN" ? emitter : base), threshold: component.nominalBaseEmitterVoltage, kind: "transistor" });
             } else if (component instanceof UltrasonicSensor) {
                 sensors.push(component);
-            } else if (component instanceof Capacitor || component instanceof Switch || component instanceof PushButton || component instanceof Breadboard) {
+            } else if (component instanceof Capacitor || component instanceof Switch || component instanceof PushButton || component instanceof Breadboard || component instanceof Microchip) {
                 // Capacitors are open circuits in steady-state DC; switches are handled as ideal shorts above.
             } else if (component.type !== "dc-voltage-source") {
                 throw new Error(`Unsupported component: ${component.id} (${component.type})`);

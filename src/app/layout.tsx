@@ -4,6 +4,7 @@ import Script from "next/script";
 import "./globals.css";
 import "@/components/site/site.css";
 import { SiteHeader } from "@/components/site/site-header";
+import { SpotlightTracker } from "@/components/site/spotlight-tracker";
 
 export const metadata: Metadata = {
   title: {
@@ -36,6 +37,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           dangerouslySetInnerHTML={{ __html: THEME_INIT }}
         />
         <SiteHeader />
+        <SpotlightTracker />
         {children}
       </body>
     </html>

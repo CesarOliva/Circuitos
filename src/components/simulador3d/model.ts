@@ -2,8 +2,6 @@ import * as THREE from "three";
 import type { Spec } from "@/components/simulador/catalog";
 import {
   BAND_COLOURS,
-  BLOCK_D,
-  BLOCK_Y,
   BOARD,
   BOARD_T,
   CY,
@@ -13,9 +11,10 @@ import {
   STEP_Z,
   TOWER_D,
   TOWER_Z,
+  blocksOf,
   cellX,
   colourCode,
-  traces,
+  routesOf,
   type Plan,
   type Plane,
 } from "@/components/simulador/layout";
@@ -119,6 +118,7 @@ export function buildModel(spec: ModelSpec, palette: Palette, mount: Mount = "bo
   const board = BOARDS[spec.type];
   const layout = board ? { footprint: board.pcb, pads: terminalPins(board).map((pin): Plane => [pin.x, pin.y]) } : LAYOUT[spec.type];
   if (!layout) throw new Error(`No model for component type "${spec.type}"`);
+  const pitch = LAYOUT[spec.type]?.pitch ?? PITCH;
   const loose = mount === "loose";
   const M = materials(palette);
   const METAL = new Set<THREE.Material>([M.steel, M.darkSteel, M.brass, M.copper, M.solder]);
@@ -370,7 +370,7 @@ export function buildModel(spec: ModelSpec, palette: Palette, mount: Mount = "bo
     outlineOn(layout.footprint, 0.02);
     label(spec.id, layout.footprint.x + 1, layout.footprint.y - 2.4, 0, 3.2, "start");
 
-    (board ? [] : traces(layout.pads, ids.length)).forEach((route, index) =>
+    (board ? [] : routesOf(layout, ids.length)).forEach(({ index, route }) =>
       within(ids[index], () => {
         for (let step = 1; step < route.length; step++) strip(route[step - 1], route[step], 1.1, 0, 0.08, M.copper);
         const [x, y] = layout.pads[index];
@@ -672,6 +672,18 @@ export function buildModel(spec: ModelSpec, palette: Palette, mount: Mount = "bo
       });
       break;
     }
+    case "microchip": {
+      // A black package on the board: pins 1–4 leave its back edge, pins 8–5 its front edge, each down to its pad.
+      const body = layout.footprint;
+      slab(body, 0, 7, M.black, 0.6);
+      slab({ x: body.x + 2, y: body.y + 2, w: body.w - 4, d: body.d - 4, r: 1.6 }, 7, 0.5, M.plastic, 0.2);
+      cylinder(body.x + 6, body.y + 3, 1, 7.5, 0.06, M.hole, 16, false);
+      layout.pads.forEach(([x, y], index) => {
+        const edge = y < 0 ? body.y : body.y + body.d;
+        pin(index, [[x, edge, 3.5], [x, y, 3.5], [x, y, 0]], M.steel, 0.42, 1.2);
+      });
+      break;
+    }
     default: {
       if (!board) throw new Error(`No model for component type "${spec.type}"`);
       slab(board.pcb, 0, PCB_T, M.pcb, 0.3);
@@ -721,30 +733,33 @@ export function buildModel(spec: ModelSpec, palette: Palette, mount: Mount = "bo
   // The terminal block ----------------------------------------------------------------
 
   if (!loose && !board) {
-    const count = ids.length;
-    const plan: Plan = { x: -(count * PITCH) / 2, y: BLOCK_Y, w: count * PITCH, d: BLOCK_D, r: 1 };
-    slab(plan, 0, STEP_Z, M.plastic, 0.4);
-    slab({ ...plan, d: TOWER_D }, STEP_Z, TOWER_Z - STEP_Z, M.plastic, 0.4);
-    const front = BLOCK_Y + BLOCK_D;
-    ids.forEach((id, index) =>
-      within(id, () => {
-        const cx = cellX(index, count);
-        const sy = BLOCK_Y + TOWER_D / 2;
-        const area = new THREE.BoxGeometry(PITCH, BLOCK_D, TOWER_Z);
-        area.translate(cx, BLOCK_Y + BLOCK_D / 2, TOWER_Z / 2);
-        add(area, M.hit, { edges: false });
-        cylinder(cx, sy, 3.6, TOWER_Z, 0.05, M.hole, 32, false);
-        cylinder(cx, sy, 2.7, TOWER_Z, 0.7, M.steel, 32);
-        const slot = Math.PI / 4;
-        strip([cx - 2.2 * Math.cos(slot), sy - 2.2 * Math.sin(slot)], [cx + 2.2 * Math.cos(slot), sy + 2.2 * Math.sin(slot)], 0.5, TOWER_Z + 0.7, 0.05, M.hole);
-        const opening = new THREE.BoxGeometry(6.8, 0.6, 4);
-        opening.translate(cx, front - 0.27, 3.4);
-        add(opening, M.hole, { edges: false });
-        label(id, cx, BLOCK_Y + TOWER_D + 3.6, STEP_Z, id.length > 2 ? 2.6 : 3.6);
-        // A jumper goes into the cell's opening.
-        ends.set(id, new THREE.Vector3(cx, front - 1.5, 3.4));
-      }),
-    );
+    for (const block of blocksOf(layout, ids.length)) {
+      const count = block.cells.length;
+      const plan: Plan = { x: -(count * pitch) / 2, y: block.y, w: count * pitch, d: block.depth, r: 1 };
+      slab(plan, 0, STEP_Z, M.plastic, 0.4);
+      slab({ ...plan, d: TOWER_D }, STEP_Z, TOWER_Z - STEP_Z, M.plastic, 0.4);
+      const front = block.y + block.depth;
+      block.cells.forEach((index, slot) => {
+        const id = ids[index];
+        within(id, () => {
+          const cx = cellX(slot, count, pitch);
+          const sy = block.y + TOWER_D / 2;
+          const area = new THREE.BoxGeometry(pitch, block.depth, TOWER_Z);
+          area.translate(cx, block.y + block.depth / 2, TOWER_Z / 2);
+          add(area, M.hit, { edges: false });
+          cylinder(cx, sy, 3.6, TOWER_Z, 0.05, M.hole, 32, false);
+          cylinder(cx, sy, 2.7, TOWER_Z, 0.7, M.steel, 32);
+          const screw = Math.PI / 4;
+          strip([cx - 2.2 * Math.cos(screw), sy - 2.2 * Math.sin(screw)], [cx + 2.2 * Math.cos(screw), sy + 2.2 * Math.sin(screw)], 0.5, TOWER_Z + 0.7, 0.05, M.hole);
+          const opening = new THREE.BoxGeometry(6.8, 0.6, 4);
+          opening.translate(cx, front - 0.27, 3.4);
+          add(opening, M.hole, { edges: false });
+          label(id, cx, block.y + TOWER_D + 3.6, STEP_Z, id.length > 2 ? 2.6 : 3.6);
+          // A jumper goes into the cell's opening.
+          ends.set(id, new THREE.Vector3(cx, front - 1.5, 3.4));
+        });
+      });
+    }
   }
 
   // Everything solid, without the invisible pointer targets; the shadow catcher goes under it.

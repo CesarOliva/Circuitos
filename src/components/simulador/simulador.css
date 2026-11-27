@@ -75,6 +75,12 @@
   box-shadow: none;
 }
 
+/* On light pages the current view is a soft grey pill, not a black one. */
+[data-theme="light"] .sim-nav [aria-current="page"] {
+  background: var(--anatomy-lo);
+  color: var(--anatomy-strong);
+}
+
 .sim-nav a:hover {
   box-shadow: 0 0 0 1px var(--anatomy-mid);
   color: var(--anatomy-strong);
@@ -449,4 +455,27 @@
   [data-terminal] .iso-edge {
     transition: none;
   }
+}
+
+/* Halo azul tenue que sigue al cursor sobre cada placa; SpotlightTracker escribe --mx/--my (ver site.css). */
+.sim-gallery .iso-plate {
+  transition: box-shadow 0.18s ease;
+}
+
+.sim-gallery .iso-plate::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(260px circle at var(--mx, 50%) var(--my, 50%), rgb(31 143 255 / 16%), transparent 70%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+
+.sim-gallery .iso-plate:hover {
+  box-shadow: 0 0 0 1px var(--accent), 0 16px 36px rgb(0 0 0 / 22%), 0 0 30px rgb(31 143 255 / 10%);
+}
+
+.sim-gallery .iso-plate:hover::before {
+  opacity: 1;
 }

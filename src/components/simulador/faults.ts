@@ -70,6 +70,7 @@ export const TOP: Record<string, Point> = {
   "transistor-bjt": [0, -13.2, 14],
   ldr: [0, CY, 6],
   ultrasonic: [11, -19.5, 15.5],
+  microchip: [0, -13, 7.5],
 };
 
 // A jagged crack across the top face.

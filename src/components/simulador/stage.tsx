@@ -2,7 +2,7 @@ import * as React from "react";
 import * as k from "@/components/iso/iso-kit";
 import { Dots, FaceText, Line, Solid } from "@/components/iso/react/draw";
 import type { Flat, Plan, Plane, Point3, SolidPaths, LineTone, Tone } from "@/components/iso/iso-kit";
-import { BLOCK_D, BLOCK_Y, BOARD, BOARD_T, PITCH, STANDOFF_H, STEP_Z, TOWER_D, TOWER_Z, cellX } from "./layout";
+import { BLOCK_D, BLOCK_Y, BOARD, BOARD_T, PITCH, STANDOFF_H, STEP_Z, TOWER_D, TOWER_Z, blockOf, cellX, type Block } from "./layout";
 
 export { traces } from "./layout";
 
@@ -141,35 +141,37 @@ export function padAndTrace(art: Art, pad: Plane, route: Plane[]) {
   art.dots([at([pad[0], pad[1], 0])], { size: 0.9, tone: "hi" });
 }
 
-// The screw terminal block: one cell per terminal of the component, its id engraved on the step.
-export function terminalBlock(art: Art, ids: string[], cell: (index: number, build: (art: Art) => void) => void) {
-  const count = ids.length;
-  const plan: Plan = { x: -(count * PITCH) / 2, y: BLOCK_Y, w: count * PITCH, d: BLOCK_D, r: 1 };
+// The screw terminal block: one cell per terminal of the block, its id engraved on the step.
+export function terminalBlock(art: Art, ids: string[], cell: (index: number, build: (art: Art) => void) => void, pitch = PITCH, block: Block = blockOf(ids.length)) {
+  const count = block.cells.length;
+  const y = block.y;
+  const plan: Plan = { x: -(count * pitch) / 2, y, w: count * pitch, d: block.depth, r: 1 };
   const tower: Plan = { ...plan, d: TOWER_D };
   art.path(k.haloOf(plan, 0, 1, P), "iso-halo");
   art.solid(k.slabOf(plan, 0, STEP_Z, P, 3, 0.5), { tone: "mid" });
   art.solid(k.slabOf(tower, STEP_Z, TOWER_Z - STEP_Z, P, 3, 0.5), { tone: "mid" });
-  const front = BLOCK_Y + BLOCK_D;
-  for (let index = 1; index < count; index++) {
-    const x = plan.x + index * PITCH;
+  const front = y + block.depth;
+  for (let slot = 1; slot < count; slot++) {
+    const x = plan.x + slot * pitch;
     art.line(
-      k.pathOf([at([x, BLOCK_Y, TOWER_Z]), at([x, BLOCK_Y + TOWER_D, TOWER_Z]), at([x, BLOCK_Y + TOWER_D, STEP_Z]), at([x, front, STEP_Z]), at([x, front, 0])]),
+      k.pathOf([at([x, y, TOWER_Z]), at([x, y + TOWER_D, TOWER_Z]), at([x, y + TOWER_D, STEP_Z]), at([x, front, STEP_Z]), at([x, front, 0])]),
       { tone: "lo" },
     );
   }
-  ids.forEach((id, index) => {
-    const cx = cellX(index, count);
+  block.cells.forEach((index, slot) => {
+    const id = ids[index];
+    const cx = cellX(slot, count, pitch);
     cell(index, (art) => {
-      art.path(boxHull({ x: cx - PITCH / 2, y: BLOCK_Y, w: PITCH, d: BLOCK_D, r: 0 }, 0, TOWER_Z), "sim-hit-area");
-      const sy = BLOCK_Y + TOWER_D / 2;
+      art.path(boxHull({ x: cx - pitch / 2, y, w: pitch, d: block.depth, r: 0 }, 0, TOWER_Z), "sim-hit-area");
+      const sy = y + TOWER_D / 2;
       art.line(k.ring(cx, sy, 3.6, TOWER_Z, P, 24), { tone: "lo" });
       art.solid(k.cylinder(cx, sy, 2.7, TOWER_Z, 0.7, P, 24), { tone: "hi", crease: "lo" });
-      const slot = Math.PI / 4;
-      art.line(k.lineOnTop([cx - 2.7 * Math.cos(slot), sy - 2.7 * Math.sin(slot)], [cx + 2.7 * Math.cos(slot), sy + 2.7 * Math.sin(slot)], TOWER_Z + 0.7, P), { tone: "mid" });
+      const screw = Math.PI / 4;
+      art.line(k.lineOnTop([cx - 2.7 * Math.cos(screw), sy - 2.7 * Math.sin(screw)], [cx + 2.7 * Math.cos(screw), sy + 2.7 * Math.sin(screw)], TOWER_Z + 0.7, P), { tone: "mid" });
       const hole = [at([cx - 3.4, front, 1.4]), at([cx + 3.4, front, 1.4]), at([cx + 3.4, front, 5.4]), at([cx - 3.4, front, 5.4])];
       art.path(k.pathOf(hole, true), "sim-hole");
       art.line(k.pathOf(hole, true), { tone: "mid" });
-      art.text(k.topMatrix([cx, BLOCK_Y + TOWER_D + 4.6], STEP_Z, P, "x"), id, { size: id.length > 2 ? 3.2 : 4.6, tone: "hi", anchor: "middle" });
+      art.text(k.topMatrix([cx, y + TOWER_D + 4.6], STEP_Z, P, "x"), id, { size: id.length > 2 ? 3.2 : 4.6, tone: "hi", anchor: "middle" });
     });
   });
 }

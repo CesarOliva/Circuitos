@@ -7,6 +7,12 @@ const SHINE = "rgb(255 255 255 / 45%)";
 const leg = (d: string, colour = STEEL, width = 1.6) => <path d={d} fill="none" stroke={colour} strokeWidth={width} strokeLinecap="round" strokeLinejoin="round" />;
 
 const PICTURES: Record<string, ReactNode> = {
+  microchip: <>
+    {[14, 20, 26, 32].map(x => <g key={x}>{leg(`M${x} 13V6`)}{leg(`M${x} 35v7`)}</g>)}
+    <rect x="10" y="13" width="28" height="22" rx="2.5" fill="#2b2b2f" />
+    <circle cx="14.5" cy="17" r="1.4" fill="#5b6370" />
+    <rect x="12" y="13.8" width="24" height="1.4" rx=".7" fill={SHINE} opacity=".5" />
+  </>,
   breadboard: <>
     <rect x="3" y="8" width="42" height="33" rx="2.5" fill="#e4e2da" />
     <rect x="3" y="23.6" width="42" height="1.8" fill="#c6c3ba" />

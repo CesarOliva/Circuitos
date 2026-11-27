@@ -74,6 +74,9 @@
 .control-on { fill: rgb(31 143 255 / 16%); stroke: var(--accent); }
 .control-mark { stroke: #8fb3e8; stroke-width: 2.5; }
 .contact-dot { fill: #7aa7ff; }
+/* The generic chip: an epoxy body with bright legs, readable on both pages. */
+.chip-body { fill: #161c29; stroke: #3b4b68; }
+.chip-leg { stroke: #9aaccb; stroke-width: 2.4; stroke-linecap: round; }
 .pot-marker { fill: var(--accent-bright); stroke: #0a0e17; stroke-width: 1.5; }
 .ldr-body { fill: #19170e; stroke: #8f7c3f; }
 .ldr-mark,.ldr-rays { stroke: #e0c25e; }
@@ -140,6 +143,7 @@
 .part-tile { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; width: 100%; min-height: 82px; padding: 6px 4px 7px; border: 1px solid #222e44; border-radius: 11px; background: radial-gradient(circle at 50% 35%, #1b2539, #0f1520 75%); color: #c5d2e8; font: inherit; cursor: grab; touch-action: pan-x; user-select: none; transition: border-color .15s ease, transform .15s ease, box-shadow .15s ease; }
 .part-tile:hover { border-color: var(--accent); transform: translateY(-2px); box-shadow: 0 0 0 1px rgb(31 143 255 / 30%), 0 8px 22px rgb(31 143 255 / 22%); }
 .part-tile:active { cursor: grabbing; }
+.part-tile.spotlight { --spot: 110px; }
 .part-picture { display: block; flex: none; width: 44px; height: 44px; pointer-events: none; }
 /* A thin cold rim, so the dark parts don't sink into the dark tiles. */
 .part-tile .part-picture,.drag-ghost .part-picture { filter: drop-shadow(0 0 .8px rgb(170 205 255 / 60%)); }
@@ -229,6 +233,24 @@ button:focus-visible,input:focus-visible { outline: 3px solid var(--accent-brigh
 [data-theme="light"] .play-footer kbd { border-color: var(--line-strong); color: #0a5cb8; }
 [data-theme="light"] .drag-ghost { background: rgb(255 255 255 / 94%); box-shadow: 0 12px 28px rgb(13 38 76 / 25%); }
 [data-theme="light"] ::selection { background: rgb(31 143 255 / 30%); color: #0c1527; }
+/* Light page: the canvas, tray tiles and parts are white and grey. Lit or running parts keep their own colours. */
+[data-theme="light"] .canvas-wrap { background: radial-gradient(ellipse 80% 70% at 50% 0%, rgb(31 143 255 / 7%), transparent 70%), #f5f7fb; }
+[data-theme="light"] .part-tile { background: radial-gradient(circle at 50% 35%, #ffffff, #eef2f8 75%); border-color: #cfd9ea; color: #1c2a44; }
+[data-theme="light"] .part-body:not(.chip-body):not(.led-on):not(.motor-active):not(.buzzer-active):not(.control-on) { fill: #ffffff; stroke: #8195b5; }
+[data-theme="light"] .chip-body { fill: #e4e9f2; stroke: #8195b5; }
+[data-theme="light"] .chip-leg { stroke: #5b6f92; }
+[data-theme="light"] .part-name { fill: #1c2a44; }
+[data-theme="light"] .terminal-dot { fill: #ffffff; stroke: #6d85ad; }
+[data-theme="light"] .dot-grid-dot { fill: #c3cde0; }
+[data-theme="light"] .empty-canvas circle { fill: #ffffff; stroke: #cfd9ea; }
+[data-theme="light"] .battery-mark,
+[data-theme="light"] .resistor-mark,
+[data-theme="light"] .diode-mark,
+[data-theme="light"] .capacitor-mark,
+[data-theme="light"] .inductor-mark,
+[data-theme="light"] .control-mark,
+[data-theme="light"] .motor-mark,
+[data-theme="light"] .transistor-mark { stroke: #34445f; }
 
 @media (prefers-reduced-motion: reduce) {
   *,*::before,*::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; }

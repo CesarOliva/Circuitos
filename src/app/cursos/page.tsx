@@ -14,7 +14,7 @@ export default async function CursosPage() {
   const courses = await content.listCourses();
 
   return (
-    <main className="edu">
+    <main className="edu edu-courses">
       <p className="edu-eyebrow">Aprende por asignatura</p>
       <h1>Cursos</h1>
       <p className="edu-lead">
@@ -23,7 +23,7 @@ export default async function CursosPage() {
       <ul className="course-grid">
         {courses.map((course, index) => (
           <li key={`${course.subjectSlug}/${course.slug}`} style={{ "--i": index } as CSSProperties }>
-            <Link className="course-card" href={`/cursos/${course.slug}`}>
+            <Link className="spotlight course-card" href={`/cursos/${course.slug}`}>
               <CourseArt kind={course.art} label={course.title} />
               <h3>{course.title}</h3>
               <p>{course.description}</p>

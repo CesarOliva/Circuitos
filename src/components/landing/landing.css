@@ -166,39 +166,6 @@ body:has(.intro-screen[data-state="playing"]) :is(.hero-copy > *, .hw > span) {
   outline-offset: 2px;
 }
 
-/* ---------- Cifras ---------- */
-
-.stats {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 14px;
-  padding: 10px 0 54px;
-}
-
-.stat {
-  display: grid;
-  gap: 4px;
-  padding: 18px 20px;
-  border: 1px solid var(--line);
-  border-radius: 14px;
-  background: var(--surface);
-  text-align: left;
-}
-
-.stat-number {
-  color: var(--accent-ink);
-  font-family: var(--mono);
-  font-size: var(--text-2xl);
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-}
-
-.stat-label {
-  color: var(--muted);
-  font-size: var(--text-sm);
-  line-height: 1.45;
-}
-
 /* ---------- Ventanas del sitio ---------- */
 
 .features {
@@ -487,22 +454,6 @@ body:has(.intro-screen[data-state="playing"]) :is(.hero-copy > *, .hw > span) {
   animation: grid-drift 26s linear infinite;
 }
 
-/* Halo que sigue al cursor sobre las tarjetas de ventanas. */
-.spotlight::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  background: radial-gradient(260px circle at var(--mx, 50%) var(--my, 50%), rgb(31 143 255 / 16%), transparent 70%);
-  opacity: 0;
-  transition: opacity 0.3s ease;
-  pointer-events: none;
-}
-
-.spotlight:hover::before {
-  opacity: 1;
-}
-
 /* Al pasar el cursor, el icono de cada ventana se vuelve a dibujar. */
 .feature-icon :is(path, rect) {
   stroke-dasharray: 1 1;
@@ -623,13 +574,6 @@ body:has(.intro-screen[data-state="playing"]) :is(.hero-copy > *, .hw > span) {
 
 /* ---------- Responsivo ---------- */
 
-@media (max-width: 980px) {
-  .stats {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-}
-
 @media (max-width: 900px) {
   .scroll-stage {
     height: auto;
@@ -663,21 +607,6 @@ body:has(.intro-screen[data-state="playing"]) :is(.hero-copy > *, .hw > span) {
   .fv { order: 2; width: 100%; height: 130px; }
   .feature-card p { order: 3; }
   .feature-go { order: 4; }
-}
-
-@media (max-width: 480px) {
-  .stats {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 10px;
-  }
-
-  .stat {
-    padding: 14px;
-  }
-
-  .stat-number {
-    font-size: var(--text-xl);
-  }
 }
 
 @media (prefers-reduced-motion: reduce) {

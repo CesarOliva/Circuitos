@@ -15,7 +15,7 @@ export default function CoordenadasPage() {
     <main className="iso sim-gallery">
       <header className="sim-header">
         <nav className="sim-nav" aria-label="Vistas">
-          <Link href="/componentes">Isométrico</Link>
+          <Link href="/componentes">2D</Link>
           <Link href="/componentes/3d">3D</Link>
           <span aria-current="page">Coordenadas</span>
         </nav>

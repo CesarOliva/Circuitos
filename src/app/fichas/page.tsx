@@ -19,9 +19,10 @@ export default function FichasPage() {
       <header className="sim-header">
         <div className="sim-navs">
           <nav className="sim-nav" aria-label="Secciones">
+            <Link href="/componentes">Componentes 2D</Link>
+            <Link href="/componentes/3d">Componentes 3D</Link>
+            <Link href="/componentes/fallos">Componentes en fallo</Link>
             <span aria-current="page">Fichas</span>
-            <Link href="/componentes">Galería</Link>
-            <Link href="/">Playground</Link>
           </nav>
         </div>
         <h1>Fichas técnicas</h1>

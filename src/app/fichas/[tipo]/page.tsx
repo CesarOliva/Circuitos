@@ -54,9 +54,10 @@ export default async function FichaPage({ params }: PageProps<"/fichas/[tipo]">)
       <header className="sim-header">
         <div className="sim-navs">
           <nav className="sim-nav" aria-label="Secciones">
-            <Link href="/fichas">Fichas</Link>
-            <Link href="/componentes">Galería</Link>
-            <Link href="/">Playground</Link>
+            <Link href="/componentes">Componentes 2D</Link>
+            <Link href="/componentes/3d">Componentes 3D</Link>
+            <Link href="/componentes/fallos">Componentes en fallo</Link>
+            <Link href="/fichas" aria-current="page">Fichas</Link>
           </nav>
         </div>
         <p className="ficha-ruta">
@@ -64,9 +65,6 @@ export default async function FichaPage({ params }: PageProps<"/fichas/[tipo]">)
         </p>
         <h1>{ficha.titulo}</h1>
         <p>{ficha.resumen}</p>
-        <p className="ficha-clase">
-          <code>{ficha.clase}</code> · <code>{ficha.archivo}</code>
-        </p>
       </header>
 
       <div className="ficha-cuerpo">
@@ -157,7 +155,7 @@ export default async function FichaPage({ params }: PageProps<"/fichas/[tipo]">)
           <section id="validacion">
             <h2>Validación de voltajes</h2>
             <p>
-              Límites definidos en <code>src/data/componentSpecs.ts</code>. El validador de abajo arma un circuito de prueba, lo resuelve con el
+              El validador de abajo arma un circuito de prueba, lo resuelve con el
               simulador y aplica estas reglas: cambia los valores para ver cuándo el componente sale de su rango seguro.
             </p>
             {esquema?.valor && (

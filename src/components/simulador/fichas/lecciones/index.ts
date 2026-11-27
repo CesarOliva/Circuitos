@@ -10,6 +10,7 @@ import { leccion as esp32 } from "./esp32-devkit-v1";
 import { leccion as inductor } from "./inductor";
 import { leccion as ldr } from "./ldr";
 import { leccion as led } from "./led";
+import { leccion as microchip } from "./microchip";
 import { leccion as potentiometer } from "./potentiometer";
 import { leccion as pushButton } from "./push-button";
 import { leccion as resistor } from "./resistor";
@@ -33,6 +34,7 @@ export const LECCIONES: Record<string, Leccion> = {
   "transistor-bjt": transistor,
   ldr,
   ultrasonic,
+  microchip,
   breadboard,
   "arduino-uno-r3": arduinoUno,
   "esp32-devkit-v1": esp32,

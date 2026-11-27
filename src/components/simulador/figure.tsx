@@ -1,6 +1,6 @@
 import { Plate } from "@/components/iso/react/draw";
-import { Art, HEIGHT, WIDTH, board, padAndTrace, polyline, silkscreen, terminalBlock, traces } from "./stage";
-import { LAYOUT, type Plane } from "./layout";
+import { Art, HEIGHT, WIDTH, board, padAndTrace, polyline, silkscreen, terminalBlock } from "./stage";
+import { LAYOUT, blocksOf, routesOf, type Plane } from "./layout";
 import { PIECES } from "./pieces";
 import { specOf, type Entry } from "./catalog";
 import { Caption, figureNumber } from "./caption";
@@ -38,7 +38,7 @@ export function ComponentFigure({ entry, index, fault }: { entry: Entry; index: 
   const term = (slot: number, build: (art: Art) => void) => art.group({ "data-terminal": ids[slot] }, build);
   board(art);
   silkscreen(art, layout.footprint, component.id);
-  traces(layout.pads, ids.length).forEach((route, slot) => term(slot, (art) => padAndTrace(art, layout.pads[slot], route)));
+  routesOf(layout, ids.length).forEach(({ index, route }) => term(index, (art) => padAndTrace(art, layout.pads[index], route)));
   // The part itself: burnt parts go black, and an open terminal draws no lead.
   art.group(cues.burnt ? { className: "sim-charred" } : {}, (part) => {
     const cell = (slot: number, build: (art: Art) => void) =>
@@ -48,7 +48,7 @@ export function ComponentFigure({ entry, index, fault }: { entry: Entry; index: 
     piece.draw(part, cell, component);
     marks(part, layout.pads, cues, TOP[component.type]);
   });
-  terminalBlock(art, ids, term);
+  for (const block of blocksOf(layout, ids.length)) terminalBlock(art, ids, term, layout.pitch, block);
 
   const spec = specOf(entry);
   const idle = `${ids.length} terminales`;

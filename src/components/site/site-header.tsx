@@ -9,8 +9,6 @@ const LINKS = [
   { href: "/simulador", label: "Simulador" },
   { href: "/cursos", label: "Cursos" },
   { href: "/componentes", label: "Componentes" },
-  { href: "/componentes/3d", label: "En 3D" },
-  { href: "/componentes/fallos", label: "Fallos" },
 ];
 
 export function SiteHeader() {
@@ -24,7 +22,7 @@ export function SiteHeader() {
         </Link>
         <nav className="site-nav" aria-label="Secciones del sitio">
           {LINKS.map(({ href, label }) => {
-            const active = href === "/cursos" ? pathname.startsWith(href) : pathname === href;
+            const active = href === "/cursos" || href === "/componentes" ? pathname.startsWith(href) : pathname === href;
             return (
               <Link key={href} href={href} aria-current={active ? "page" : undefined}>
                 {label}

@@ -3,7 +3,7 @@ import type { ElectronicComponent } from "@simulacion/index.ts";
 import * as k from "@/components/iso/iso-kit";
 import * as G from "@/components/iso/lathe.mjs";
 import type { Flat, Plan, Plane, Point3, SolidPaths } from "@/components/iso/iso-kit";
-import { CY, colourCode } from "./layout";
+import { CY, LAYOUT, colourCode } from "./layout";
 import { Art, P, at, hexagon, polyline } from "./stage";
 
 export type Term = (index: number, build: (art: Art) => void) => void;
@@ -301,6 +301,21 @@ const ultrasonic: Piece = {
   },
 };
 
+const microchip: Piece = {
+  draw(art, term) {
+    // A black package on the board: pins 1–4 leave its back edge, pins 8–5 its front edge, each down to its pad.
+    const { footprint: body, pads } = LAYOUT.microchip;
+    art.solid(k.slabOf(body, 0, 7, P, 4, 0.6), { tone: "lo", inner: <path className="iso-line" data-tone="faint" d={k.sideSeam(body, 3.5, P, 4)} /> });
+    art.solid(k.slabOf(k.insetPlan(body, 2.4), 7, 0.5, P, 3, 0.2), { tone: "mid", crease: "lo" });
+    // The pin 1 mark, in the back corner by pin 1.
+    art.dots([at([body.x + 6, body.y + 3, 7.5])], { size: 0.9, tone: "hi" });
+    pads.forEach(([x, y], index) => {
+      const edge = y < 0 ? body.y : body.y + body.d;
+      term(index, (art) => lead(art, [[x, edge, 3.5], [x, y, 3.5], [x, y, 0]], 1.2));
+    });
+  },
+};
+
 export const PIECES: Record<string, Piece> = {
   "dc-voltage-source": battery,
   "dc-motor": motor,
@@ -316,4 +331,5 @@ export const PIECES: Record<string, Piece> = {
   "transistor-bjt": transistor,
   ldr,
   ultrasonic,
+  microchip,
 };

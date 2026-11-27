@@ -7,6 +7,7 @@ import {
   Inductor,
   LDR,
   LED,
+  Microchip,
   Potentiometer,
   PushButton,
   Resistor,
@@ -39,6 +40,7 @@ export const CATALOG: Entry[] = [
   { component: new Diode("D1"), className: "Diode", title: "Diodo", folder: "semiconductors" },
   { component: new LED("LED1", "red", 2, 0.02), className: "LED", title: "LED", folder: "semiconductors" },
   { component: new Transistor("Q1", "NPN", 100, 0.2, 40), className: "Transistor", title: "Transistor BJT", folder: "semiconductors" },
+  { component: new Microchip("U1"), className: "Microchip", title: "Microchip genérico", folder: "semiconductors" },
   { component: new LDR("LDR1"), className: "LDR", title: "Fotorresistencia (LDR)", folder: "sensors" },
   { component: new UltrasonicSensor("US1", 2, 400, 50), className: "UltrasonicSensor", title: "Sensor ultrasónico", folder: "sensors" },
 ];

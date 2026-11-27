@@ -15,6 +15,7 @@ import {
   Inductor,
   LED,
   LDR,
+  Microchip,
   Potentiometer,
   PushButton,
   Resistor,
@@ -39,8 +40,7 @@ type Kind =
   | "breadboard"
   | "battery" | "resistor" | "led" | "diode" | "capacitor" | "inductor"
   | "switch" | "push-button" | "potentiometer" | "ldr" | "ultrasonic"
-  | "dc-motor" | "active-buzzer" | "transistor"
-  | "arduino-uno-r3" | "esp32-devkit-v1";
+  | "dc-motor" | "active-buzzer" | "transistor" | "microchip"  | "arduino-uno-r3" | "esp32-devkit-v1";
 type Part = {
   id: string;
   kind: Kind;
@@ -109,6 +109,15 @@ function boardSpec(design: BoardDesign): ComponentSpec {
   return { ...common, half: [60, 190], terminals: [...column(pins.filter(pin => pin.x < 0), -46, -28, "start"), ...column(pins.filter(pin => pin.x > 0), 46, 28, "end")] };
 }
 
+// The generic chip is a DIP-16 straddling the breadboard's centre channel: pins 1–8 sit on row e, pins 16–9 on row f,
+// one column apart, so every pin lands on a hole. Its units are one breadboard pitch in playground canvas units.
+const CHIP_PITCH = BB_PITCH / COMPONENT_SCALE;
+const chipPin = (id: string, column: number, row: -1 | 1): TerminalSpec => {
+  const x = (column - 3.5) * CHIP_PITCH;
+  const y = row * CHIP_PITCH;
+  return { id, x, y, ax: x, ay: y, labelX: x, labelY: y + row * 20, anchor: "middle" };
+};
+
 const specs: Record<Kind, ComponentSpec> = {
   // Its terminals are the holes, laid out in ./breadboard.
   breadboard: { name: "Protoboard", prefix: "PB", unit: "", value: 0, group: "Montaje", terminals: [], half: [BB_W / 2, BB_H / 2] },
@@ -135,6 +144,11 @@ const specs: Record<Kind, ComponentSpec> = {
     mappedTerminal("C", "transistor-bjt", 1, 29),
     mappedTerminal("E", "transistor-bjt", 2, 19, 16, 22),
   ] },
+  microchip: {
+    name: "Microchip", prefix: "U", unit: "", value: 0, group: "Semiconductores",
+    terminals: [...["1", "2", "3", "4", "5", "6", "7", "8"].map((id, index) => chipPin(id, index, -1)), ...["16", "15", "14", "13", "12", "11", "10", "9"].map((id, index) => chipPin(id, index, 1))],
+    half: [CHIP_PITCH * 3.5 + 26, CHIP_PITCH + 12],
+  },
   "arduino-uno-r3": boardSpec(BOARDS["arduino-uno-r3"]),
   "esp32-devkit-v1": boardSpec(BOARDS["esp32-devkit-v1"]),
 };
@@ -290,10 +304,10 @@ function netlist(parts: Part[], wires: Wire[], directContacts: DirectContact[]) 
     return root;
   };
   const terminals = new Map<string, TerminalRef>();
-  // A microcontroller isn't solved here: wires to its pins are drawn, but they carry no current.
-  const microcontrollers = new Set(parts.filter(part => isBoard(part.kind)).map(part => part.id));
+  // A microcontroller isn't solved here, and a generic chip has no path inside: wires to their pins are drawn, but carry no current.
+  const inert = new Set(parts.filter(part => isBoard(part.kind) || part.kind === "microchip").map(part => part.id));
   for (const wire of [...wires, ...directContacts]) {
-    if (microcontrollers.has(wire.from.componentId) || microcontrollers.has(wire.to.componentId)) continue;
+    if (inert.has(wire.from.componentId) || inert.has(wire.to.componentId)) continue;
     for (const end of [wire.from, wire.to]) if (!boards.has(end.componentId)) terminals.set(key(end), end);
     parent.set(find(key(wire.from)), find(key(wire.to)));
   }
@@ -324,6 +338,7 @@ function createComponent(part: Part) {
     case "dc-motor": return new DCMotor(part.id, value, 0.1, 3000, 1.2);
     case "active-buzzer": return new ActiveBuzzer(part.id, value, 0.03);
     case "transistor": return new Transistor(part.id, part.polarity ?? "NPN", value, 0.6, 40);
+    case "microchip": return new Microchip(part.id);
     case "arduino-uno-r3":
     case "esp32-devkit-v1": throw new Error("Las placas no son componentes eléctricos del circuito");
   }
@@ -409,6 +424,17 @@ function ComponentArt({ part, lit, active }: { part: Part; lit: boolean; active:
       return <>
         <rect className="part-body board-body" x={-w} y={-h} width={2 * w} height={2 * h} rx="8" />
         <text className="part-name" x="0" y="4">{specs[part.kind].name}</text>
+      </>;
+    }
+    case "microchip": {
+      // The body spans the centre channel; each pin's leg runs from the body's edge out to its hole.
+      const bodyW = CHIP_PITCH * 3.5 + 24;
+      const bodyH = CHIP_PITCH * 0.75;
+      return <>
+        {[-1, 1].map(row => [0, 1, 2, 3, 4, 5, 6, 7].map(index => <line key={`${row}-${index}`} className="chip-leg" x1={(index - 3.5) * CHIP_PITCH} x2={(index - 3.5) * CHIP_PITCH} y1={row * bodyH} y2={row * CHIP_PITCH} />))}
+        <rect className="part-body chip-body" x={-bodyW} y={-bodyH} width={2 * bodyW} height={2 * bodyH} rx="6" />
+        <circle className="contact-dot" cx={-bodyW + 12} cy={-bodyH + 10} r="3" />
+        <text className="part-name" x="0" y="4">Microchip</text>
       </>;
     }
   default: return null;
@@ -630,7 +656,7 @@ export default function Playground() {
   function simulate() {
     const circuit = new Circuit("playground", "Mi circuito");
     try {
-      for (const part of parts) if (part.kind !== "breadboard" && !isBoard(part.kind)) circuit.addComponent(createComponent(part));
+      for (const part of parts) if (part.kind !== "breadboard" && !isBoard(part.kind) && part.kind !== "microchip") circuit.addComponent(createComponent(part));
       netlist(parts, wires, directContacts).forEach((link, index) => circuit.addConnection(new Connection(`N${index + 1}`, link.from, link.to)));
       const nextResult = new DCSolver().simulate(circuit);
       setResult(nextResult);
@@ -1032,7 +1058,7 @@ export default function Playground() {
           <div className="component-tray" aria-label="Agregar componentes: arrastra uno al área de trabajo o haz clic para agregarlo">
             {groups.map(group => <div className="palette-group" key={group}>
               <span className="tray-label">{group}</span>
-              {kinds.filter(kind => specs[kind].group === group).map(kind => <button key={kind} className="part-tile" aria-label={`Agregar ${specs[kind].name}`}
+              {kinds.filter(kind => specs[kind].group === group).map(kind => <button key={kind} className="spotlight part-tile" aria-label={`Agregar ${specs[kind].name}`}
                 onPointerDown={event => trayDown(event, kind)} onPointerMove={trayMove} onPointerUp={trayUp} onPointerCancel={trayCancel}
                 onClick={() => { if (skipClick.current) skipClick.current = false; else addPart(kind); }}>
                 <PartPicture kind={kind} />

@@ -6,6 +6,7 @@ import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import type { Spec } from "@/components/simulador/catalog";
 import { useReadout } from "@/components/iso/react/live";
 import { buildModel, type Mount, type Palette } from "./model";
+import { isDarkTheme, watchTheme } from "./theme";
 import type { Cues } from "@/components/simulador/faults";
 
 const ASPECT = 300 / 420;
@@ -17,8 +18,7 @@ function paletteOf(element: Element): Palette {
   const style = getComputedStyle(element);
   const read = (name: string, fallback: string) => style.getPropertyValue(name).trim() || fallback;
   return {
-    // The pages are always dark, in black and electric blue.
-    dark: true,
+    dark: isDarkTheme(),
     ink: read("--anatomy-hi", "#c9d3e6"),
     faint: read("--anatomy-lo", "#283650"),
     accent: "#1f8fff",
@@ -238,17 +238,16 @@ export function Viewer3D({ spec, idle, mount = "board", cues }: { spec: Spec; id
     onScreen.observe(element);
     const resize = new ResizeObserver(() => view.current?.resize());
     resize.observe(element);
-    const scheme = matchMedia("(prefers-color-scheme: dark)");
     const rebuild = () => {
       release();
       create();
     };
-    scheme.addEventListener("change", rebuild);
+    const unwatch = watchTheme(rebuild);
     return () => {
       near.disconnect();
       onScreen.disconnect();
       resize.disconnect();
-      scheme.removeEventListener("change", rebuild);
+      unwatch();
       release();
     };
   }, [spec, mount, cues]);

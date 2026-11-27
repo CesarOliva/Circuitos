@@ -161,51 +161,5 @@ export const ANALISIS_DE_CIRCUITOS: CourseSource = {
         explanation: "2 kΩ en paralelo con 2 kΩ dan 1 kΩ, y 1 kΩ + 1 kΩ = 2 kΩ.",
       },
     },
-    {
-      slug: "protoboard",
-      title: "Protoboard: conecta sin errores",
-      summary: "Qué agujeros están unidos por dentro y cómo armar un circuito.",
-      scene: "breadboard",
-      blocks: [
-        {
-          type: "paragraph",
-          text: "La protoboard es el tablero donde armas circuitos sin soldar. Por dentro tiene tiras metálicas que unen agujeros, y entender cuáles están unidos es la mitad del trabajo.",
-        },
-        {
-          type: "list",
-          items: [
-            "Filas: la protoboard del simulador tiene 30 filas numeradas, cada una con 10 agujeros (a–j). Los cinco de la izquierda (a–e) están unidos entre sí, y los cinco de la derecha (f–j) también. El canal central las separa.",
-            "Rieles: son 4 tiras largas de 30 agujeros, dos a cada lado, para llevar el positivo y el negativo de la fuente por toda la placa. Cada riel está unido de punta a punta.",
-          ],
-        },
-        {
-          type: "paragraph",
-          text: "Con eso, un circuito en serie se arma así: llevas la fuente a los rieles, y cada componente va entre dos tiras distintas. La pata de un componente y la pata del siguiente comparten tira, y ahí es donde se conectan.",
-        },
-        { type: "playground", kind: "breadboard" },
-        {
-          type: "callout",
-          tone: "warning",
-          title: "ERRORES TÍPICOS",
-          text: "Poner las dos patas de un componente en la misma tira (haces un corto y no pasa corriente por él), conectar un LED sin resistor, invertir la polaridad, o cruzar el canal central creyendo que la fila está unida.",
-        },
-        {
-          type: "callout",
-          title: "¿SABÍAS QUE?",
-          text: "En algunas protoboards reales los rieles vienen partidos por la mitad y hay que unirlos con un cable. El del simulador no está partido.",
-        },
-      ],
-      quiz: {
-        question: "En la protoboard del simulador, ¿qué agujeros de la fila 5 están unidos entre sí?",
-        options: [
-          "Todos, de a5 a j5",
-          "a5–e5 por un lado y f5–j5 por otro",
-          "Solo a5 y j5",
-          "Ninguno hasta poner un cable",
-        ],
-        answer: 1,
-        explanation: "Cada fila se divide en dos tiras de cinco agujeros (a–e y f–j) separadas por el canal central.",
-      },
-    },
   ],
 };

@@ -109,8 +109,6 @@ export function buildBreadboard(palette: Palette, scale: number): Built {
     holes.setMatrixAt(hole.index, place);
     targets.setMatrixAt(hole.index, place);
     holes.setColorAt(hole.index, base);
-    // A jumper goes down into the hole.
-    ends.set(hole.id, new THREE.Vector3(hole.x * scale, hole.y * scale, HEIGHT - 1.4));
   }
   root.add(holes, targets);
 

@@ -197,51 +197,5 @@ export const CONTROL_Y_SEMICONDUCTORES: CourseSource = {
         explanation: "El diodo se queda con 0.7 V, así que el resistor tiene 8.3 V y I = 8.3 / 1000 = 8.3 mA. Los 7 mA serían con un LED rojo (2 V).",
       },
     },
-    {
-      slug: "led-rojo",
-      title: "El LED rojo",
-      summary: "Un diodo que emite luz y cómo elegir su resistor.",
-      scene: "led",
-      blocks: [
-        {
-          type: "paragraph",
-          text: "El LED (diodo emisor de luz) es un diodo que, al conducir, se ilumina. Por eso también tiene polaridad: la pata larga es el ánodo (+) y el lado plano de la cápsula marca el cátodo (−). Conectado al revés no se enciende.",
-        },
-        {
-          type: "list",
-          items: [
-            "Caída directa del modelo: 2 V (un LED rojo real ronda esa cifra, y cambia según el modelo).",
-            "Corriente máxima: 20 mA. Más allá pierde brillo con el tiempo o se daña.",
-            "Su brillo depende de la corriente, no del voltaje.",
-          ],
-        },
-        {
-          type: "paragraph",
-          text: "Como casi no se opone a la corriente, hay que limitarla con un resistor en serie. La fórmula sirve para cualquier fuente:",
-        },
-        { type: "formula", expression: "R = (Vfuente − 2 V) / I", caption: "I es la corriente que quieres, por debajo de 20 mA" },
-        {
-          type: "list",
-          items: [
-            "9 V y 10 mA: R = 7 V / 10 mA = 700 Ω. Con el valor comercial de 680 Ω circulan 10.3 mA.",
-            "5 V (Arduino) y 220 Ω: I = 3 V / 220 Ω ≈ 13.6 mA.",
-            "5 V y 330 Ω: I = 3 V / 330 Ω ≈ 9.1 mA, más suave.",
-          ],
-        },
-        { type: "playground", kind: "led" },
-        {
-          type: "callout",
-          tone: "warning",
-          title: "FALLOS TÍPICOS",
-          text: "Abierto: queda apagado. En corto: no ilumina y deja de limitar la corriente. Con exceso de corriente o calor, pierde brillo o se daña de forma permanente.",
-        },
-      ],
-      quiz: {
-        question: "Con una fuente de 5 V, un LED rojo (2 V) y un resistor de 330 Ω, ¿qué corriente circula?",
-        options: ["15.2 mA", "9.1 mA", "6.1 mA", "20 mA"],
-        answer: 1,
-        explanation: "I = (5 − 2) / 330 ≈ 9.1 mA. Los 15.2 mA olvidan la caída del LED y los 6.1 mA salen de usar solo los 2 V del LED.",
-      },
-    },
   ],
 };

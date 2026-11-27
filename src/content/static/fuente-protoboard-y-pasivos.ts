@@ -166,52 +166,6 @@ export const FUENTE_PROTOBOARD_Y_PASIVOS: CourseSource = {
       },
     },
     {
-      slug: "capacitor-polaridad-y-descarga",
-      title: "El capacitor: polaridad y descarga",
-      summary: "Qué guarda, por qué tiene polaridad y cómo se vacía.",
-      scene: "capacitor",
-      blocks: [
-        {
-          type: "paragraph",
-          text: "Un capacitor guarda carga eléctrica entre dos placas. Su capacidad se mide en faradios y, como un faradio es enorme, en la práctica verás µF. El del simulador es de 100 µF, 25 V y polarizado.",
-        },
-        {
-          type: "list",
-          items: [
-            "100 µF: cuánta carga guarda por cada voltio aplicado.",
-            "25 V: el voltaje máximo que debe soportar. Opera siempre por debajo.",
-            "Polarizado: tiene un terminal + y otro −. Invertirlo, o superar los 25 V, puede causar fugas, hinchazón e incluso ruptura.",
-          ],
-        },
-        {
-          type: "paragraph",
-          text: "Cuando termina de cargarse, el capacitor ya no deja pasar corriente continua: se comporta como un circuito abierto. La energía que guarda depende del voltaje:",
-        },
-        { type: "formula", expression: "E = ½ · C · V² = ½ × 100 µF × (9 V)² = 4.05 mJ", caption: "Energía almacenada a 9 V" },
-        {
-          type: "paragraph",
-          text: "Si lo conectas a un resistor, se descarga siguiendo la curva contraria a la de carga, con la misma constante de tiempo τ = R · C. Con 1 kΩ y 100 µF, τ = 0.1 s.",
-        },
-        { type: "formula", expression: "V(t) = V0 · e^(−t/τ)", caption: "Tras τ queda el 37 % del voltaje inicial; tras 5τ, menos del 1 %" },
-        {
-          type: "paragraph",
-          text: "El simulador de abajo muestra la carga con el mismo resistor y capacitor; la descarga es su imagen en espejo: lo que sube al cargarse, baja al descargarse.",
-        },
-        { type: "playground", kind: "capacitor" },
-        {
-          type: "callout",
-          title: "PARA QUÉ SIRVE",
-          text: "Filtra variaciones de la fuente (estabiliza el voltaje), da tiempos de espera con un resistor y entrega de golpe la energía que guardó, como el flash de una cámara.",
-        },
-      ],
-      quiz: {
-        question: "Un capacitor de 100 µF cargado a 9 V se descarga por un resistor de 1 kΩ. ¿Cuánto voltaje tiene tras 0.1 s (un τ)?",
-        options: ["0 V", "Aproximadamente 3.3 V", "Aproximadamente 5.7 V", "9 V"],
-        answer: 1,
-        explanation: "Al descargarse queda e⁻¹ ≈ 37 % del voltaje inicial: 9 V × 0.37 ≈ 3.3 V. Los 5.7 V son lo que alcanza al cargarse, que es la curva contraria.",
-      },
-    },
-    {
       slug: "inductor-y-campo-magnetico",
       title: "El inductor y el campo magnético",
       summary: "Por qué una bobina se opone a que la corriente cambie de golpe.",

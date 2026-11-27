@@ -13,6 +13,7 @@ export interface Plan {
 export const BOARD: Plan = { x: -46, y: -38, w: 92, d: 86, r: 4 };
 export const BOARD_T = 2.4;
 export const STANDOFF_H = 7;
+export const TABLE_SCALE = 0.75;
 export const BLOCK_Y = 28;
 export const BLOCK_D = 15;
 export const STEP_Z = 7;

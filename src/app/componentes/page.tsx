@@ -30,10 +30,14 @@ export default function ComponentesPage() {
       </header>
       <section className="sim-grid">
         {CATALOG.map((entry, index) => (
-          <ComponentFigure key={entry.component.id} entry={entry} index={index} />
+          <Link key={entry.component.id} className="sim-card-link" href={`/componentes/${entry.component.type}`} aria-label={`Abrir ficha técnica de ${entry.title}`}>
+            <ComponentFigure entry={entry} index={index} />
+          </Link>
         ))}
         {BOARD_LIST.map((design, index) => (
-          <BoardFigure key={design.id} design={design} index={CATALOG.length + index} />
+          <Link key={design.id} className="sim-card-link" href={`/componentes/${design.id}`} aria-label={`Abrir ficha técnica de ${design.title}`}>
+            <BoardFigure design={design} index={CATALOG.length + index} />
+          </Link>
         ))}
       </section>
     </main>

@@ -8,6 +8,24 @@ export const BB_W = 400;
 export const BB_H = 230;
 export const BB_COLUMNS = BREADBOARD_ROWS;
 
+// Terminal centres relative to a component's origin, in canvas units. Shared with the 3D models.
+export const PLAYGROUND_PIN_POSITIONS: Record<string, Array<[number, number]>> = {
+  "dc-voltage-source": [[-18, 0], [18, 0]],
+  resistor: [[-18, 0], [18, 0]],
+  led: [[-6, 12], [6, 12]],
+  diode: [[-18, 0], [18, 0]],
+  capacitor: [[-6, 12], [6, 12]],
+  inductor: [[-18, 0], [18, 0]],
+  switch: [[-6, 12], [6, 12]],
+  "push-button": [[-12, 12], [12, 12]],
+  potentiometer: [[-12, 12], [0, 12], [12, 12]],
+  ldr: [[-6, 12], [6, 12]],
+  "dc-motor": [[-18, 0], [-6, 0]],
+  "active-buzzer": [[-6, 12], [6, 12]],
+  ultrasonic: [[-18, 12], [-6, 12], [6, 12], [18, 12]],
+  "transistor-bjt": [[-12, 12], [0, 12], [12, 12]],
+};
+
 // Each row's height, in pitches from the channel.
 const ROW_Y: Record<string, number> = {
   "top+": -8.6, "top-": -7.6,

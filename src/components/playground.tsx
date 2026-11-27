@@ -24,7 +24,7 @@ import {
 } from "@simulacion/index";
 import type { Jumper, Locate, Placed } from "./simulador3d/circuit";
 import type { Mount } from "./simulador3d/model";
-import { BB_COLUMNS, BB_H, BB_HOLE, BB_HOLES, BB_LABEL_X, BB_LETTERS, BB_NUMBER_Y, BB_PITCH, BB_RAIL_LINES, BB_W, bbX, bbY, holeName, stripBox } from "./breadboard";
+import { BB_COLUMNS, BB_H, BB_HOLE, BB_HOLES, BB_LABEL_X, BB_LETTERS, BB_NUMBER_Y, BB_PITCH, BB_RAIL_LINES, BB_W, PLAYGROUND_PIN_POSITIONS, bbX, bbY, holeName, stripBox } from "./breadboard";
 import { PartPicture } from "./part-picture";
 import { BOARDS, specOfBoard, terminalPins, type BoardDesign } from "./simulador/boards";
 import "./playground.css";
@@ -78,10 +78,6 @@ type GroupName = "Montaje" | "Pasivos y controles" | "Sensores y actuadores" | "
 type ComponentSpec = { name: string; prefix: string; unit: string; value: number; group: GroupName; terminals: TerminalSpec[]; half?: [number, number] };
 type Result = ReturnType<DCSolver["simulate"]>;
 
-const terminal = (id: string, side: -1 | 1, anchor = 40): TerminalSpec => ({
-  id, x: side * 58, y: 0, ax: side * anchor, ay: 0,
-  labelX: side * 18, labelY: 4, anchor: side < 0 ? "end" : "start",
-});
 // Boards are schematic blocks, not to scale: their pins sit on rows along the long edges (UNO) or in columns down the sides (ESP32),
 // spaced to fit each terminal's hit area.
 const PIN_GAP = 26;
@@ -89,6 +85,16 @@ const COMPONENT_SCALE = 0.325;
 const SNAP_DISTANCE = BB_PITCH * (2 / 3);
 const CONTACT_DISTANCE = BB_PITCH * 0.25;
 const isBoard = (kind: Kind) => kind === "arduino-uno-r3" || kind === "esp32-devkit-v1";
+const mappedTerminal = (id: string, kind: string, index: number, anchorY: number, labelY?: number, anchorX?: number): TerminalSpec => {
+  const [px, py] = PLAYGROUND_PIN_POSITIONS[kind][index];
+  const x = px / COMPONENT_SCALE;
+  const y = py / COMPONENT_SCALE;
+  return {
+    id, x, y, ax: anchorX ?? x, ay: anchorY,
+    labelX: x < 0 ? -18 : x > 0 ? 18 : 0, labelY: labelY ?? y + 4,
+    anchor: x < 0 ? "end" : x > 0 ? "start" : "middle",
+  };
+};
 function boardSpec(design: BoardDesign): ComponentSpec {
   const pins = terminalPins(design);
   const at = (index: number, count: number) => (index - (count - 1) / 2) * PIN_GAP;
@@ -106,28 +112,28 @@ function boardSpec(design: BoardDesign): ComponentSpec {
 const specs: Record<Kind, ComponentSpec> = {
   // Its terminals are the holes, laid out in ./breadboard.
   breadboard: { name: "Protoboard", prefix: "PB", unit: "", value: 0, group: "Montaje", terminals: [], half: [BB_W / 2, BB_H / 2] },
-  battery: { name: "Batería DC", prefix: "V", unit: "V", value: 9, group: "Pasivos y controles", terminals: [terminal("+", -1), terminal("-", 1)] },
-  resistor: { name: "Resistencia", prefix: "R", unit: "Ω", value: 470, group: "Pasivos y controles", terminals: [terminal("1", -1), terminal("2", 1)] },
-  led: { name: "LED rojo", prefix: "D", unit: "V", value: 2.1, group: "Semiconductores", terminals: [terminal("A", -1, 29), terminal("K", 1, 29)] },
-  diode: { name: "Diodo", prefix: "D", unit: "V", value: 0.7, group: "Semiconductores", terminals: [terminal("A", -1), terminal("K", 1)] },
-  capacitor: { name: "Capacitor", prefix: "C", unit: "µF", value: 100, group: "Pasivos y controles", terminals: [terminal("1", -1), terminal("2", 1)] },
-  inductor: { name: "Inductor", prefix: "L", unit: "mH", value: 100, group: "Pasivos y controles", terminals: [terminal("1", -1), terminal("2", 1)] },
-  switch: { name: "Switch", prefix: "S", unit: "", value: 0, group: "Pasivos y controles", terminals: [terminal("1", -1), terminal("2", 1)] },
-  "push-button": { name: "Pulsador", prefix: "P", unit: "", value: 0, group: "Pasivos y controles", terminals: [terminal("1", -1), terminal("2", 1)] },
-  potentiometer: { name: "Potenciómetro", prefix: "POT", unit: "kΩ", value: 10, group: "Pasivos y controles", terminals: [terminal("A", -1), { id: "W", x: 0, y: -49, ax: 0, ay: -31, labelX: 0, labelY: -11, anchor: "middle" }, terminal("B", 1)] },
-  ldr: { name: "Fotoresistencia", prefix: "LDR", unit: "lx", value: 10, group: "Sensores y actuadores", terminals: [terminal("1", -1, 29), terminal("2", 1, 29)] },
+  battery: { name: "Batería DC", prefix: "V", unit: "V", value: 9, group: "Pasivos y controles", terminals: [mappedTerminal("+", "dc-voltage-source", 0, 0, undefined, -40), mappedTerminal("-", "dc-voltage-source", 1, 0, undefined, 40)] },
+  resistor: { name: "Resistencia", prefix: "R", unit: "Ω", value: 470, group: "Pasivos y controles", terminals: [mappedTerminal("1", "resistor", 0, 0, undefined, -40), mappedTerminal("2", "resistor", 1, 0, undefined, 40)] },
+  led: { name: "LED rojo", prefix: "D", unit: "V", value: 2.1, group: "Semiconductores", terminals: [mappedTerminal("A", "led", 0, 22), mappedTerminal("K", "led", 1, 22)] },
+  diode: { name: "Diodo", prefix: "D", unit: "V", value: 0.7, group: "Semiconductores", terminals: [mappedTerminal("A", "diode", 0, 0, undefined, -40), mappedTerminal("K", "diode", 1, 0, undefined, 40)] },
+  capacitor: { name: "Capacitor", prefix: "C", unit: "µF", value: 100, group: "Pasivos y controles", terminals: [mappedTerminal("1", "capacitor", 0, 29), mappedTerminal("2", "capacitor", 1, 29)] },
+  inductor: { name: "Inductor", prefix: "L", unit: "mH", value: 100, group: "Pasivos y controles", terminals: [mappedTerminal("1", "inductor", 0, 0, undefined, -40), mappedTerminal("2", "inductor", 1, 0, undefined, 40)] },
+  switch: { name: "Switch", prefix: "S", unit: "", value: 0, group: "Pasivos y controles", terminals: [mappedTerminal("1", "switch", 0, 26), mappedTerminal("2", "switch", 1, 26)] },
+  "push-button": { name: "Pulsador", prefix: "P", unit: "", value: 0, group: "Pasivos y controles", terminals: [mappedTerminal("1", "push-button", 0, 26), mappedTerminal("2", "push-button", 1, 26)] },
+  potentiometer: { name: "Potenciómetro", prefix: "POT", unit: "kΩ", value: 10, group: "Pasivos y controles", terminals: [mappedTerminal("A", "potentiometer", 0, 26), mappedTerminal("W", "potentiometer", 1, 26), mappedTerminal("B", "potentiometer", 2, 26)] },
+  ldr: { name: "Fotoresistencia", prefix: "LDR", unit: "lx", value: 10, group: "Sensores y actuadores", terminals: [mappedTerminal("1", "ldr", 0, 22), mappedTerminal("2", "ldr", 1, 22)] },
   ultrasonic: { name: "Ultrasónico", prefix: "US", unit: "cm", value: 100, group: "Sensores y actuadores", terminals: [
-    { id: "VCC", x: -58, y: -16, ax: -40, ay: -16, labelX: -18, labelY: -12, anchor: "end" },
-    { id: "TRIG", x: -58, y: 16, ax: -40, ay: 16, labelX: -18, labelY: 20, anchor: "end" },
-    { id: "ECHO", x: 58, y: -16, ax: 40, ay: -16, labelX: 18, labelY: -12, anchor: "start" },
-    { id: "GND", x: 58, y: 16, ax: 40, ay: 16, labelX: 18, labelY: 20, anchor: "start" },
+    mappedTerminal("VCC", "ultrasonic", 0, 34, 16, -40),
+    mappedTerminal("TRIG", "ultrasonic", 1, 34, 26),
+    mappedTerminal("ECHO", "ultrasonic", 2, 34, 16),
+    mappedTerminal("GND", "ultrasonic", 3, 34, 26, 40),
   ] },
-  "dc-motor": { name: "Motor DC", prefix: "M", unit: "V", value: 6, group: "Sensores y actuadores", terminals: [terminal("+", -1, 30), terminal("-", 1, 30)] },
-  "active-buzzer": { name: "Buzzer activo", prefix: "BZ", unit: "V", value: 5, group: "Sensores y actuadores", terminals: [terminal("+", -1, 31), terminal("-", 1, 31)] },
+  "dc-motor": { name: "Motor DC", prefix: "M", unit: "V", value: 6, group: "Sensores y actuadores", terminals: [mappedTerminal("+", "dc-motor", 0, 0, undefined, -30), mappedTerminal("-", "dc-motor", 1, 0, undefined, -12)] },
+  "active-buzzer": { name: "Buzzer activo", prefix: "BZ", unit: "V", value: 5, group: "Sensores y actuadores", terminals: [mappedTerminal("+", "active-buzzer", 0, 27), mappedTerminal("-", "active-buzzer", 1, 27)] },
   transistor: { name: "Transistor BJT", prefix: "Q", unit: "β", value: 100, group: "Semiconductores", terminals: [
-    { id: "B", x: -58, y: 0, ax: -30, ay: 0, labelX: -15, labelY: 4, anchor: "end" },
-    { id: "C", x: 38, y: -48, ax: 18, ay: -24, labelX: 8, labelY: -32, anchor: "middle" },
-    { id: "E", x: 38, y: 48, ax: 18, ay: 24, labelX: 8, labelY: 42, anchor: "middle" },
+    mappedTerminal("B", "transistor-bjt", 0, 19, 16, -22),
+    mappedTerminal("C", "transistor-bjt", 1, 29),
+    mappedTerminal("E", "transistor-bjt", 2, 19, 16, 22),
   ] },
   "arduino-uno-r3": boardSpec(BOARDS["arduino-uno-r3"]),
   "esp32-devkit-v1": boardSpec(BOARDS["esp32-devkit-v1"]),

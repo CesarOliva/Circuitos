@@ -3,14 +3,14 @@
 import * as React from "react";
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
-import { BOARD, BOARD_T, CY, STANDOFF_H } from "@/components/simulador/layout";
+import { BOARD, BOARD_T, CY, STANDOFF_H, TABLE_SCALE } from "@/components/simulador/layout";
 import { buildBreadboard } from "./breadboard";
 import { buildModel, type Built, type ModelSpec, type Mount, type Palette } from "./model";
 
 // The playground canvas is 960 × 560; its centre is the table's origin and its units shrink to board units.
 const CANVAS_W = 960;
 const CANVAS_H = 560;
-const SCALE = 0.75;
+const SCALE = TABLE_SCALE;
 const FLOOR = -BOARD_T - STANDOFF_H;
 const TOP = 45;
 const AZIMUTH = (76 * Math.PI) / 180;

@@ -13,6 +13,7 @@ import {
   STEP_Z,
   TOWER_D,
   TOWER_Z,
+  TABLE_SCALE,
   cellX,
   colourCode,
   traces,
@@ -20,6 +21,7 @@ import {
   type Plane,
 } from "@/components/simulador/layout";
 import { BOARDS, HEADER_H, PCB_T, PIN_TOP, terminalPins } from "@/components/simulador/boards";
+import { PLAYGROUND_PIN_POSITIONS } from "@/components/breadboard";
 import { TOP, crackOn, waveOn, type Cues } from "@/components/simulador/faults";
 
 type V3 = [number, number, number];
@@ -392,18 +394,29 @@ export function buildModel(spec: ModelSpec, palette: Palette, mount: Mount = "bo
   const props = spec.properties;
 
   // A loose terminal's free end, where a jumper clips on, with a wide invisible target round it.
-  const tip = (index: number, at: V3) => {
-    ends.set(ids[index], new THREE.Vector3(...at));
+  const loosePin = (index: number, point: V3): V3 => {
+    const canvasPoint = loose && PLAYGROUND_PIN_POSITIONS[spec.type]?.[index];
+    if (!canvasPoint) return point;
+    root.updateMatrixWorld(true);
+    const height = root.localToWorld(new THREE.Vector3(...point)).y;
+    return root.worldToLocal(new THREE.Vector3(canvasPoint[0] * TABLE_SCALE, height, canvasPoint[1] * TABLE_SCALE)).toArray() as V3;
+  };
+
+  const tip = (index: number, at: V3, align = true) => {
+    const point = align ? loosePin(index, at) : at;
+    ends.set(ids[index], new THREE.Vector3(...point));
     const geometry = new THREE.SphereGeometry(3.2, 12, 8);
-    geometry.translate(...at);
+    geometry.translate(...point);
     add(geometry, M.hit, { edges: false });
   };
 
   // A loose leg: a lead that ends in a free tip.
   const leg = (index: number, points: V3[], r = 0.4, material = M.steel, bend = 1.4) =>
     term(index, () => {
-      lead(points, material, r, bend);
-      tip(index, points[points.length - 1]);
+      const path = [...points];
+      path[path.length - 1] = loosePin(index, path[path.length - 1]);
+      lead(path, material, r, bend);
+      tip(index, path[path.length - 1], false);
     });
 
   // A lead that ends on its pad on the board or, loose, carries on down to a free tip.
@@ -418,9 +431,9 @@ export function buildModel(spec: ModelSpec, palette: Palette, mount: Mount = "bo
     term(index, () => {
       lead(points, material, 0.55, 3);
       const [a, b] = points.slice(-2).map((p) => new THREE.Vector3(...p));
-      const end = b.clone().addScaledVector(b.clone().sub(a).normalize(), 4).toArray() as V3;
+      const end = loosePin(index, b.clone().addScaledVector(b.clone().sub(a).normalize(), 4).toArray() as V3);
       lead([points[points.length - 1], end], M.solder, 0.36, 1);
-      tip(index, end);
+      tip(index, end, false);
     });
 
   charring = Boolean(cues.burnt);
@@ -523,8 +536,9 @@ export function buildModel(spec: ModelSpec, palette: Palette, mount: Mount = "bo
         term(index, () => {
           if (!loose) return void slab({ x: x - 1.2, y: -9, w: 2.4, d: 3.4, r: 0.3 }, 0, 1, M.brass, 0.1);
           // Loose, the solder lugs hang below the body.
-          slab({ x: x - 1.2, y: cy - 0.35, w: 2.4, d: 0.7, r: 0.2 }, LEG_Z, -LEG_Z, M.brass, 0.1);
-          tip(index, [x, cy, LEG_Z]);
+          const pin = loosePin(index, [x, cy, LEG_Z]);
+          slab({ x: pin[0] - 1.2, y: pin[1] - 0.35, w: 2.4, d: 0.7, r: 0.2 }, pin[2], -pin[2], M.brass, 0.1);
+          tip(index, pin, false);
         }),
       );
       prism(hexagon(0, cy, 4.6), 9, 1.8, M.steel, 0.2);

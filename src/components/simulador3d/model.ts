@@ -21,7 +21,7 @@ import {
   type Plane,
 } from "@/components/simulador/layout";
 import { BOARDS, HEADER_H, PCB_T, PIN_TOP, terminalPins } from "@/components/simulador/boards";
-import { PLAYGROUND_PIN_POSITIONS } from "@/components/breadboard";
+import { BB_PITCH, PLAYGROUND_PIN_POSITIONS } from "@/components/breadboard";
 import { TOP, crackOn, waveOn, type Cues } from "@/components/simulador/faults";
 
 type V3 = [number, number, number];
@@ -122,11 +122,17 @@ export function buildModel(spec: ModelSpec, palette: Palette, mount: Mount = "bo
   const layout = board ? { footprint: board.pcb, pads: terminalPins(board).map((pin): Plane => [pin.x, pin.y]) } : LAYOUT[spec.type];
   if (!layout) throw new Error(`No model for component type "${spec.type}"`);
   const loose = mount === "loose";
+  const rowShifted = loose && [
+    "ldr", "led", "transistor-bjt", "active-buzzer", "ultrasonic", "dc-motor",
+    "diode", "resistor", "inductor", "capacitor", "switch", "push-button", "potentiometer", "dc-voltage-source",
+  ].includes(spec.type);
+  const rowShift = rowShifted ? (["diode", "resistor", "inductor"].includes(spec.type) ? 1 : 2) * BB_PITCH * TABLE_SCALE : 0;
   const M = materials(palette);
   const METAL = new Set<THREE.Material>([M.steel, M.darkSteel, M.brass, M.copper, M.solder]);
   const root = new THREE.Group();
   root.scale.y = -1;
   root.rotation.x = -Math.PI / 2;
+  if (rowShifted) root.position.z = rowShift;
   const terminals = new Map<string, THREE.Object3D[]>();
   const ends = new Map<string, THREE.Vector3>();
   const disposables: Array<{ dispose(): void }> = Object.values(M);
@@ -398,13 +404,17 @@ export function buildModel(spec: ModelSpec, palette: Palette, mount: Mount = "bo
     const canvasPoint = loose && PLAYGROUND_PIN_POSITIONS[spec.type]?.[index];
     if (!canvasPoint) return point;
     root.updateMatrixWorld(true);
-    const height = root.localToWorld(new THREE.Vector3(...point)).y;
-    return root.worldToLocal(new THREE.Vector3(canvasPoint[0] * TABLE_SCALE, height, canvasPoint[1] * TABLE_SCALE)).toArray() as V3;
+    const transformed = root.localToWorld(new THREE.Vector3(...point));
+    if (rowShifted) {
+      return root.worldToLocal(new THREE.Vector3(canvasPoint[0] * TABLE_SCALE, transformed.y, transformed.z)).toArray() as V3;
+    }
+    return root.worldToLocal(new THREE.Vector3(canvasPoint[0] * TABLE_SCALE, transformed.y, canvasPoint[1] * TABLE_SCALE)).toArray() as V3;
   };
 
   const tip = (index: number, at: V3, align = true) => {
     const point = align ? loosePin(index, at) : at;
-    ends.set(ids[index], new THREE.Vector3(...point));
+    const end = rowShifted && spec.type !== "ultrasonic" ? [point[0], point[1] + root.position.z, point[2]] as V3 : point;
+    ends.set(ids[index], new THREE.Vector3(...end));
     const geometry = new THREE.SphereGeometry(3.2, 12, 8);
     geometry.translate(...point);
     add(geometry, M.hit, { edges: false });
@@ -768,6 +778,7 @@ export function buildModel(spec: ModelSpec, palette: Palette, mount: Mount = "bo
     child.geometry.computeBoundingBox();
     extent.union(child.geometry.boundingBox!);
   }
+  if (rowShifted && spec.type !== "ultrasonic") extent.translate(new THREE.Vector3(0, root.position.z, 0));
   ground.position.z = extent.min.z - 0.01;
 
   if (spec.type === "ultrasonic" && loose) {

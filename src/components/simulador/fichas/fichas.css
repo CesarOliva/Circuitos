@@ -14,7 +14,7 @@
 
 .ficha-ruta {
   font-family: var(--anatomy-mono);
-  font-size: 12px;
+  font-size: var(--text-xs);
 }
 
 .ficha-ruta a:hover,
@@ -24,7 +24,7 @@
 
 .ficha-clase {
   font-family: var(--anatomy-mono);
-  font-size: 12px;
+  font-size: var(--text-xs);
   overflow-wrap: anywhere;
 }
 
@@ -33,7 +33,7 @@
   top: 24px;
   display: grid;
   gap: 2px;
-  font-size: 13px;
+  font-size: var(--text-sm);
 }
 
 .ficha-indice a {
@@ -50,7 +50,7 @@
 .ficha-contenido {
   display: grid;
   gap: 44px;
-  font-size: 14.5px;
+  font-size: var(--text-base);
   line-height: 1.6;
 }
 
@@ -63,7 +63,7 @@
 
 .ficha-contenido h2 {
   color: var(--anatomy-strong);
-  font-size: 18px;
+  font-size: var(--text-lg);
   font-weight: 600;
   padding-bottom: 8px;
   border-bottom: 1px solid var(--anatomy-lo);
@@ -71,7 +71,7 @@
 
 .ficha-contenido h3 {
   color: var(--anatomy-strong);
-  font-size: 14.5px;
+  font-size: var(--text-md);
   font-weight: 600;
   margin-top: 6px;
 }
@@ -123,7 +123,7 @@
 .ficha-tabla table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 13.5px;
+  font-size: var(--text-sm);
 }
 
 .ficha-tabla th,
@@ -138,7 +138,7 @@
   border-top: none;
   color: var(--anatomy-muted);
   font-family: var(--anatomy-mono);
-  font-size: 11px;
+  font-size: var(--text-xs);
   font-weight: 400;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -158,7 +158,7 @@
 .ficha-nivel {
   margin-right: 4px;
   font-family: var(--anatomy-mono);
-  font-size: 10.5px;
+  font-size: var(--text-xs);
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
@@ -223,7 +223,7 @@
   padding: 12px;
   background: var(--anatomy-page);
   box-shadow: 0 0 0 1px var(--anatomy-faint);
-  font-size: 12.5px;
+  font-size: var(--text-sm);
   line-height: 1.5;
 }
 
@@ -231,7 +231,7 @@
   margin-right: 6px;
   color: var(--anatomy-muted);
   font-family: var(--anatomy-mono);
-  font-size: 11px;
+  font-size: var(--text-xs);
   letter-spacing: 0.06em;
   text-transform: uppercase;
 }
@@ -248,7 +248,7 @@
   gap: 16px;
   padding-top: 16px;
   border-top: 1px solid var(--anatomy-lo);
-  font-size: 13px;
+  font-size: var(--text-sm);
 }
 
 .ficha-paginas a {
@@ -265,7 +265,7 @@
 
 .fichas-grupo h2 {
   color: var(--anatomy-strong);
-  font-size: 15px;
+  font-size: var(--text-md);
   font-weight: 600;
 }
 
@@ -282,7 +282,7 @@
   padding: 16px 18px;
   background: var(--anatomy-card);
   box-shadow: 0 0 0 1px var(--anatomy-lo);
-  font-size: 13.5px;
+  font-size: var(--text-sm);
 }
 
 .fichas-grupo a:hover {
@@ -291,13 +291,13 @@
 
 .fichas-grupo strong {
   color: var(--anatomy-strong);
-  font-size: 15px;
+  font-size: var(--text-md);
   font-weight: 600;
 }
 
 .fichas-grupo span {
   font-family: var(--anatomy-mono);
-  font-size: 11px;
+  font-size: var(--text-xs);
   color: var(--anatomy-muted);
 }
 
@@ -320,12 +320,12 @@
   display: grid;
   gap: 5px;
   align-content: start;
-  font-size: 12.5px;
+  font-size: var(--text-sm);
 }
 
 .validador-campo small {
   color: var(--anatomy-muted);
-  font-size: 11px;
+  font-size: var(--text-xs);
 }
 
 .validador-input {
@@ -336,7 +336,7 @@
   background: var(--anatomy-page);
   box-shadow: 0 0 0 1px var(--anatomy-lo);
   font-family: var(--anatomy-mono);
-  font-size: 12px;
+  font-size: var(--text-xs);
 }
 
 .validador-input:focus-within {
@@ -365,7 +365,7 @@
 }
 
 .validador-montaje {
-  font-size: 13px;
+  font-size: var(--text-sm);
 }
 
 .validador-montaje span,
@@ -373,7 +373,7 @@
   margin-right: 6px;
   color: var(--anatomy-muted);
   font-family: var(--anatomy-mono);
-  font-size: 10.5px;
+  font-size: var(--text-xs);
   letter-spacing: 0.06em;
   text-transform: uppercase;
 }
@@ -383,19 +383,19 @@
   flex-wrap: wrap;
   gap: 10px 28px;
   font-family: var(--anatomy-mono);
-  font-size: 12px;
+  font-size: var(--text-xs);
 }
 
 .validador-lectura dt {
   color: var(--anatomy-muted);
-  font-size: 10.5px;
+  font-size: var(--text-xs);
   text-transform: uppercase;
   letter-spacing: 0.06em;
 }
 
 .validador-lectura dd {
   color: var(--anatomy-strong);
-  font-size: 15px;
+  font-size: var(--text-md);
   font-variant-numeric: tabular-nums;
 }
 
@@ -403,7 +403,7 @@
   list-style: none;
   padding: 0;
   gap: 6px;
-  font-size: 13px;
+  font-size: var(--text-sm);
 }
 
 .validador-avisos li {
@@ -420,7 +420,7 @@
 
 .validador-ok {
   color: var(--anatomy-green);
-  font-size: 13px;
+  font-size: var(--text-sm);
 }
 
 /* Lesson. */
@@ -475,7 +475,7 @@
   box-shadow: 0 0 0 1px var(--anatomy-lo);
   color: var(--anatomy-text);
   font: inherit;
-  font-size: 13.5px;
+  font-size: var(--text-sm);
   text-align: left;
   cursor: pointer;
 }
@@ -500,7 +500,7 @@
 }
 
 .cuestionario-explicacion {
-  font-size: 13px;
+  font-size: var(--text-sm);
 }
 
 .cuestionario-puntaje {
@@ -510,7 +510,7 @@
   margin-top: 6px;
   color: var(--anatomy-strong);
   font-family: var(--anatomy-mono);
-  font-size: 13px;
+  font-size: var(--text-sm);
 }
 
 .cuestionario-puntaje button {

@@ -7,6 +7,8 @@ import { CtaZoom } from "@/components/landing/cta-zoom";
 import "@/components/landing/landing.css";
 
 const HERO_WORDS = ["Arma,", "simula", "y", "entiende", "tus", "circuitos."];
+// Posición de la primera letra de cada palabra en la frase, para escalonar las letras con --i.
+const HERO_STARTS = HERO_WORDS.map((_, index) => HERO_WORDS.slice(0, index).join(" ").length + (index ? 1 : 0));
 
 export default function Home() {
   return (
@@ -22,12 +24,12 @@ export default function Home() {
             <h1 aria-label="Arma, simula y entiende tus circuitos.">
               {HERO_WORDS.map((word, index) => (
                 <Fragment key={word}>
-                  <span
-                    className={`hw${word === "entiende" ? " hero-accent" : ""}`}
-                    style={{ "--i": index } as CSSProperties}
-                    aria-hidden="true"
-                  >
-                    {word}
+                  <span className={`hw${word === "entiende" ? " hero-accent" : ""}`} aria-hidden="true">
+                    {[...word].map((letter, position) => (
+                      <span key={position} style={{ "--i": HERO_STARTS[index] + position } as CSSProperties}>
+                        {letter}
+                      </span>
+                    ))}
                   </span>
                   {index < HERO_WORDS.length - 1 ? " " : null}
                 </Fragment>

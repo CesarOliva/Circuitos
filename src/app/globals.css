@@ -1,8 +1,22 @@
 @import "tailwindcss";
 
+/* Tipografía: IBM Plex Sans para el texto y Plex Mono para valores, unidades, pines y código.
+   La escala está en rem para respetar el tamaño de letra que el usuario elija en su navegador. */
 :root {
-  --font-geist-sans: Arial, Helvetica, sans-serif;
-  --font-geist-mono: "Courier New", monospace;
+  --sans: var(--font-plex-sans), system-ui, sans-serif;
+  --mono: var(--font-plex-mono), ui-monospace, monospace;
+  /* Nombres que usan los estilos de la rama simulador (cursos, portada, playground): apuntan a Plex. */
+  --font-geist-sans: var(--sans);
+  --font-geist-mono: var(--mono);
+  --text-xs: 0.75rem;
+  --text-sm: 0.8125rem;
+  --text-base: 0.875rem;
+  --text-md: 1rem;
+  --text-lg: 1.125rem;
+  --text-xl: 1.375rem;
+  --text-2xl: 1.75rem;
+  --text-3xl: 2.25rem;
+  --text-display: clamp(2.5rem, 5vw, 3.5rem);
 }
 
 /* Paleta de la página. El tema por defecto es el oscuro (negro y azul eléctrico);
@@ -56,8 +70,8 @@
   --color-line: var(--line);
   --color-muted: var(--muted);
   --color-accent: var(--accent);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--sans);
+  --font-mono: var(--mono);
 }
 
 html {
@@ -69,6 +83,16 @@ html,
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--sans);
   transition: background 0.25s ease, color 0.25s ease;
+}
+
+h1,
+h2,
+h3 {
+  text-wrap: balance;
+}
+
+p {
+  text-wrap: pretty;
 }

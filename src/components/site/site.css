@@ -28,8 +28,8 @@
   flex: none;
   gap: 10px;
   color: var(--foreground);
-  font-size: 15px;
-  font-weight: 650;
+  font-size: var(--text-md);
+  font-weight: 600;
   text-decoration: none;
 }
 
@@ -62,8 +62,8 @@
   padding: 7px 12px;
   border-radius: 999px;
   color: var(--muted);
-  font-size: 13px;
-  font-weight: 550;
+  font-size: var(--text-sm);
+  font-weight: 500;
   text-decoration: none;
   white-space: nowrap;
   transition: color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
@@ -94,7 +94,7 @@
   border-radius: 999px;
   background: var(--surface);
   color: var(--foreground);
-  font-size: 13px;
+  font-size: var(--text-sm);
   font-weight: 600;
   text-decoration: none;
   white-space: nowrap;
@@ -174,11 +174,11 @@
 
   .site-nav a {
     padding: 6px 10px;
-    font-size: 12px;
+    font-size: var(--text-xs);
   }
 
   .site-login {
     padding: 6px 10px;
-    font-size: 12px;
+    font-size: var(--text-xs);
   }
 }

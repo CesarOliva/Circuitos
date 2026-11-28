@@ -39,4 +39,4 @@ Los fallos de Arduino/ESP32, protoboard y problemas externos (por ejemplo no pon
 
 ## Implementación
 
-El playground resuelve primero el circuito sano, detecta las fallas con las mediciones resultantes y vuelve a resolver cuando cambia la topología. El inductor saturado se reporta; no cambia el resultado eléctrico DC porque su modelo de estado estable es un corto ideal. La galería deriva los nombres y efectos de `Ficha.fallos`, y los recursos visuales solo aportan se
+El playground resuelve primero el circuito sano, detecta las fallas con las mediciones resultantes y vuelve a resolver cuando cambia la topología. El inductor saturado se reporta; no cambia el resultado eléctrico DC porque su modelo de estado estable es un corto ideal. La galería deriva los nombres y efectos de `Ficha.fallos`, y los recursos visuales solo aportan señales gráficas.

@@ -22,10 +22,9 @@ export default async function Componentes3DPage({ searchParams }: PageProps<"/co
       <header className="sim-header">
         <div className="sim-navs">
           <nav className="sim-nav" aria-label="Vistas">
-            <span aria-current="page">Componentes 3D</span>
             <Link href="/componentes">Componentes 2D</Link>
-            <Link href="/componentes/fallos">Componentes en fallo</Link>
-            <Link href="/fichas">Fichas</Link>
+            <span aria-current="page">Componentes 3D</span>
+            {/* <Link href="/componentes/fallos">Componentes en fallo</Link> */}
           </nav>
           <nav className="sim-nav" aria-label="Montaje">
             {loose ? <Link href="/componentes/3d">En placa</Link> : <span aria-current="page">En placa</span>}

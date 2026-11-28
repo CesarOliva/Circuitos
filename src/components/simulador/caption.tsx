@@ -1,7 +1,7 @@
 import { formatProperty, type Spec } from "./catalog";
 import { cueNotes, type Fault } from "./faults";
 
-// Under each card: the class, its name and id, and every property from getProperties().
+// Under each card: the class name followed by every technical property from getProperties().
 // A failed part also says which failure it is, what the datasheet says it does, and what the drawing marks.
 export function Caption({ spec, fault }: { spec: Spec; fault?: Fault }) {
   const notas = fault ? cueNotes(fault.cues, spec.terminals.map((terminal) => terminal.id)) : [];
@@ -13,7 +13,7 @@ export function Caption({ spec, fault }: { spec: Spec; fault?: Fault }) {
         </span>
       ) : null}
       <span className="sim-class">
-        <code>{spec.className}</code> · {spec.name} · <code>{spec.id}</code> · <code>type: {spec.type}</code>
+        <code>{spec.className}</code>
       </span>
       <dl className="sim-properties">
         {Object.entries(spec.properties).map(([key, value]) => (

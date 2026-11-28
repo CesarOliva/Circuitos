@@ -20,11 +20,10 @@ export default function ComponentesPage() {
         <nav className="sim-nav" aria-label="Vistas">
           <span aria-current="page">Componentes 2D</span>
           <Link href="/componentes/3d">Componentes 3D</Link>
-          <Link href="/componentes/fallos">Componentes en fallo</Link>
-          <Link href="/fichas">Fichas</Link>
+          {/* <Link href="/componentes/fallos">Componentes en fallo</Link> */}
         </nav>
         <h1>Componentes del simulador</h1>
-        <p>Pasa sobre un terminal para identificarlo. Debajo de cada componente encontrarás el enlace a su ficha técnica.</p>
+        <p>Pasa sobre un terminal para identificarlo. Selecciona un componente para abrir su ficha técnica.</p>
       </header>
       <section className="sim-grid">
         {CATALOG.map((entry, index) => (

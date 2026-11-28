@@ -139,7 +139,7 @@ export default function Home() {
                 </p>
                 <span className="feature-go">Girar los modelos →</span>
               </Link>
-              <Link className="spotlight feature-card" href="/componentes/fallos">
+              {/* <Link className="spotlight feature-card" href="/componentes/fallos">
                 <span className="fv fv-fault" aria-hidden="true">
                   <svg viewBox="0 0 80 70">
                     <path className="fault-tri" d="M40 6 L74 64 H6 Z" />
@@ -160,7 +160,7 @@ export default function Home() {
                   cobre, una grieta, una señal irregular o el cuerpo quemado.
                 </p>
                 <span className="feature-go">Estudiar los fallos →</span>
-              </Link>
+              </Link> */}
             </div>
           </section>
         </Reveal>

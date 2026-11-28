@@ -30,7 +30,7 @@
 
 .ficha-indice {
   position: sticky;
-  top: 24px;
+  top: 80px;
   display: grid;
   gap: 2px;
   font-size: var(--text-sm);
@@ -442,84 +442,174 @@
   padding-left: 20px;
 }
 
-.cuestionario > ol {
+.ficha .cuestionario {
   display: grid;
   gap: 18px;
-  list-style: decimal;
-  padding-left: 20px;
-}
-
-.cuestionario fieldset {
-  display: grid;
-  gap: 8px;
-  border: 0;
-  padding: 0;
-  margin: 0;
-}
-
-.cuestionario legend {
-  color: var(--anatomy-strong);
-  margin-bottom: 8px;
-}
-
-.cuestionario-opciones {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr));
-  gap: 8px;
-}
-
-.cuestionario-opcion {
-  padding: 8px 12px;
-  border: 0;
+  padding: 24px;
+  border: 1px solid var(--anatomy-lo);
   background: var(--anatomy-card);
-  box-shadow: 0 0 0 1px var(--anatomy-lo);
+}
+
+.ficha .quiz-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.ficha .quiz-heading h3 {
+  margin: 0;
+  color: var(--anatomy-strong);
+  font-size: var(--text-md);
+}
+
+.ficha .quiz-kicker {
+  margin: 0 0 6px;
+  color: var(--anatomy-lit);
+  font-family: var(--anatomy-mono);
+  font-size: var(--text-xs);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.ficha .quiz-score {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  flex: none;
+  margin: 0;
+  padding: 8px 11px;
+  background: var(--anatomy-faint);
+  color: var(--anatomy-text);
+  font-family: var(--anatomy-mono);
+  font-size: var(--text-xs);
+}
+
+.ficha .quiz-score strong {
+  color: var(--anatomy-strong);
+  font-size: var(--text-sm);
+}
+
+.ficha .quiz-items {
+  display: grid;
+  gap: 24px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ficha .quiz-items > li {
+  display: grid;
+  gap: 10px;
+}
+
+.ficha .quiz-question {
+  display: grid;
+  gap: 4px;
+}
+
+.ficha .quiz-question > p:last-child {
+  margin: 0;
+  color: var(--anatomy-text);
+  line-height: 1.6;
+}
+
+.ficha .quiz-options {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ficha .quiz-option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 48px;
+  padding: 10px 14px;
+  border: 1px solid var(--anatomy-lo);
+  background: var(--anatomy-faint);
   color: var(--anatomy-text);
   font: inherit;
-  font-size: var(--text-sm);
   text-align: left;
   cursor: pointer;
+  transition: border-color 160ms ease, background 160ms ease, color 160ms ease;
 }
 
-.cuestionario-opcion:hover:not(:disabled) {
-  box-shadow: 0 0 0 1px var(--anatomy-lit);
+.ficha .quiz-option-index {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  flex: none;
+  border: 1px solid var(--anatomy-lo);
+  color: var(--anatomy-text);
+  font-family: var(--anatomy-mono);
+  font-size: var(--text-xs);
+}
+
+.ficha .quiz-option:hover:not(:disabled) {
+  border-color: var(--anatomy-lit);
   color: var(--anatomy-strong);
 }
 
-.cuestionario-opcion:disabled {
+.ficha .quiz-option:focus-visible,
+.ficha .quiz-retry:focus-visible {
+  outline: 2px solid var(--anatomy-lit);
+  outline-offset: 2px;
+}
+
+.ficha .quiz-option:disabled {
   cursor: default;
 }
 
-.cuestionario-opcion.correcta {
-  box-shadow: 0 0 0 1px var(--anatomy-green);
+.ficha .quiz-option[data-state="correct"] {
+  border-color: var(--anatomy-green);
   color: var(--anatomy-green);
 }
 
-.cuestionario-opcion.incorrecta {
-  box-shadow: 0 0 0 1px var(--anatomy-red);
+.ficha .quiz-option[data-state="wrong"] {
+  border-color: var(--anatomy-red);
   color: var(--anatomy-red);
 }
 
-.cuestionario-explicacion {
+.ficha .quiz-feedback {
+  margin: 0;
   font-size: var(--text-sm);
+  line-height: 1.55;
 }
 
-.cuestionario-puntaje {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  margin-top: 6px;
-  color: var(--anatomy-strong);
-  font-family: var(--anatomy-mono);
-  font-size: var(--text-sm);
+.ficha .quiz-feedback[data-state="correct"] {
+  color: var(--anatomy-green);
 }
 
-.cuestionario-puntaje button {
+.ficha .quiz-feedback[data-state="wrong"] {
+  color: var(--anatomy-red);
+}
+
+.ficha .quiz-retry {
+  justify-self: start;
+  padding: 6px 0;
   border: 0;
-  background: none;
+  background: transparent;
   color: var(--anatomy-lit);
   font: inherit;
-  cursor: pointer;
+  font-size: var(--text-sm);
   text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+@media (max-width: 480px) {
+  .ficha .cuestionario {
+    padding: 16px;
+  }
+
+  .ficha .quiz-heading {
+    align-items: flex-start;
+  }
 }
 
 @media (max-width: 860px) {

@@ -15,11 +15,11 @@ import { BOARD_SPECS, describirLimite, describirRango, formatear, formatearValor
 export const dynamicParams = false;
 
 export function generateStaticParams() {
-  return FICHAS.map((ficha) => ({ tipo: ficha.slug }));
+  return FICHAS.map((ficha) => ({ componente: ficha.slug }));
 }
 
-export async function generateMetadata({ params }: PageProps<"/componentes/[tipo]">): Promise<Metadata> {
-  const ficha = fichaPorSlug((await params).tipo);
+export async function generateMetadata({ params }: PageProps<"/componentes/[componente]">): Promise<Metadata> {
+  const ficha = fichaPorSlug((await params).componente);
   if (!ficha) return {};
   return { title: `${ficha.titulo} · Ficha técnica`, description: ficha.resumen };
 }
@@ -35,9 +35,9 @@ const SECCIONES = [
   ["leccion", "Lección"],
 ] as const;
 
-export default async function FichaPage({ params }: PageProps<"/componentes/[tipo]">) {
-  const { tipo } = await params;
-  const ficha = fichaPorSlug(tipo);
+export default async function FichaPage({ params }: PageProps<"/componentes/[componente]">) {
+  const { componente } = await params;
+  const ficha = fichaPorSlug(componente);
   if (!ficha) notFound();
 
   const leccion = LECCIONES[ficha.slug];
@@ -54,9 +54,8 @@ export default async function FichaPage({ params }: PageProps<"/componentes/[tip
       <header className="sim-header">
         <div className="sim-navs">
           <nav className="sim-nav" aria-label="Secciones">
-            <Link href="/componentes">Galería</Link>
-            <span aria-current="page">Ficha</span>
-            <Link href="/">Playground</Link>
+            <Link href="/componentes">Componentes 2D</Link>
+            <Link href="/componentes/3d">Componentes 3D</Link>
           </nav>
         </div>
         <p className="ficha-ruta">
@@ -64,9 +63,6 @@ export default async function FichaPage({ params }: PageProps<"/componentes/[tip
         </p>
         <h1>{ficha.titulo}</h1>
         <p>{ficha.resumen}</p>
-        <p className="ficha-clase">
-          <code>{ficha.clase}</code> · <code>{ficha.archivo}</code>
-        </p>
       </header>
 
       <div className="ficha-cuerpo">
@@ -97,7 +93,6 @@ export default async function FichaPage({ params }: PageProps<"/componentes/[tip
                   <tr>
                     <th scope="col">Parámetro</th>
                     <th scope="col">En el simulador</th>
-                    <th scope="col">Componente real</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -105,7 +100,6 @@ export default async function FichaPage({ params }: PageProps<"/componentes/[tip
                     <tr key={fila.parametro}>
                       <th scope="row">{fila.parametro}</th>
                       <td>{fila.simulador}</td>
-                      <td>{fila.real}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -157,7 +151,7 @@ export default async function FichaPage({ params }: PageProps<"/componentes/[tip
           <section id="validacion">
             <h2>Validación de voltajes</h2>
             <p>
-              Límites definidos en <code>src/data/componentSpecs.ts</code>. El validador de abajo arma un circuito de prueba, lo resuelve con el
+              El validador de abajo arma un circuito de prueba, lo resuelve con el
               simulador y aplica estas reglas: cambia los valores para ver cuándo el componente sale de su rango seguro.
             </p>
             {esquema?.valor && (
@@ -350,7 +344,6 @@ export default async function FichaPage({ params }: PageProps<"/componentes/[tip
                 </p>
               </div>
             </div>
-            <h3>Cuestionario</h3>
             <Cuestionario preguntas={leccion.cuestionario} />
           </section>
 

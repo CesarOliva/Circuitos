@@ -6,6 +6,7 @@ import { CATALOG } from "@/components/simulador/catalog";
 import { BOARD_LIST } from "@/components/simulador/boards";
 import { BoardFigure } from "@/components/simulador/board-figure";
 import { ComponentFigure } from "@/components/simulador/figure";
+import { ConFicha } from "@/components/simulador/fichas/con-ficha";
 
 export const metadata: Metadata = {
   title: "Componentes del simulador",
@@ -13,31 +14,28 @@ export const metadata: Metadata = {
 };
 
 export default function ComponentesPage() {
-  const folders = new Set(CATALOG.map((entry) => entry.folder)).size;
   return (
     <main className="iso sim-gallery">
       <header className="sim-header">
         <nav className="sim-nav" aria-label="Vistas">
-          <span aria-current="page">Isométrico</span>
-          <Link href="/componentes/3d">3D</Link>
-          <Link href="/componentes/fallos">Fallos</Link>
+          <span aria-current="page">Componentes 2D</span>
+          <Link href="/componentes/3d">Componentes 3D</Link>
+          <Link href="/componentes/fallos">Componentes en fallo</Link>
+          <Link href="/fichas">Fichas</Link>
         </nav>
         <h1>Componentes del simulador</h1>
-        <p>
-          {CATALOG.length} clases de <code>simulacion/src/components</code> en {folders} carpetas. Cada tarjeta instancia la clase real: los bornes, el
-          readout y la lista de propiedades salen de <code>terminals</code> y <code>getProperties()</code>.
-        </p>
+        <p>Pasa sobre un terminal para identificarlo. Debajo de cada componente encontrarás el enlace a su ficha técnica.</p>
       </header>
       <section className="sim-grid">
         {CATALOG.map((entry, index) => (
-          <Link key={entry.component.id} className="sim-card-link" href={`/componentes/${entry.component.type}`} aria-label={`Abrir ficha técnica de ${entry.title}`}>
+          <ConFicha key={entry.component.id} slug={entry.component.type}>
             <ComponentFigure entry={entry} index={index} />
-          </Link>
+          </ConFicha>
         ))}
         {BOARD_LIST.map((design, index) => (
-          <Link key={design.id} className="sim-card-link" href={`/componentes/${design.id}`} aria-label={`Abrir ficha técnica de ${design.title}`}>
+          <ConFicha key={design.id} slug={design.id}>
             <BoardFigure design={design} index={CATALOG.length + index} />
-          </Link>
+          </ConFicha>
         ))}
       </section>
     </main>

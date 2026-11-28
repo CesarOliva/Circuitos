@@ -7,6 +7,7 @@ import { CATALOG, specOf } from "@/components/simulador/catalog";
 import { Caption, figureNumber } from "@/components/simulador/caption";
 import { faultsForFicha } from "@/components/simulador/faults";
 import { ComponentFigure } from "@/components/simulador/figure";
+import { TituloConFicha } from "@/components/simulador/fichas/con-ficha";
 import { Viewer3D } from "@/components/simulador3d/viewer";
 import { fichaPorSlug } from "@/components/simulador/fichas";
 
@@ -23,9 +24,10 @@ export default async function ComponentesFallosPage({ searchParams }: PageProps<
       <header className="sim-header">
         <div className="sim-navs">
           <nav className="sim-nav" aria-label="Vistas">
-            <Link href="/componentes">Isométrico</Link>
-            <Link href="/componentes/3d">3D</Link>
-            <span aria-current="page">Fallos</span>
+            <Link href="/componentes">Componentes 2D</Link>
+            <Link href="/componentes/3d">Componentes 3D</Link>
+            <span aria-current="page">Componentes en fallo</span>
+            <Link href="/fichas">Fichas</Link>
           </nav>
           <nav className="sim-nav" aria-label="Montaje">
             {loose ? <Link href="/componentes/fallos">En placa</Link> : <span aria-current="page">En placa</span>}
@@ -47,7 +49,7 @@ export default async function ComponentesFallosPage({ searchParams }: PageProps<
         if (!faults.length) return null;
         return (
           <section key={entry.component.id} className="sim-fault-group">
-            <h2>{entry.title}</h2>
+            <TituloConFicha slug={entry.component.type}>{entry.title}</TituloConFicha>
             {faults.map((fault) => (
               <div key={fault.label} className="sim-fault-row">
                 <ComponentFigure entry={entry} index={index} fault={fault} />

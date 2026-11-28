@@ -22,7 +22,7 @@ export function SiteHeader() {
         </Link>
         <nav className="site-nav" aria-label="Secciones del sitio">
           {LINKS.map(({ href, label }) => {
-            const active = href === "/cursos" || href === "/componentes" ? pathname.startsWith(href) : pathname === href;
+            const active = href === "/componentes" ? pathname.startsWith(href) || pathname.startsWith("/fichas") : href === "/cursos" ? pathname.startsWith(href) : pathname === href;
             return (
               <Link key={href} href={href} aria-current={active ? "page" : undefined}>
                 {label}

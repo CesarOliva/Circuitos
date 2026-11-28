@@ -6,6 +6,7 @@ import { Plate } from "@/components/iso/react/draw";
 import { CATALOG, specOf } from "@/components/simulador/catalog";
 import { BOARD_LIST, specOfBoard } from "@/components/simulador/boards";
 import { Caption, figureNumber } from "@/components/simulador/caption";
+import { ConFicha } from "@/components/simulador/fichas/con-ficha";
 import { Viewer3D } from "@/components/simulador3d/viewer";
 
 export const metadata: Metadata = {
@@ -21,9 +22,10 @@ export default async function Componentes3DPage({ searchParams }: PageProps<"/co
       <header className="sim-header">
         <div className="sim-navs">
           <nav className="sim-nav" aria-label="Vistas">
-            <Link href="/componentes">Isométrico</Link>
-            <span aria-current="page">3D</span>
-            <Link href="/componentes/fallos">Fallos</Link>
+            <span aria-current="page">Componentes 3D</span>
+            <Link href="/componentes">Componentes 2D</Link>
+            <Link href="/componentes/fallos">Componentes en fallo</Link>
+            <Link href="/fichas">Fichas</Link>
           </nav>
           <nav className="sim-nav" aria-label="Montaje">
             {loose ? <Link href="/componentes/3d">En placa</Link> : <span aria-current="page">En placa</span>}
@@ -43,18 +45,22 @@ export default async function Componentes3DPage({ searchParams }: PageProps<"/co
         {specs.map((spec, index) => {
           const idle = `${spec.terminals.length} terminales`;
           return (
-            <Plate key={spec.id} fig={figureNumber(index, spec)} title={spec.title} hint="Arrastra para girar" readout={idle} caption={<Caption spec={spec} />}>
-              <Viewer3D key="stage" spec={spec} idle={idle} mount={loose ? "loose" : "board"} />
-            </Plate>
+            <ConFicha key={spec.id} slug={CATALOG[index].component.type}>
+              <Plate fig={figureNumber(index, spec)} title={spec.title} hint="Arrastra para girar" readout={idle} caption={<Caption spec={spec} />}>
+                <Viewer3D key="stage" spec={spec} idle={idle} mount={loose ? "loose" : "board"} />
+              </Plate>
+            </ConFicha>
           );
         })}
         {BOARD_LIST.map((design, index) => {
           const spec = specOfBoard(design);
           const idle = `${spec.terminals.length} terminales`;
           return (
-            <Plate key={spec.id} fig={figureNumber(specs.length + index, spec)} title={spec.title} hint="Arrastra para girar" readout={idle} caption={<Caption spec={spec} />}>
-              <Viewer3D spec={spec} idle={idle} mount={loose ? "loose" : "board"} />
-            </Plate>
+            <ConFicha key={spec.id} slug={design.id}>
+              <Plate fig={figureNumber(specs.length + index, spec)} title={spec.title} hint="Arrastra para girar" readout={idle} caption={<Caption spec={spec} />}>
+                <Viewer3D spec={spec} idle={idle} mount={loose ? "loose" : "board"} />
+              </Plate>
+            </ConFicha>
           );
         })}
       </section>

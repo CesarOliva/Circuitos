@@ -1,0 +1,36 @@
+/* Link from each gallery card to its technical sheet. */
+.con-ficha {
+  display: grid;
+  gap: 10px;
+  align-content: start;
+}
+
+.con-ficha-link {
+  justify-self: start;
+  padding: 6px 12px;
+  border: 1px solid var(--anatomy-lo);
+  border-radius: 999px;
+  color: var(--anatomy-lit);
+  font-family: var(--anatomy-mono);
+  font-size: var(--text-xs);
+  text-decoration: none;
+}
+
+.con-ficha-link:hover,
+.con-ficha-titulo:hover {
+  color: var(--anatomy-strong);
+  border-color: currentColor;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.con-ficha-link:focus-visible,
+.con-ficha-titulo:focus-visible {
+  outline: 2px solid var(--anatomy-lit);
+  outline-offset: 2px;
+}
+
+.con-ficha-titulo {
+  color: inherit;
+  text-decoration: none;
+}

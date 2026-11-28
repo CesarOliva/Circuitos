@@ -166,39 +166,6 @@ body:has(.intro-screen[data-state="playing"]) :is(.hero-copy > *, .hw > span) {
   outline-offset: 2px;
 }
 
-/* ---------- Cifras ---------- */
-
-.stats {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 14px;
-  padding: 10px 0 54px;
-}
-
-.stat {
-  display: grid;
-  gap: 4px;
-  padding: 18px 20px;
-  border: 1px solid var(--line);
-  border-radius: 14px;
-  background: var(--surface);
-  text-align: left;
-}
-
-.stat-number {
-  color: var(--accent-ink);
-  font-family: var(--mono);
-  font-size: var(--text-2xl);
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-}
-
-.stat-label {
-  color: var(--muted);
-  font-size: var(--text-sm);
-  line-height: 1.45;
-}
-
 /* ---------- Ventanas del sitio ---------- */
 
 .features {
@@ -640,21 +607,6 @@ body:has(.intro-screen[data-state="playing"]) :is(.hero-copy > *, .hw > span) {
   .fv { order: 2; width: 100%; height: 130px; }
   .feature-card p { order: 3; }
   .feature-go { order: 4; }
-}
-
-@media (max-width: 480px) {
-  .stats {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 10px;
-  }
-
-  .stat {
-    padding: 14px;
-  }
-
-  .stat-number {
-    font-size: var(--text-xl);
-  }
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -245,6 +245,15 @@ def box_keypoints(box: tuple[float, float, float, float]) -> dict[str, list[floa
     }
 
 
+def orient_board_corners(corners: np.ndarray, aspect_ratio: float) -> np.ndarray:
+    across = np.linalg.norm(corners[1] - corners[0]) + np.linalg.norm(corners[2] - corners[3])
+    down = np.linalg.norm(corners[3] - corners[0]) + np.linalg.norm(corners[2] - corners[1])
+    if aspect_ratio > 1 and down > across * 1.1:
+        # Rotate counterclockwise so the portrait board's top becomes its left.
+        return np.roll(corners, -1, axis=0)
+    return corners
+
+
 def project_points(
     board_corners: np.ndarray,
     points: dict[str, list[float]],
@@ -260,7 +269,7 @@ def project_points(
         ],
         dtype=np.float32,
     )
-    transform = cv2.getPerspectiveTransform(board_corners, destination)
+    transform = cv2.getPerspectiveTransform(orient_board_corners(board_corners, board_width / board_height), destination)
     names = list(points)
     source_points = np.array([points[name] for name in names], dtype=np.float32).reshape(-1, 1, 2)
     mapped = cv2.perspectiveTransform(source_points, transform).reshape(-1, 2)
@@ -274,9 +283,46 @@ def rectify_board(image_rgb: np.ndarray, corners: np.ndarray, aspect_ratio: floa
     width = 800
     height = round(min(1200, max(2, width / aspect_ratio)))
     destination = np.array([[0, 0], [width - 1, 0], [width - 1, height - 1], [0, height - 1]], dtype=np.float32)
-    transform = cv2.getPerspectiveTransform(corners, destination)
+    transform = cv2.getPerspectiveTransform(orient_board_corners(corners, aspect_ratio), destination)
     rectified = cv2.warpPerspective(image_rgb, transform, (width, height))
     return Image.fromarray(rectified), transform
+
+
+def find_board_on_light_background(image_rgb: np.ndarray, aspect_ratio: float) -> np.ndarray | None:
+    gray = cv2.cvtColor(image_rgb, cv2.COLOR_RGB2GRAY)
+    height, width = gray.shape
+    background = np.median(np.concatenate((gray[:, 0], gray[:, -1], gray[0], gray[-1])))
+    if background < 190:
+        return None
+    foreground = (gray <= background - 12).astype(np.uint8)
+    size = max(3, (min(height, width) // 55) | 1)
+    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (size, size))
+    foreground = cv2.morphologyEx(foreground, cv2.MORPH_CLOSE, kernel)
+    foreground = cv2.morphologyEx(foreground, cv2.MORPH_OPEN, kernel)
+    contours, _ = cv2.findContours(foreground, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    for contour in sorted(contours, key=cv2.contourArea, reverse=True):
+        if cv2.contourArea(contour) < height * width * 0.08:
+            break
+        rectangle = cv2.minAreaRect(contour)
+        short, long = sorted(rectangle[1])
+        if short == 0 or not 1.25 <= long / short <= 2.6:
+            continue
+        hull = cv2.convexHull(contour)
+        polygon = cv2.approxPolyDP(hull, 0.025 * cv2.arcLength(hull, True), True)
+        corners = order_corners(polygon.reshape(4, 2) if len(polygon) == 4 else cv2.boxPoints(rectangle))
+        rectified, _ = rectify_board(image_rgb, corners, aspect_ratio)
+        hue, saturation, value = cv2.split(cv2.cvtColor(np.asarray(rectified), cv2.COLOR_RGB2HSV))
+        board_height, board_width = hue.shape
+        colored = (saturation >= 75) & ((hue < 11) | (hue >= 165) | ((hue >= 84) & (hue < 137)))
+        # Require rail markings on both sides and a dense array of small dark holes.
+        rail_kernel = np.ones((1, board_width // 8), np.uint8)
+        rail_regions = (colored[:board_height // 4], colored[-board_height // 4:])
+        if not all(cv2.morphologyEx(region.astype(np.uint8), cv2.MORPH_OPEN, rail_kernel).any()
+                   for region in rail_regions):
+            continue
+        if len(hole_centers(value, board_width * 0.03)) >= 80:
+            return corners
+    return None
 
 
 def transform_detection(item: Detection, transform: np.ndarray) -> Detection:
@@ -637,7 +683,9 @@ def separate_touching_wires(mask: np.ndarray, pitch: float) -> list[list[tuple[i
         if right - left < pitch * 0.7:
             continue
         narrow = [(runs[i][0][1], i) for i in range(left + 1, right) if len(runs[i]) == 1]
-        if narrow and min(narrow)[0] < width * 1.35:
+        before = sum(i >= left - pitch for i in supported if i <= left)
+        after = sum(i <= right + pitch for i in supported if i >= right)
+        if narrow and min(narrow)[0] < width * 1.35 and min(before, after) >= pitch * 0.5:
             crossing = min(narrow)[1]
             break
 
@@ -699,7 +747,7 @@ def calibrate_rail_holes(hsv: np.ndarray) -> dict[str, np.ndarray]:
     }
     candidates = hole_centers(value, pitch)
     banks = []
-    group_gaps = (5, 11, 17, 23)
+    layouts = ((34, (6, 13, 20, 27)), (29, (5, 11, 17, 23)), (30, ()))
     for side, start, stop in (("top", 0, height // 5), ("bottom", height * 4 // 5, height)):
         stripes = {}
         for sign, mask in ink.items():
@@ -736,29 +784,36 @@ def calibrate_rail_holes(hsv: np.ndarray) -> dict[str, np.ndarray]:
         if len(steps) < 6:
             continue
         spacing = float(np.median(steps))
-        observed_x = np.concatenate([row[:, 0] for row in rows.values()])
-        indices = np.rint((observed_x - width * 0.065) / spacing)
-        spacing, origin = np.polyfit(indices, observed_x, 1)
-        if np.median(np.abs(observed_x - (origin + indices * spacing))) > pitch * 0.15:
+        observed_x = np.sort(np.concatenate([row[:, 0] for row in rows.values()]))
+        # Merge each pair of vertically aligned holes before counting gaps.
+        groups = np.split(observed_x, np.flatnonzero(np.diff(observed_x) > spacing * 0.35) + 1)
+        centers = np.array([np.median(group) for group in groups])
+        first = max(0, round((centers[0] - width * 0.055) / spacing))
+        slots = first + np.r_[0, np.cumsum(np.rint(np.diff(centers) / spacing).astype(int))]
+        occupied = set(slots)
+        count, gaps = next(
+            ((count, gaps) for count, gaps in layouts if gaps and sum(
+                gap not in occupied and gap - 1 in occupied and gap + 1 in occupied for gap in gaps
+            ) >= 3),
+            layouts[-1],
+        )
+        if slots[-1] >= count or len(occupied) < 8:
             continue
-        occupied = set(indices.astype(int))
-        grouped = sum(
-            gap not in occupied and gap - 1 in occupied and gap + 1 in occupied
-            for gap in group_gaps
-        ) >= 3
-        banks.append((side, rows, float(spacing), float(origin), grouped))
-    # Five groups of five leave four gaps. Align their right edge to the
-    # simulator's 30-column board so both banks use the same column numbers.
-    count = 29 if any(bank[-1] for bank in banks) else 30
+        fit = np.polyfit(slots, centers, 2)
+        if np.median(np.abs(centers - np.polyval(fit, slots))) > pitch * 0.15:
+            continue
+        banks.append((side, rows, fit, count, gaps))
     holes = {}
-    for side, rows, spacing, origin, _ in banks:
+    for side, rows, fit, count, gaps in banks:
         for sign, row in rows.items():
             slope, intercept = np.polyfit(row[:, 0], row[:, 1], 1)
-            for offset in range(count):
-                if count == 29 and offset in group_gaps:
-                    continue
-                x = origin + offset * spacing
-                holes[f"{side}{sign}{31 - count + offset}"] = np.array([x, slope * x + intercept])
+            offsets = [offset for offset in range(count) if offset not in gaps]
+            for index, offset in enumerate(offsets):
+                # Six-hole groups fill all 30 virtual contacts; the older
+                # five-hole layout keeps its existing column alignment.
+                column = index + 1 if count == 34 else 31 - count + offset
+                x = np.polyval(fit, offset)
+                holes[f"{side}{sign}{column}"] = np.array([x, slope * x + intercept])
     return holes
 
 
@@ -788,6 +843,8 @@ def calibrate_terminal_holes(value: np.ndarray, rails: dict[str, np.ndarray]) ->
             if score[match] > best:
                 best = score[match]
                 row_points = [candidates[np.abs(straight_y - y) <= 4] for y in grid[match]]
+        fits = {}
+        column_support = []
         for name, points in zip(rows, row_points):
             xs = np.sort(points[:, 0])
             steps = np.diff(xs)
@@ -801,8 +858,19 @@ def calibrate_terminal_holes(value: np.ndarray, rails: dict[str, np.ndarray]) ->
             if np.count_nonzero(aligned) < 6:
                 continue
             slope, intercept = np.polyfit(points[aligned, 0], points[aligned, 1], 1)
-            for column in range(1, 31):
-                x = origin + dx * column
+            fits[name] = (dx, origin, slope, intercept)
+            within_board = (points[:, 0] >= width * 0.035) & (points[:, 0] <= width * 0.96)
+            column_support.extend(np.unique(columns[aligned & within_board]))
+        physical_columns, counts = np.unique(column_support, return_counts=True)
+        supported_columns = physical_columns[counts >= 2]
+        columns = np.arange(1, 31)
+        # The editor has 30 columns. Map wider boards across the same span
+        # so terminals on the left can still be matched to the imported board.
+        if len(supported_columns) and supported_columns[-1] - supported_columns[0] >= 30:
+            columns = np.linspace(supported_columns[0], supported_columns[-1], 30)
+        for name, (dx, origin, slope, intercept) in fits.items():
+            for column, physical_column in enumerate(columns, 1):
+                x = origin + dx * physical_column
                 holes[f"{name}{column}"] = np.array([x, slope * x + intercept])
     return holes
 
@@ -862,9 +930,14 @@ def detect_wires(image: Image.Image, headers: list[Detection]) -> list[dict[str,
                 minLineLength=width // 2, maxLineGap=width // 14,
             )
             if lines is not None:
+                # Keep steep strands that cross the stripe. Erasing across
+                # their full width joins unrelated ends to the nearest hole.
+                strand_height = max(9, round(pitch * 0.5) | 1)
+                strands = cv2.morphologyEx(mask, cv2.MORPH_OPEN, np.ones((strand_height, 1), np.uint8))
                 for x1, y1, x2, y2 in lines.reshape(-1, 4):
                     if abs(y2 - y1) <= abs(x2 - x1) * 0.1:
-                        cv2.line(mask, (x1, y1), (x2, y2), 0, 5)
+                        cv2.line(mask, (x1, y1), (x2, y2), 0, 7)
+                mask |= strands
         mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel)
         _, labels, regions, _ = cv2.connectedComponentsWithStats(mask)
         for index, (x, y, w, h, area) in enumerate(regions[1:], 1):
@@ -1026,27 +1099,38 @@ def process_image(
     image_rgb = np.asarray(image)
     detections = detect_objects(image, processor, model, device, threshold)
     boards = [item for item in detections if item.label == BOARD_LABEL]
-    if not boards:
+    aspect_ratio = board_width / board_height
+    board_detection = max(boards, key=lambda item: item.score, default=None)
+    board_corners = None
+    corner_error = None
+    if board_detection is not None:
+        try:
+            board_corners = detect_board_corners(image_rgb, board_detection.box)
+        except ValueError as error:
+            corner_error = error
+    if board_corners is None:
+        board_corners = find_board_on_light_background(image_rgb, aspect_ratio)
+    if board_corners is None:
+        if corner_error is not None:
+            if output_dir is not None:
+                raise corner_error
+            return {"error": str(corner_error), "breadboard": False, "components": []}
         if output_dir is None:
             return {"breadboard": False, "components": []}
         raise ValueError(
             f"No detecté el protoboard en {image_path.name}. "
             "Asegúrate de que se vea completo y prueba una foto con mejor contraste."
         )
-    board_detection = max(boards, key=lambda item: item.score)
-    try:
-        board_corners = detect_board_corners(image_rgb, board_detection.box)
-    except ValueError as error:
-        if output_dir is not None:
-            raise
-        return {"error": str(error), "breadboard": False, "components": []}
+    if board_detection is None or corner_error is not None:
+        bounds = (*board_corners.min(axis=0), *board_corners.max(axis=0))
+        board_detection = Detection(BOARD_LABEL, 0.0, bounds)
     components = [
         item for item in detections
         if item.label != BOARD_LABEL
         and (item.label == "wire" or not is_board_sized(item, board_corners))
         and cv2.pointPolygonTest(board_corners, tuple(box_keypoints(item.box)["centro"]), False) >= 0
     ]
-    rectified, transform = rectify_board(image_rgb, board_corners, board_width / board_height)
+    rectified, transform = rectify_board(image_rgb, board_corners, aspect_ratio)
     width, height = rectified.width - 1, rectified.height - 1
     rectified_board = Detection(BOARD_LABEL, board_detection.score, (0, 0, width, height))
     details = detail_detections(rectified, rectified_board, processor, model, device, threshold)

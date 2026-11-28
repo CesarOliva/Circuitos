@@ -1,4 +1,7 @@
 import unittest
+from pathlib import Path
+from tempfile import TemporaryDirectory
+from unittest.mock import patch
 
 import cv2
 import numpy as np
@@ -19,6 +22,7 @@ from analyze import (
     is_rail_sized_resistor,
     merge_detail_detections,
     order_corners,
+    process_image,
     project_points,
     rectify_board,
     remove_duplicate_boxes,
@@ -27,6 +31,33 @@ from analyze import (
 
 
 class CoordinateMappingTests(unittest.TestCase):
+    def test_imports_a_portrait_board_on_white_when_the_model_misses_it(self):
+        image = np.full((460, 860, 3), 255, dtype=np.uint8)
+        board = image[7:440, 290:572]
+        board[:] = (215, 215, 210)
+        for x, color in ((10, (208, 40, 48)), (43, (25, 118, 205)),
+                         (239, (208, 40, 48)), (272, (25, 118, 205))):
+            cv2.line(board, (x, 29), (x, 403), color, 2)
+        for y in range(27, 411, 13):
+            for x in (65, 78, 91, 104, 117, 160, 173, 186, 199, 212):
+                cv2.rectangle(board, (x - 2, y - 2), (x + 2, y + 2), (42, 42, 40), -1)
+        cv2.line(board, (43, 105), (78, 105), (12, 160, 60), 5)
+        cv2.line(board, (80, 412), (66, 432), (20, 20, 20), 4)
+        cv2.line(image, (356, 439), (341, 459), (20, 20, 20), 4)
+
+        with TemporaryDirectory() as directory, patch("analyze.detect_objects", return_value=[]):
+            path = Path(directory) / "portrait.png"
+            Image.fromarray(image).save(path)
+            result = process_image(path, None, None, None, 0.22, 400, 230, None)
+            self.assertTrue(result["breadboard"])
+            jumper = next(wire for wire in result["wires"] if wire["color"] == "#0ca03c")
+            self.assertAlmostEqual(jumper["from"]["x"], jumper["to"]["x"], delta=0.035)
+            self.assertLess(jumper["from"]["x"], -0.15)
+
+            board[:] = (215, 215, 210)
+            Image.fromarray(image).save(path)
+            self.assertFalse(process_image(path, None, None, None, 0.22, 400, 230, None)["breadboard"])
+
     def test_pairs_crossing_wires_from_the_visible_strands(self):
         mask = np.zeros((70, 200), dtype=np.uint8)
         cv2.line(mask, (10, 15), (190, 55), 1, 9)
@@ -51,6 +82,17 @@ class CoordinateMappingTests(unittest.TestCase):
         self.assertEqual(len(holes), 300)
         np.testing.assert_allclose(holes["a1"], [52, 115], atol=1)
         np.testing.assert_allclose(holes["j30"], [748, 337], atol=1)
+
+    def test_wider_terminal_grid_keeps_both_edges_on_the_virtual_board(self):
+        value = np.full((460, 800), 225, dtype=np.uint8)
+        for y in (108, 130, 152, 174, 196, 260, 281, 302, 323, 344):
+            for x in range(35, 736, 20):
+                cv2.rectangle(value, (x - 3, y - 3), (x + 3, y + 3), 35, -1)
+
+        holes = calibrate_terminal_holes(value, {})
+
+        np.testing.assert_allclose(holes["a1"], [35, 108], atol=1)
+        np.testing.assert_allclose(holes["j30"], [735, 344], atol=1)
 
     def test_calibrates_reversed_rail_colors_and_grouped_columns(self):
         image = np.full((460, 800, 3), 225, dtype=np.uint8)
@@ -99,6 +141,28 @@ class CoordinateMappingTests(unittest.TestCase):
             atol=0.013,
         )
         self.assertTrue(wires[0]["via"])
+
+    def test_preserves_jumpers_crossing_a_printed_rail_with_six_hole_groups(self):
+        image = np.full((460, 800, 3), 225, dtype=np.uint8)
+        red = (230, 20, 30)
+        for y, color in ((10, (20, 120, 235)), (73, red)):
+            cv2.line(image, (25, y), (775, y), color, 4)
+        for slot in range(34):
+            if slot in (6, 13, 20, 27):
+                continue
+            x = 42 + slot * 21
+            for y in (31, 52):
+                cv2.rectangle(image, (x - 3, y - 3), (x + 3, y + 3), (40, 40, 40), -1)
+        for x in (42, 63):
+            cv2.line(image, (x, 52), (x, 105), red, 8)
+
+        wires = detect_wires(Image.fromarray(image), [])
+
+        self.assertEqual(len(wires), 2)
+        self.assertEqual(
+            {wire["fromHole"] or wire["toHole"] for wire in wires},
+            {"top+1", "top+2"},
+        )
 
     def test_recognizes_one_header_from_its_row_of_contacts(self):
         image = np.full((100, 240, 3), 225, dtype=np.uint8)
